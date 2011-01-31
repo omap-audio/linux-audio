@@ -48,7 +48,7 @@
 #include <sound/initval.h>
 
 #include <trace/events/asoc.h>
-int soc_dsp_runtime_update(struct snd_soc_dapm_widget *);
+int soc_dpcm_runtime_update(struct snd_soc_dapm_widget *);
 
 #define DAPM_UPDATE_STAT(widget, val) widget->dapm->card->dapm_stats.val++;
 
@@ -1890,7 +1890,7 @@ int snd_soc_dapm_mux_update_power(struct snd_soc_dapm_widget *widget,
 	if (found) {
 		dapm_mark_dirty(widget, "mux change");
 		dapm_power_widgets(widget->dapm, SND_SOC_DAPM_STREAM_NOP);
-		soc_dsp_runtime_update(widget);
+		soc_dpcm_runtime_update(widget);
 	}
 
 	return 0;
@@ -1923,7 +1923,7 @@ int snd_soc_dapm_mixer_update_power(struct snd_soc_dapm_widget *widget,
 	if (found) {
 		dapm_mark_dirty(widget, "mixer update");
 		dapm_power_widgets(widget->dapm, SND_SOC_DAPM_STREAM_NOP);
-		soc_dsp_runtime_update(widget);
+		soc_dpcm_runtime_update(widget);
 	}
 
 	return 0;
@@ -2969,6 +2969,9 @@ static void soc_dapm_stream_event(struct snd_soc_dapm_context *dapm,
 	const char *stream, int event)
 {
 	struct snd_soc_dapm_widget *w;
+
+	if (!dapm)
+		return;
 
 	list_for_each_entry(w, &dapm->card->widgets, list)
 	{
