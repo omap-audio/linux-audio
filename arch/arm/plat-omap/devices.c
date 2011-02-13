@@ -16,11 +16,14 @@
 #include <linux/io.h>
 #include <linux/slab.h>
 #include <linux/memblock.h>
+#include <linux/err.h>
 
 #include <mach/hardware.h>
 #include <asm/mach-types.h>
 #include <asm/mach/map.h>
 
+#include <plat/omap_hwmod.h>
+#include <plat/omap_device.h>
 #include <plat/tc.h>
 #include <plat/board.h>
 #include <plat/mmc.h>
@@ -154,8 +157,6 @@ static void omap_init_rng(void)
 #else
 static inline void omap_init_rng(void) {}
 #endif
-
-/*-------------------------------------------------------------------------*/
 
 /* Numbering for the SPI-capable controllers when used for SPI:
  * spi		= 1
