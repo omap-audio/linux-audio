@@ -9,8 +9,9 @@
  * Copyright (C) 2007 Texas Instruments, Inc.
  * Karthik Dasu <karthik-dp@ti.com>
  *
- * Copyright (C) 2006 Nokia Corporation
+ * Copyright (C) 2006, 2011 Nokia Corporation
  * Tony Lindgren <tony@atomide.com>
+ * Tero Kristo <tero.kristo@nokia.com>
  *
  * Copyright (C) 2005 Texas Instruments, Inc.
  * Richard Woodruff <r-woodruff2@ti.com>
@@ -270,6 +271,12 @@ static int omap3_enter_idle_bm(struct cpuidle_device *dev,
 		goto select_state;
 	}
 
+	/* If DSS is active, prevent CORE RET/OFF */
+	dss_state = pwrdm_read_pwrst(dss_pd);
+	if (dss_state == PWRDM_POWER_ON &&
+	    core_next_state != PWRDM_POWER_ON)
+		core_next_state = PWRDM_POWER_INACTIVE;
+
 	/*
 	 * Prevent PER off if CORE is not in retention or off as this
 	 * would disable PER wakeups completely.
@@ -290,7 +297,6 @@ static int omap3_enter_idle_bm(struct cpuidle_device *dev,
 		iva2_state = pwrdm_read_pwrst(iva2_pd);
 		sgx_state = pwrdm_read_pwrst(sgx_pd);
 		usb_state = pwrdm_read_pwrst(usb_pd);
-		dss_state = pwrdm_read_pwrst(dss_pd);
 
 		if (cam_state > PWRDM_POWER_OFF ||
 		    dss_state > PWRDM_POWER_OFF ||
