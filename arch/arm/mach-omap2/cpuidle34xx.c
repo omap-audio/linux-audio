@@ -271,7 +271,33 @@ static int omap3_enter_idle_bm(struct cpuidle_device *dev,
 		goto select_state;
 	}
 
-	/* If DSS is active, prevent CORE RET/OFF */
+	/*
+	 * If DSS is active, prevent any CORE power domain transition
+	 * to RETENTION or lower.  This is because we don't currently
+	 * have the infrastructure in the DSS driver or kernel to
+	 * enter CORE RET without causing DSS FIFO underflows.  When
+	 * the DSS FIFO underflows, the screen image can be distorted,
+	 * because the CORE may not be able to come back on-line
+	 * quickly enough to service DSS requests to the SDRAM
+	 * framebuffer.  The DSS may also interrupt the MPU when the
+	 * FIFO underflows, potentially wasting power.
+	 *
+	 * The approach below is easy to implement, but potentially
+	 * wastes power, especially with screens that don't require a
+	 * backlight.  Probably the best long-term way to fix this is
+	 * for the DSS driver to constrain the CORE and SDRAM minimum
+	 * power state with omap_pm_set_max_dev_wakeup_lat(), based on
+	 * the DSS FIFO size(s), watermark levels, drain rate, and
+	 * refill time.  Based on that constraint, the OMAP PM code
+	 * should adjust the CORE maximum power state, CORE DPLL
+	 * autoidle mode, CORE_CLK rate, and voltage scaling to ensure
+	 * the required wakeup latency at the lowest power
+	 * consumption.
+	 *
+	 * (More information on the DSS low-power refresh mode can be
+	 * found in _Using Display Low-Power Refresh on the OMAP3430
+	 * Device_, TI Application Report, SWPA158 - October 2008.)
+	 */
 	dss_state = pwrdm_read_pwrst(dss_pd);
 	if (dss_state == PWRDM_POWER_ON &&
 	    core_next_state != PWRDM_POWER_ON)
