@@ -1,12 +1,12 @@
 /*
- *  linux/arch/arm/mach-omap2/clock2430_data.c
+ * OMAP2430 clock data
  *
- *  Copyright (C) 2005-2009 Texas Instruments, Inc.
- *  Copyright (C) 2004-2011 Nokia Corporation
+ * Copyright (C) 2005-2009 Texas Instruments, Inc.
+ * Copyright (C) 2004-2011 Nokia Corporation
  *
- *  Contacts:
- *  Richard Woodruff <r-woodruff2@ti.com>
- *  Paul Walmsley
+ * Contacts:
+ * Richard Woodruff <r-woodruff2@ti.com>
+ * Paul Walmsley
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -34,18 +34,15 @@
 /*
  * 2430 clock tree.
  *
- * NOTE:In many cases here we are assigning a 'default' parent.	In many
- *	cases the parent is selectable.	The get/set parent calls will also
- *	switch sources.
- *
- *	Many some clocks say always_enabled, but they can be auto idled for
- *	power savings. They will always be available upon clock request.
+ * NOTE:In many cases here we are assigning a 'default' parent. In
+ *	many cases the parent is selectable. The set parent calls will
+ *	also switch sources.
  *
  *	Several sources are given initial rates which may be wrong, this will
  *	be fixed up in the init func.
  *
  *	Things are broadly separated below by clock domains. It is
- *	noteworthy that most periferals have dependencies on multiple clock
+ *	noteworthy that most peripherals have dependencies on multiple clock
  *	domains. Many get their interface clocks from the L4 domain, but get
  *	functional clocks from fixed sources or other core domain derived
  *	clocks.
@@ -433,37 +430,23 @@ static struct clk dsp_fck = {
 	.recalc		= &omap2_clksel_recalc,
 };
 
-/* DSP interface clock */
-static const struct clksel_rate dsp_irate_ick_rates[] = {
-	{ .div = 1, .val = 1, .flags = RATE_IN_24XX },
-	{ .div = 2, .val = 2, .flags = RATE_IN_24XX },
-	{ .div = 3, .val = 3, .flags = RATE_IN_243X },
-	{ .div = 0 },
-};
-
-static const struct clksel dsp_irate_ick_clksel[] = {
-	{ .parent = &dsp_fck, .rates = dsp_irate_ick_rates },
+static const struct clksel dsp_ick_clksel[] = {
+	{ .parent = &dsp_fck, .rates = dsp_ick_rates },
 	{ .parent = NULL }
-};
-
-/* This clock does not exist as such in the TRM. */
-static struct clk dsp_irate_ick = {
-	.name		= "dsp_irate_ick",
-	.ops		= &clkops_null,
-	.parent		= &dsp_fck,
-	.clksel_reg	= OMAP_CM_REGADDR(OMAP24XX_DSP_MOD, CM_CLKSEL),
-	.clksel_mask	= OMAP24XX_CLKSEL_DSP_IF_MASK,
-	.clksel		= dsp_irate_ick_clksel,
-	.recalc		= &omap2_clksel_recalc,
 };
 
 /* 2430 only - EN_DSP controls both dsp fclk and iclk on 2430 */
 static struct clk iva2_1_ick = {
 	.name		= "iva2_1_ick",
 	.ops		= &clkops_omap2_dflt_wait,
-	.parent		= &dsp_irate_ick,
+	.parent		= &dsp_fck,
+	.clkdm_name	= "dsp_clkdm",
 	.enable_reg	= OMAP_CM_REGADDR(OMAP24XX_DSP_MOD, CM_FCLKEN),
 	.enable_bit	= OMAP24XX_CM_FCLKEN_DSP_EN_DSP_SHIFT,
+	.clksel_reg	= OMAP_CM_REGADDR(OMAP24XX_DSP_MOD, CM_CLKSEL),
+	.clksel_mask	= OMAP24XX_CLKSEL_DSP_IF_MASK,
+	.clksel		= dsp_ick_clksel,
+	.recalc		= &omap2_clksel_recalc,
 };
 
 /*
@@ -989,6 +972,7 @@ static struct clk gpt7_ick = {
 	.name		= "gpt7_ick",
 	.ops		= &clkops_omap2_iclk_dflt_wait,
 	.parent		= &l4_ck,
+	.clkdm_name	= "core_l4_clkdm",
 	.enable_reg	= OMAP_CM_REGADDR(CORE_MOD, CM_ICLKEN1),
 	.enable_bit	= OMAP24XX_EN_GPT7_SHIFT,
 	.recalc		= &followparent_recalc,
@@ -1761,7 +1745,7 @@ static struct clk mmchs1_fck = {
 	.name		= "mmchs1_fck",
 	.ops		= &clkops_omap2_dflt_wait,
 	.parent		= &func_96m_ck,
-	.clkdm_name	= "core_l3_clkdm",
+	.clkdm_name	= "core_l4_clkdm",
 	.enable_reg	= OMAP_CM_REGADDR(CORE_MOD, OMAP24XX_CM_FCLKEN2),
 	.enable_bit	= OMAP2430_EN_MMCHS1_SHIFT,
 	.recalc		= &followparent_recalc,
@@ -1781,6 +1765,7 @@ static struct clk mmchs2_fck = {
 	.name		= "mmchs2_fck",
 	.ops		= &clkops_omap2_dflt_wait,
 	.parent		= &func_96m_ck,
+	.clkdm_name	= "core_l4_clkdm",
 	.enable_reg	= OMAP_CM_REGADDR(CORE_MOD, OMAP24XX_CM_FCLKEN2),
 	.enable_bit	= OMAP2430_EN_MMCHS2_SHIFT,
 	.recalc		= &followparent_recalc,
@@ -1900,7 +1885,6 @@ static struct omap_clk omap2430_clks[] = {
 	CLK(NULL,	"mpu_ck",	&mpu_ck,	CK_243X),
 	/* dsp domain clocks */
 	CLK(NULL,	"dsp_fck",	&dsp_fck,	CK_243X),
-	CLK(NULL,	"dsp_irate_ick", &dsp_irate_ick, CK_243X),
 	CLK(NULL,	"iva2_1_ick",	&iva2_1_ick,	CK_243X),
 	/* GFX domain clocks */
 	CLK(NULL,	"gfx_3d_fck",	&gfx_3d_fck,	CK_243X),
