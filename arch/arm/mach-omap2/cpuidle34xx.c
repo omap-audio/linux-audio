@@ -9,8 +9,9 @@
  * Copyright (C) 2007 Texas Instruments, Inc.
  * Karthik Dasu <karthik-dp@ti.com>
  *
- * Copyright (C) 2006 Nokia Corporation
+ * Copyright (C) 2006, 2011 Nokia Corporation
  * Tony Lindgren <tony@atomide.com>
+ * Tero Kristo <tero.kristo@nokia.com>
  *
  * Copyright (C) 2005 Texas Instruments, Inc.
  * Richard Woodruff <r-woodruff2@ti.com>
@@ -63,7 +64,7 @@ struct omap3_processor_cx {
 struct omap3_processor_cx omap3_power_states[OMAP3_MAX_STATES];
 struct omap3_processor_cx current_cx_state;
 struct powerdomain *mpu_pd, *core_pd, *per_pd;
-struct powerdomain *cam_pd;
+struct powerdomain *cam_pd, *dss_pd, *iva2_pd, *sgx_pd, *usb_pd;
 
 /*
  * The latencies/thresholds for various C states have
@@ -237,7 +238,7 @@ static int omap3_enter_idle_bm(struct cpuidle_device *dev,
 {
 	struct cpuidle_state *new_state = next_valid_state(dev, state);
 	u32 core_next_state, per_next_state = 0, per_saved_state = 0;
-	u32 cam_state;
+	u32 cam_state, dss_state, iva2_state, sgx_state, usb_state;
 	struct omap3_processor_cx *cx;
 	int ret;
 
@@ -258,6 +259,8 @@ static int omap3_enter_idle_bm(struct cpuidle_device *dev,
 	 *        its own code.
 	 */
 
+	/* XXX Add CORE-active check here */
+
 	/*
 	 * Prevent idle completely if CAM is active.
 	 * CAM does not have wakeup capability in OMAP3.
@@ -269,6 +272,38 @@ static int omap3_enter_idle_bm(struct cpuidle_device *dev,
 	}
 
 	/*
+	 * If DSS is active, prevent any CORE power domain transition
+	 * to RETENTION or lower.  This is because we don't currently
+	 * have the infrastructure in the DSS driver or kernel to
+	 * enter CORE RET without causing DSS FIFO underflows.  When
+	 * the DSS FIFO underflows, the screen image can be distorted,
+	 * because the CORE may not be able to come back on-line
+	 * quickly enough to service DSS requests to the SDRAM
+	 * framebuffer.  The DSS may also interrupt the MPU when the
+	 * FIFO underflows, potentially wasting power.
+	 *
+	 * The approach below is easy to implement, but potentially
+	 * wastes power, especially with screens that don't require a
+	 * backlight.  Probably the best long-term way to fix this is
+	 * for the DSS driver to constrain the CORE and SDRAM minimum
+	 * power state with omap_pm_set_max_dev_wakeup_lat(), based on
+	 * the DSS FIFO size(s), watermark levels, drain rate, and
+	 * refill time.  Based on that constraint, the OMAP PM code
+	 * should adjust the CORE maximum power state, CORE DPLL
+	 * autoidle mode, CORE_CLK rate, and voltage scaling to ensure
+	 * the required wakeup latency at the lowest power
+	 * consumption.
+	 *
+	 * (More information on the DSS low-power refresh mode can be
+	 * found in _Using Display Low-Power Refresh on the OMAP3430
+	 * Device_, TI Application Report, SWPA158 - October 2008.)
+	 */
+	dss_state = pwrdm_read_pwrst(dss_pd);
+	if (dss_state == PWRDM_POWER_ON &&
+	    core_next_state != PWRDM_POWER_ON)
+		core_next_state = PWRDM_POWER_INACTIVE;
+
+	/*
 	 * Prevent PER off if CORE is not in retention or off as this
 	 * would disable PER wakeups completely.
 	 */
@@ -276,6 +311,35 @@ static int omap3_enter_idle_bm(struct cpuidle_device *dev,
 	if ((per_next_state == PWRDM_POWER_OFF) &&
 	    (core_next_state > PWRDM_POWER_RET))
 		per_next_state = PWRDM_POWER_RET;
+
+	/* XXX Add prevent-PER-off check here */
+
+	/*
+	 * If we are attempting CORE off, check if any other powerdomains
+	 * are at retention or higher. CORE off causes chipwide reset which
+	 * would reset these domains also.
+	 */
+	if (core_next_state == PWRDM_POWER_OFF) {
+		iva2_state = pwrdm_read_pwrst(iva2_pd);
+		sgx_state = pwrdm_read_pwrst(sgx_pd);
+		usb_state = pwrdm_read_pwrst(usb_pd);
+
+		if (cam_state > PWRDM_POWER_OFF ||
+		    dss_state > PWRDM_POWER_OFF ||
+		    iva2_state > PWRDM_POWER_OFF ||
+		    per_next_state > PWRDM_POWER_OFF ||
+		    sgx_state > PWRDM_POWER_OFF ||
+		    usb_state > PWRDM_POWER_OFF)
+			core_next_state = PWRDM_POWER_RET;
+	}
+
+	/* Fallback to new target core/mpu state */
+	while (cx->core_state < core_next_state) {
+		state--;
+		cx = cpuidle_get_statedata(state);
+	}
+
+	new_state = state;
 
 	/* Are we changing PER target state? */
 	if (per_next_state != per_saved_state)
@@ -491,6 +555,10 @@ int __init omap3_idle_init(void)
 	core_pd = pwrdm_lookup("core_pwrdm");
 	per_pd = pwrdm_lookup("per_pwrdm");
 	cam_pd = pwrdm_lookup("cam_pwrdm");
+	dss_pd = pwrdm_lookup("dss_pwrdm");
+	iva2_pd = pwrdm_lookup("iva2_pwrdm");
+	sgx_pd = pwrdm_lookup("sgx_pwrdm");
+	usb_pd = pwrdm_lookup("usbhost_pwrdm");
 
 	omap_init_power_states();
 	cpuidle_register_driver(&omap3_idle_driver);
