@@ -55,7 +55,7 @@
 static struct clk func_32k_ck = {
 	.name		= "func_32k_ck",
 	.ops		= &clkops_null,
-	.rate		= 32000,
+	.rate		= 32768,
 	.clkdm_name	= "wkup_clkdm",
 };
 
@@ -116,7 +116,6 @@ static struct dpll_data dpll_dd = {
 	.max_multiplier		= 1023,
 	.min_divider		= 1,
 	.max_divider		= 16,
-	.rate_tolerance		= DEFAULT_DPLL_RATE_TOLERANCE
 };
 
 /*
@@ -814,6 +813,14 @@ static struct clk dss_54m_fck = {	/* Alt clk used in power management */
 	.recalc		= &followparent_recalc,
 };
 
+static struct clk wu_l4_ick = {
+	.name		= "wu_l4_ick",
+	.ops		= &clkops_null,
+	.parent		= &sys_ck,
+	.clkdm_name	= "wkup_clkdm",
+	.recalc		= &followparent_recalc,
+};
+
 /*
  * CORE power domain ICLK & FCLK defines.
  * Many of the these can have more than one possible parent. Entries
@@ -835,8 +842,8 @@ static const struct clksel omap24xx_gpt_clksel[] = {
 static struct clk gpt1_ick = {
 	.name		= "gpt1_ick",
 	.ops		= &clkops_omap2_iclk_dflt_wait,
-	.parent		= &l4_ck,
-	.clkdm_name	= "core_l4_clkdm",
+	.parent		= &wu_l4_ick,
+	.clkdm_name	= "wkup_clkdm",
 	.enable_reg	= OMAP_CM_REGADDR(WKUP_MOD, CM_ICLKEN),
 	.enable_bit	= OMAP24XX_EN_GPT1_SHIFT,
 	.recalc		= &followparent_recalc,
@@ -1380,8 +1387,8 @@ static struct clk uart3_fck = {
 static struct clk gpios_ick = {
 	.name		= "gpios_ick",
 	.ops		= &clkops_omap2_iclk_dflt_wait,
-	.parent		= &l4_ck,
-	.clkdm_name	= "core_l4_clkdm",
+	.parent		= &wu_l4_ick,
+	.clkdm_name	= "wkup_clkdm",
 	.enable_reg	= OMAP_CM_REGADDR(WKUP_MOD, CM_ICLKEN),
 	.enable_bit	= OMAP24XX_EN_GPIOS_SHIFT,
 	.recalc		= &followparent_recalc,
@@ -1400,8 +1407,8 @@ static struct clk gpios_fck = {
 static struct clk mpu_wdt_ick = {
 	.name		= "mpu_wdt_ick",
 	.ops		= &clkops_omap2_iclk_dflt_wait,
-	.parent		= &l4_ck,
-	.clkdm_name	= "core_l4_clkdm",
+	.parent		= &wu_l4_ick,
+	.clkdm_name	= "wkup_clkdm",
 	.enable_reg	= OMAP_CM_REGADDR(WKUP_MOD, CM_ICLKEN),
 	.enable_bit	= OMAP24XX_EN_MPU_WDT_SHIFT,
 	.recalc		= &followparent_recalc,
@@ -1420,9 +1427,9 @@ static struct clk mpu_wdt_fck = {
 static struct clk sync_32k_ick = {
 	.name		= "sync_32k_ick",
 	.ops		= &clkops_omap2_iclk_dflt_wait,
-	.parent		= &l4_ck,
 	.flags		= ENABLE_ON_INIT,
-	.clkdm_name	= "core_l4_clkdm",
+	.parent		= &wu_l4_ick,
+	.clkdm_name	= "wkup_clkdm",
 	.enable_reg	= OMAP_CM_REGADDR(WKUP_MOD, CM_ICLKEN),
 	.enable_bit	= OMAP24XX_EN_32KSYNC_SHIFT,
 	.recalc		= &followparent_recalc,
@@ -1431,8 +1438,8 @@ static struct clk sync_32k_ick = {
 static struct clk wdt1_ick = {
 	.name		= "wdt1_ick",
 	.ops		= &clkops_omap2_iclk_dflt_wait,
-	.parent		= &l4_ck,
-	.clkdm_name	= "core_l4_clkdm",
+	.parent		= &wu_l4_ick,
+	.clkdm_name	= "wkup_clkdm",
 	.enable_reg	= OMAP_CM_REGADDR(WKUP_MOD, CM_ICLKEN),
 	.enable_bit	= OMAP24XX_EN_WDT1_SHIFT,
 	.recalc		= &followparent_recalc,
@@ -1441,9 +1448,9 @@ static struct clk wdt1_ick = {
 static struct clk omapctrl_ick = {
 	.name		= "omapctrl_ick",
 	.ops		= &clkops_omap2_iclk_dflt_wait,
-	.parent		= &l4_ck,
 	.flags		= ENABLE_ON_INIT,
-	.clkdm_name	= "core_l4_clkdm",
+	.parent		= &wu_l4_ick,
+	.clkdm_name	= "wkup_clkdm",
 	.enable_reg	= OMAP_CM_REGADDR(WKUP_MOD, CM_ICLKEN),
 	.enable_bit	= OMAP24XX_EN_OMAPCTRL_SHIFT,
 	.recalc		= &followparent_recalc,
@@ -1452,8 +1459,8 @@ static struct clk omapctrl_ick = {
 static struct clk icr_ick = {
 	.name		= "icr_ick",
 	.ops		= &clkops_omap2_iclk_dflt_wait,
-	.parent		= &l4_ck,
-	.clkdm_name	= "core_l4_clkdm",
+	.parent		= &wu_l4_ick,
+	.clkdm_name	= "wkup_clkdm",
 	.enable_reg	= OMAP_CM_REGADDR(WKUP_MOD, CM_ICLKEN),
 	.enable_bit	= OMAP2430_EN_ICR_SHIFT,
 	.recalc		= &followparent_recalc,
@@ -1652,7 +1659,7 @@ static struct clk sdma_fck = {
 static struct clk sdma_ick = {
 	.name		= "sdma_ick",
 	.ops		= &clkops_omap2_iclk_idle_only,
-	.parent		= &l4_ck,
+	.parent		= &core_l3_ck,
 	.clkdm_name	= "core_l3_clkdm",
 	.enable_reg	= OMAP_CM_REGADDR(CORE_MOD, CM_ICLKEN3),
 	.enable_bit	= OMAP24XX_AUTO_SDMA_SHIFT,
@@ -1662,9 +1669,9 @@ static struct clk sdma_ick = {
 static struct clk sdrc_ick = {
 	.name		= "sdrc_ick",
 	.ops		= &clkops_omap2_iclk_idle_only,
-	.parent		= &l4_ck,
+	.parent		= &core_l3_ck,
 	.flags		= ENABLE_ON_INIT,
-	.clkdm_name	= "core_l4_clkdm",
+	.clkdm_name	= "core_l3_clkdm",
 	.enable_reg	= OMAP_CM_REGADDR(CORE_MOD, CM_ICLKEN3),
 	.enable_bit	= OMAP2430_EN_SDRC_SHIFT,
 	.recalc		= &followparent_recalc,
@@ -1914,6 +1921,7 @@ static struct omap_clk omap2430_clks[] = {
 	/* L4 domain clocks */
 	CLK(NULL,	"l4_ck",	&l4_ck,		CK_243X),
 	CLK(NULL,	"ssi_l4_ick",	&ssi_l4_ick,	CK_243X),
+	CLK(NULL,	"wu_l4_ick",	&wu_l4_ick,	CK_243X),
 	/* virtual meta-group clock */
 	CLK(NULL,	"virt_prcm_set", &virt_prcm_set, CK_243X),
 	/* general l4 interface ck, multi-parent functional clk */
