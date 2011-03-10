@@ -3290,10 +3290,10 @@ static struct omap_clk omap3xxx_clks[] = {
 	CLK("omap-mcbsp.1",	"prcm_fck",	&core_96m_fck,	CK_3XXX),
 	CLK("omap-mcbsp.5",	"prcm_fck",	&core_96m_fck,	CK_3XXX),
 	CLK(NULL,	"core_96m_fck",	&core_96m_fck,	CK_3XXX),
-	CLK("mmci-omap-hs.2",	"fck",	&mmchs3_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
-	CLK("mmci-omap-hs.1",	"fck",	&mmchs2_fck,	CK_3XXX),
+	CLK("omap_hsmmc.2",	"fck",	&mmchs3_fck,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+	CLK("omap_hsmmc.1",	"fck",	&mmchs2_fck,	CK_3XXX),
 	CLK(NULL,	"mspro_fck",	&mspro_fck,	CK_34XX | CK_36XX),
-	CLK("mmci-omap-hs.0",	"fck",	&mmchs1_fck,	CK_3XXX),
+	CLK("omap_hsmmc.0",	"fck",	&mmchs1_fck,	CK_3XXX),
 	CLK("omap_i2c.3", "fck",	&i2c3_fck,	CK_3XXX),
 	CLK("omap_i2c.2", "fck",	&i2c2_fck,	CK_3XXX),
 	CLK("omap_i2c.1", "fck",	&i2c1_fck,	CK_3XXX),
@@ -3323,13 +3323,13 @@ static struct omap_clk omap3xxx_clks[] = {
 	CLK(NULL,	"core_l4_ick",	&core_l4_ick,	CK_3XXX),
 	CLK(NULL,	"usbtll_ick",	&usbtll_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
 	CLK("ehci-omap.0",	"usbtll_ick",	&usbtll_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
-	CLK("mmci-omap-hs.2",	"ick",	&mmchs3_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
+	CLK("omap_hsmmc.2",	"ick",	&mmchs3_ick,	CK_3430ES2PLUS | CK_AM35XX | CK_36XX),
 	CLK(NULL,	"icr_ick",	&icr_ick,	CK_34XX | CK_36XX),
 	CLK("omap-aes",	"ick",	&aes2_ick,	CK_34XX | CK_36XX),
 	CLK("omap-sham",	"ick",	&sha12_ick,	CK_34XX | CK_36XX),
 	CLK(NULL,	"des2_ick",	&des2_ick,	CK_34XX | CK_36XX),
-	CLK("mmci-omap-hs.1",	"ick",	&mmchs2_ick,	CK_3XXX),
-	CLK("mmci-omap-hs.0",	"ick",	&mmchs1_ick,	CK_3XXX),
+	CLK("omap_hsmmc.1",	"ick",	&mmchs2_ick,	CK_3XXX),
+	CLK("omap_hsmmc.0",	"ick",	&mmchs1_ick,	CK_3XXX),
 	CLK(NULL,	"mspro_ick",	&mspro_ick,	CK_34XX | CK_36XX),
 	CLK("omap_hdq.0", "ick",	&hdq_ick,	CK_3XXX),
 	CLK("omap2_mcspi.4", "ick",	&mcspi4_ick,	CK_3XXX),
@@ -3471,6 +3471,9 @@ int __init omap3xxx_clk_init(void)
 	} else if (cpu_is_omap3630()) {
 		cpu_mask = (RATE_IN_34XX | RATE_IN_36XX);
 		cpu_clkflg = CK_36XX;
+	} else if (cpu_is_ti816x()) {
+		cpu_mask = RATE_IN_TI816X;
+		cpu_clkflg = CK_TI816X;
 	} else if (cpu_is_omap34xx()) {
 		if (omap_rev() == OMAP3430_REV_ES1_0) {
 			cpu_mask = RATE_IN_3430ES1;
@@ -3550,7 +3553,7 @@ int __init omap3xxx_clk_init(void)
 	/*
 	 * Lock DPLL5 and put it in autoidle.
 	 */
-	if (omap_rev() >= OMAP3430_REV_ES2_0)
+	if (!cpu_is_ti816x() && (omap_rev() >= OMAP3430_REV_ES2_0))
 		omap3_clk_lock_dpll5();
 
 	/* Avoid sleeping during omap3_core_dpll_m2_set_rate() */
