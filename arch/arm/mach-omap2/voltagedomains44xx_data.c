@@ -95,6 +95,10 @@ static int __init omap44xx_voltage_early_init(void)
 	omap4_vdd_iva_info.volt_data = omap44xx_vdd_iva_volt_data;
 	omap4_vdd_core_info.volt_data = omap44xx_vdd_core_volt_data;
 
+	omap4_vdd_mpu_info.vp_param = &omap44xx_mpu_vp_data;
+	omap4_vdd_iva_info.vp_param = &omap44xx_iva_vp_data;
+	omap4_vdd_core_info.vp_param = &omap44xx_core_vp_data;
+
 	return omap_voltage_early_init(prm_mod, prm_irqst_ocp_mod,
 				       omap4_vdd_info,
 				       ARRAY_SIZE(omap4_vdd_info));

@@ -30,6 +30,17 @@
  * Structures containing OMAP4430 voltage supported and various
  * voltage dependent data for each VDD.
  */
+#define OMAP4_VP_MPU_VLIMITTO_VDDMIN	0xA
+#define OMAP4_VP_MPU_VLIMITTO_VDDMAX	0x39
+#define OMAP4_VP_IVA_VLIMITTO_VDDMIN	0xA
+#define OMAP4_VP_IVA_VLIMITTO_VDDMAX	0x2D
+#define OMAP4_VP_CORE_VLIMITTO_VDDMIN	0xA
+#define OMAP4_VP_CORE_VLIMITTO_VDDMAX	0x28
+
+#define OMAP4_ON_VOLTAGE_UV				1350000
+#define OMAP4_ONLP_VOLTAGE_UV			1350000
+#define OMAP4_RET_VOLTAGE_UV			837500
+#define OMAP4_OFF_VOLTAGE_UV			600000
 
 #define OMAP4430_VDD_MPU_OPP50_UV		1025000
 #define OMAP4430_VDD_MPU_OPP100_UV		1200000
@@ -44,6 +55,15 @@ struct omap_volt_data omap44xx_vdd_mpu_volt_data[] = {
 	VOLT_DATA_DEFINE(0, 0, 0, 0),
 };
 
+struct omap_vp_param omap44xx_mpu_vp_data = {
+	.on_volt		= OMAP4_ON_VOLTAGE_UV,
+	.onlp_volt		= OMAP4_ONLP_VOLTAGE_UV,
+	.ret_volt		= OMAP4_RET_VOLTAGE_UV,
+	.off_volt		= OMAP4_OFF_VOLTAGE_UV,
+	.vp_vddmin		= OMAP4_VP_MPU_VLIMITTO_VDDMIN,
+	.vp_vddmax		= OMAP4_VP_MPU_VLIMITTO_VDDMAX,
+};
+
 #define OMAP4430_VDD_IVA_OPP50_UV		1013000
 #define OMAP4430_VDD_IVA_OPP100_UV		1188000
 #define OMAP4430_VDD_IVA_OPPTURBO_UV		1300000
@@ -55,6 +75,15 @@ struct omap_volt_data omap44xx_vdd_iva_volt_data[] = {
 	VOLT_DATA_DEFINE(0, 0, 0, 0),
 };
 
+struct omap_vp_param omap44xx_iva_vp_data = {
+	.on_volt		= OMAP4_ON_VOLTAGE_UV,
+	.onlp_volt		= OMAP4_ONLP_VOLTAGE_UV,
+	.ret_volt		= OMAP4_RET_VOLTAGE_UV,
+	.off_volt		= OMAP4_OFF_VOLTAGE_UV,
+	.vp_vddmin		= OMAP4_VP_IVA_VLIMITTO_VDDMIN,
+	.vp_vddmax		= OMAP4_VP_IVA_VLIMITTO_VDDMAX,
+};
+
 #define OMAP4430_VDD_CORE_OPP50_UV		1025000
 #define OMAP4430_VDD_CORE_OPP100_UV		1200000
 
@@ -62,6 +91,15 @@ struct omap_volt_data omap44xx_vdd_core_volt_data[] = {
 	VOLT_DATA_DEFINE(OMAP4430_VDD_CORE_OPP50_UV, OMAP44XX_CONTROL_FUSE_CORE_OPP50, 0xf4, 0x0c),
 	VOLT_DATA_DEFINE(OMAP4430_VDD_CORE_OPP100_UV, OMAP44XX_CONTROL_FUSE_CORE_OPP100, 0xf9, 0x16),
 	VOLT_DATA_DEFINE(0, 0, 0, 0),
+};
+
+struct omap_vp_param omap44xx_core_vp_data = {
+	.on_volt		= OMAP4_ON_VOLTAGE_UV,
+	.onlp_volt		= OMAP4_ONLP_VOLTAGE_UV,
+	.ret_volt		= OMAP4_RET_VOLTAGE_UV,
+	.off_volt		= OMAP4_OFF_VOLTAGE_UV,
+	.vp_vddmin		= OMAP4_VP_CORE_VLIMITTO_VDDMIN,
+	.vp_vddmax		= OMAP4_VP_CORE_VLIMITTO_VDDMAX,
 };
 
 

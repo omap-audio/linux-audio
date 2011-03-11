@@ -29,7 +29,6 @@
 #define OMAP3_VP_VSTEPMIN_VSTEPMIN	0x1
 #define OMAP3_VP_VSTEPMAX_VSTEPMAX	0x04
 #define OMAP3_VP_VLIMITTO_TIMEOUT_US	200
-
 #define OMAP3430_VP1_VLIMITTO_VDDMIN	0x14
 #define OMAP3430_VP1_VLIMITTO_VDDMAX	0x42
 #define OMAP3430_VP2_VLIMITTO_VDDMIN	0x18
@@ -44,12 +43,10 @@
 #define OMAP4_VDD_MPU_SR_VOLT_REG	0x55
 #define OMAP4_VDD_IVA_SR_VOLT_REG	0x5B
 #define OMAP4_VDD_CORE_SR_VOLT_REG	0x61
-
 #define OMAP4_VP_CONFIG_ERROROFFSET	0x00
 #define OMAP4_VP_VSTEPMIN_VSTEPMIN	0x01
 #define OMAP4_VP_VSTEPMAX_VSTEPMAX	0x04
 #define OMAP4_VP_VLIMITTO_TIMEOUT_US	200
-
 #define OMAP4_VP_MPU_VLIMITTO_VDDMIN	0xA
 #define OMAP4_VP_MPU_VLIMITTO_VDDMAX	0x39
 #define OMAP4_VP_IVA_VLIMITTO_VDDMIN	0xA
@@ -146,101 +143,96 @@ static u8 twl6030_uv_to_vsel(unsigned long uv)
 static struct omap_volt_pmic_info omap3_mpu_volt_info = {
 	.slew_rate		= 4000,
 	.step_size		= 12500,
-	.on_volt		= 1200000,
-	.onlp_volt		= 1000000,
-	.ret_volt		= 975000,
-	.off_volt		= 600000,
-	.volt_setup_time	= 0xfff,
-	.vp_erroroffset		= OMAP3_VP_CONFIG_ERROROFFSET,
-	.vp_vstepmin		= OMAP3_VP_VSTEPMIN_VSTEPMIN,
-	.vp_vstepmax		= OMAP3_VP_VSTEPMAX_VSTEPMAX,
+	.vp_timeout_us	= OMAP3_VP_VLIMITTO_TIMEOUT_US,
+	.i2c_slave_addr	= OMAP3_SRI2C_SLAVE_ADDR,
+	.pmic_reg		= OMAP3_VDD_MPU_SR_CONTROL_REG,
+	.vp_erroroffset	= OMAP3_VP_CONFIG_ERROROFFSET,
+	.vp_vstepmin	= OMAP3_VP_VSTEPMIN_VSTEPMIN,
+	.vp_vstepmax	= OMAP3_VP_VSTEPMAX_VSTEPMAX,
 	.vp_vddmin		= OMAP3430_VP1_VLIMITTO_VDDMIN,
 	.vp_vddmax		= OMAP3430_VP1_VLIMITTO_VDDMAX,
-	.vp_timeout_us		= OMAP3_VP_VLIMITTO_TIMEOUT_US,
-	.i2c_slave_addr		= OMAP3_SRI2C_SLAVE_ADDR,
-	.pmic_reg		= OMAP3_VDD_MPU_SR_CONTROL_REG,
 	.vsel_to_uv		= twl4030_vsel_to_uv,
 	.uv_to_vsel		= twl4030_uv_to_vsel,
+	.on_cmd			= twl4030_uv_to_vsel,
+	.onlp_cmd		= twl4030_uv_to_vsel,
+	.ret_cmd		= twl4030_uv_to_vsel,
+	.off_cmd		= twl4030_uv_to_vsel,
 };
 
 static struct omap_volt_pmic_info omap3_core_volt_info = {
 	.slew_rate		= 4000,
 	.step_size		= 12500,
-	.on_volt                = 1200000,
-	.onlp_volt              = 1000000,
-	.ret_volt               = 975000,
-	.off_volt               = 600000,
-	.volt_setup_time        = 0xfff,
-	.vp_erroroffset		= OMAP3_VP_CONFIG_ERROROFFSET,
-	.vp_vstepmin		= OMAP3_VP_VSTEPMIN_VSTEPMIN,
-	.vp_vstepmax		= OMAP3_VP_VSTEPMAX_VSTEPMAX,
+	.vp_timeout_us	= OMAP3_VP_VLIMITTO_TIMEOUT_US,
+	.i2c_slave_addr	= OMAP3_SRI2C_SLAVE_ADDR,
+	.pmic_reg		= OMAP3_VDD_CORE_SR_CONTROL_REG,
+	.vp_erroroffset	= OMAP3_VP_CONFIG_ERROROFFSET,
+	.vp_vstepmin	= OMAP3_VP_VSTEPMIN_VSTEPMIN,
+	.vp_vstepmax	= OMAP3_VP_VSTEPMAX_VSTEPMAX,
 	.vp_vddmin		= OMAP3430_VP2_VLIMITTO_VDDMIN,
 	.vp_vddmax		= OMAP3430_VP2_VLIMITTO_VDDMAX,
-	.vp_timeout_us		= OMAP3_VP_VLIMITTO_TIMEOUT_US,
-	.i2c_slave_addr		= OMAP3_SRI2C_SLAVE_ADDR,
-	.pmic_reg		= OMAP3_VDD_CORE_SR_CONTROL_REG,
 	.vsel_to_uv		= twl4030_vsel_to_uv,
 	.uv_to_vsel		= twl4030_uv_to_vsel,
+	.on_cmd			= twl4030_uv_to_vsel,
+	.onlp_cmd		= twl4030_uv_to_vsel,
+	.ret_cmd		= twl4030_uv_to_vsel,
+	.off_cmd		= twl4030_uv_to_vsel,
 };
 
 static struct omap_volt_pmic_info omap4_mpu_volt_info = {
 	.slew_rate		= 4000,
 	.step_size		= 12500,
-	.on_volt		= 1350000,
-	.onlp_volt		= 1350000,
-	.ret_volt		= 837500,
-	.off_volt		= 600000,
-	.volt_setup_time	= 0,
-	.vp_erroroffset		= OMAP4_VP_CONFIG_ERROROFFSET,
-	.vp_vstepmin		= OMAP4_VP_VSTEPMIN_VSTEPMIN,
-	.vp_vstepmax		= OMAP4_VP_VSTEPMAX_VSTEPMAX,
+	.vp_timeout_us	= OMAP4_VP_VLIMITTO_TIMEOUT_US,
+	.i2c_slave_addr	= OMAP4_SRI2C_SLAVE_ADDR,
+	.pmic_reg		= OMAP4_VDD_MPU_SR_VOLT_REG,
+	.vp_erroroffset	= OMAP4_VP_CONFIG_ERROROFFSET,
+	.vp_vstepmin	= OMAP4_VP_VSTEPMIN_VSTEPMIN,
+	.vp_vstepmax	= OMAP4_VP_VSTEPMAX_VSTEPMAX,
 	.vp_vddmin		= OMAP4_VP_MPU_VLIMITTO_VDDMIN,
 	.vp_vddmax		= OMAP4_VP_MPU_VLIMITTO_VDDMAX,
-	.vp_timeout_us		= OMAP4_VP_VLIMITTO_TIMEOUT_US,
-	.i2c_slave_addr		= OMAP4_SRI2C_SLAVE_ADDR,
-	.pmic_reg		= OMAP4_VDD_MPU_SR_VOLT_REG,
 	.vsel_to_uv		= twl6030_vsel_to_uv,
 	.uv_to_vsel		= twl6030_uv_to_vsel,
+	.on_cmd			= twl6030_uv_to_vsel,
+	.onlp_cmd		= twl6030_uv_to_vsel,
+	.ret_cmd		= twl6030_uv_to_vsel,
+	.off_cmd		= twl6030_uv_to_vsel,
 };
 
 static struct omap_volt_pmic_info omap4_iva_volt_info = {
 	.slew_rate		= 4000,
 	.step_size		= 12500,
-	.on_volt		= 1100000,
-	.onlp_volt		= 1100000,
-	.ret_volt		= 837500,
-	.off_volt		= 600000,
-	.volt_setup_time	= 0,
-	.vp_erroroffset		= OMAP4_VP_CONFIG_ERROROFFSET,
-	.vp_vstepmin		= OMAP4_VP_VSTEPMIN_VSTEPMIN,
-	.vp_vstepmax		= OMAP4_VP_VSTEPMAX_VSTEPMAX,
+	.vp_timeout_us	= OMAP4_VP_VLIMITTO_TIMEOUT_US,
+	.i2c_slave_addr	= OMAP4_SRI2C_SLAVE_ADDR,
+	.pmic_reg		= OMAP4_VDD_IVA_SR_VOLT_REG,
+	.vp_erroroffset	= OMAP4_VP_CONFIG_ERROROFFSET,
+	.vp_vstepmin	= OMAP4_VP_VSTEPMIN_VSTEPMIN,
+	.vp_vstepmax	= OMAP4_VP_VSTEPMAX_VSTEPMAX,
 	.vp_vddmin		= OMAP4_VP_IVA_VLIMITTO_VDDMIN,
 	.vp_vddmax		= OMAP4_VP_IVA_VLIMITTO_VDDMAX,
-	.vp_timeout_us		= OMAP4_VP_VLIMITTO_TIMEOUT_US,
-	.i2c_slave_addr		= OMAP4_SRI2C_SLAVE_ADDR,
-	.pmic_reg		= OMAP4_VDD_IVA_SR_VOLT_REG,
 	.vsel_to_uv		= twl6030_vsel_to_uv,
 	.uv_to_vsel		= twl6030_uv_to_vsel,
+	.on_cmd			= twl6030_uv_to_vsel,
+	.onlp_cmd		= twl6030_uv_to_vsel,
+	.ret_cmd		= twl6030_uv_to_vsel,
+	.off_cmd		= twl6030_uv_to_vsel,
 };
 
 static struct omap_volt_pmic_info omap4_core_volt_info = {
 	.slew_rate		= 4000,
 	.step_size		= 12500,
-	.on_volt		= 1100000,
-	.onlp_volt		= 1100000,
-	.ret_volt		= 837500,
-	.off_volt		= 600000,
-	.volt_setup_time	= 0,
-	.vp_erroroffset		= OMAP4_VP_CONFIG_ERROROFFSET,
-	.vp_vstepmin		= OMAP4_VP_VSTEPMIN_VSTEPMIN,
-	.vp_vstepmax		= OMAP4_VP_VSTEPMAX_VSTEPMAX,
+	.vp_timeout_us	= OMAP4_VP_VLIMITTO_TIMEOUT_US,
+	.i2c_slave_addr	= OMAP4_SRI2C_SLAVE_ADDR,
+	.pmic_reg		= OMAP4_VDD_CORE_SR_VOLT_REG,
+	.vp_erroroffset	= OMAP4_VP_CONFIG_ERROROFFSET,
+	.vp_vstepmin	= OMAP4_VP_VSTEPMIN_VSTEPMIN,
+	.vp_vstepmax	= OMAP4_VP_VSTEPMAX_VSTEPMAX,
 	.vp_vddmin		= OMAP4_VP_CORE_VLIMITTO_VDDMIN,
 	.vp_vddmax		= OMAP4_VP_CORE_VLIMITTO_VDDMAX,
-	.vp_timeout_us		= OMAP4_VP_VLIMITTO_TIMEOUT_US,
-	.i2c_slave_addr		= OMAP4_SRI2C_SLAVE_ADDR,
-	.pmic_reg		= OMAP4_VDD_CORE_SR_VOLT_REG,
 	.vsel_to_uv		= twl6030_vsel_to_uv,
 	.uv_to_vsel		= twl6030_uv_to_vsel,
+	.on_cmd			= twl6030_uv_to_vsel,
+	.onlp_cmd		= twl6030_uv_to_vsel,
+	.ret_cmd		= twl6030_uv_to_vsel,
+	.off_cmd		= twl6030_uv_to_vsel,
 };
 
 int __init omap4_twl_init(void)

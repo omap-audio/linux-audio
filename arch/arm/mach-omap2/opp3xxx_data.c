@@ -26,6 +26,16 @@
 #include "pm.h"
 
 /* 34xx */
+/* OMAP VP parameter values */
+#define OMAP3430_VP1_VLIMITTO_VDDMIN	0x14
+#define OMAP3430_VP1_VLIMITTO_VDDMAX	0x42
+#define OMAP3430_VP2_VLIMITTO_VDDMIN	0x18
+#define OMAP3430_VP2_VLIMITTO_VDDMAX	0x2c
+
+#define OMAP3_ON_VOLTAGE_UV				1200000
+#define OMAP3_ONLP_VOLTAGE_UV			1000000
+#define OMAP3_RET_VOLTAGE_UV			975000
+#define OMAP3_OFF_VOLTAGE_UV			600000
 
 /* VDD1 */
 
@@ -44,6 +54,15 @@ struct omap_volt_data omap34xx_vddmpu_volt_data[] = {
 	VOLT_DATA_DEFINE(0, 0, 0, 0),
 };
 
+struct omap_vp_param omap34xx_mpu_vp_data = {
+	.on_volt		= OMAP3_ON_VOLTAGE_UV,
+	.onlp_volt		= OMAP3_ONLP_VOLTAGE_UV,
+	.ret_volt		= OMAP3_RET_VOLTAGE_UV,
+	.off_volt		= OMAP3_OFF_VOLTAGE_UV,
+	.vp_vddmin		= OMAP3430_VP1_VLIMITTO_VDDMIN,
+	.vp_vddmax		= OMAP3430_VP1_VLIMITTO_VDDMAX,
+};
+
 /* VDD2 */
 
 #define OMAP3430_VDD_CORE_OPP1_UV		975000
@@ -57,7 +76,20 @@ struct omap_volt_data omap34xx_vddcore_volt_data[] = {
 	VOLT_DATA_DEFINE(0, 0, 0, 0),
 };
 
+struct omap_vp_param omap34xx_core_vp_data = {
+	.on_volt		= OMAP3_ON_VOLTAGE_UV,
+	.onlp_volt		= OMAP3_ONLP_VOLTAGE_UV,
+	.ret_volt		= OMAP3_RET_VOLTAGE_UV,
+	.off_volt		= OMAP3_OFF_VOLTAGE_UV,
+	.vp_vddmin		= OMAP3430_VP2_VLIMITTO_VDDMIN,
+	.vp_vddmax		= OMAP3430_VP2_VLIMITTO_VDDMAX,
+};
+
 /* 36xx */
+#define OMAP3630_VP1_VLIMITTO_VDDMIN	0x18
+#define OMAP3630_VP1_VLIMITTO_VDDMAX	0x3c
+#define OMAP3630_VP2_VLIMITTO_VDDMIN	0x18
+#define OMAP3630_VP2_VLIMITTO_VDDMAX	0x30
 
 /* VDD1 */
 
@@ -74,6 +106,14 @@ struct omap_volt_data omap36xx_vddmpu_volt_data[] = {
 	VOLT_DATA_DEFINE(0, 0, 0, 0),
 };
 
+struct omap_vp_param omap36xx_mpu_vp_data = {
+	.on_volt		= OMAP3_ON_VOLTAGE_UV,
+	.onlp_volt		= OMAP3_ONLP_VOLTAGE_UV,
+	.ret_volt		= OMAP3_RET_VOLTAGE_UV,
+	.off_volt		= OMAP3_OFF_VOLTAGE_UV,
+	.vp_vddmin		= OMAP3630_VP1_VLIMITTO_VDDMIN,
+	.vp_vddmax		= OMAP3630_VP1_VLIMITTO_VDDMAX,
+};
 /* VDD2 */
 
 #define OMAP3630_VDD_CORE_OPP50_UV		1000000
@@ -84,6 +124,16 @@ struct omap_volt_data omap36xx_vddcore_volt_data[] = {
 	VOLT_DATA_DEFINE(OMAP3630_VDD_CORE_OPP100_UV, OMAP3630_CONTROL_FUSE_OPP100_VDD2, 0xf9, 0x16),
 	VOLT_DATA_DEFINE(0, 0, 0, 0),
 };
+
+struct omap_vp_param omap36xx_core_vp_data = {
+	.on_volt		= OMAP3_ON_VOLTAGE_UV,
+	.onlp_volt		= OMAP3_ONLP_VOLTAGE_UV,
+	.ret_volt		= OMAP3_RET_VOLTAGE_UV,
+	.off_volt		= OMAP3_OFF_VOLTAGE_UV,
+	.vp_vddmin		= OMAP3630_VP2_VLIMITTO_VDDMIN,
+	.vp_vddmax		= OMAP3630_VP2_VLIMITTO_VDDMAX,
+};
+
 
 /* OPP data */
 

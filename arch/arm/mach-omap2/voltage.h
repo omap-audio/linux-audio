@@ -23,14 +23,6 @@
 #define VOLTSCALE_VPFORCEUPDATE		1
 #define VOLTSCALE_VCBYPASS		2
 
-/*
- * OMAP3 GENERIC setup times. Revisit to see if these needs to be
- * passed from board or PMIC file
- */
-#define OMAP3_CLKSETUP		0xff
-#define OMAP3_VOLTOFFSET	0xff
-#define OMAP3_VOLTSETUP2	0xff
-
 /**
  * struct omap_vfsm_instance_data - per-voltage manager FSM register/bitfield
  * data
@@ -80,17 +72,25 @@ struct omap_volt_data {
  * struct omap_volt_pmic_info - PMIC specific data required by voltage driver.
  * @slew_rate:	PMIC slew rate (in uv/us)
  * @step_size:	PMIC voltage step size (in uv)
+ * @vp_erroroffset:	Offset value in the Error to Voltage converter
+ * @vp_vstepmin:	Minimum voltage step in mV
+ * @vp_vstepmax:	Maximum voltage step in mV
+ * @vp_vddmin:	Minimum voltage supply level in mV
+ * @vp_vddmax:	Maximum voltage supply level in mV
+ * @vp_timeout_us:	Voltage Controller's maximum wait time for response
+ * @i2c_slave_addr:	I2C slave address value for the Power IC device.
+ * @pmic_reg:	voltage configuration register address value for the
+ *				VDD channe
  * @vsel_to_uv:	PMIC API to convert vsel value to actual voltage in uV.
  * @uv_to_vsel:	PMIC API to convert voltage in uV to vsel value.
+ * @on_cmd:	PMIC API to send on command instruction
+ * @onlp_cmd:	PMIC API to send onlp command instruction
+ * @ret_cmd:	PMIC API to send ret command instruction
+ * @off_cmd:	PMIC API to send off command instruction
  */
 struct omap_volt_pmic_info {
 	int slew_rate;
 	int step_size;
-	u32 on_volt;
-	u32 onlp_volt;
-	u32 ret_volt;
-	u32 off_volt;
-	u16 volt_setup_time;
 	u8 vp_erroroffset;
 	u8 vp_vstepmin;
 	u8 vp_vstepmax;
@@ -101,11 +101,30 @@ struct omap_volt_pmic_info {
 	u8 pmic_reg;
 	unsigned long (*vsel_to_uv) (const u8 vsel);
 	u8 (*uv_to_vsel) (unsigned long uV);
+	unsigned char (*on_cmd)(unsigned long uV);
+	unsigned char (*onlp_cmd)(unsigned long uV);
+	unsigned char (*ret_cmd)(unsigned long uV);
+	unsigned char (*off_cmd)(unsigned long uV);
+};
+
+/**
+ * struct omap_vp_param - VP specific data required by voltage driver.
+ * @on_volt: on voltage for the device in mV
+ * @onlp_volt: inactive voltage for the device in mV
+ * @ret_volt: retention voltage for the device in mV
+ * @off_volt: off voltage for the device in mV
+ */
+struct omap_vp_param {
+	u32 on_volt;
+	u32 onlp_volt;
+	u32 ret_volt;
+	u32 off_volt;
+	u8 vp_vddmax;
+	u8 vp_vddmin;
 };
 
 /**
  * omap_vdd_info - Per Voltage Domain info
- *
  * @volt_data		: voltage table having the distinct voltages supported
  *			  by the domain and other associated per voltage data.
  * @pmic_info		: pmic specific parameters which should be populted by
@@ -116,6 +135,9 @@ struct omap_volt_pmic_info {
  * @vc_data		: structure containing various various vc registers,
  *			  shifts, masks etc.
  * @vfsm                : voltage manager FSM data
+ * @vfsm                : voltage manager FSM data
+ * @vp_param			: VP specific parameters
+ * @board_data			: board specific parameters
  * @voltdm		: pointer to the voltage domain structure
  * @debug_dir		: debug directory for this voltage domain.
  * @curr_volt		: current voltage for this vdd.
@@ -129,6 +151,8 @@ struct omap_vdd_info {
 	struct omap_vp_runtime_data vp_rt_data;
 	struct omap_vc_instance_data *vc_data;
 	const struct omap_vfsm_instance_data *vfsm;
+	struct omap_vp_param *vp_param;
+	union omap_volt_board_data *board_data;
 	struct voltagedomain voltdm;
 	struct dentry *debug_dir;
 	u32 curr_volt;
@@ -137,6 +161,61 @@ struct omap_vdd_info {
 	void (*write_reg) (u32 val, u16 mod, u8 offset);
 	int (*volt_scale) (struct omap_vdd_info *vdd,
 		unsigned long target_volt);
+};
+
+/**
+ * omap3_vdd_setuptime - vdd set up time info
+ * @voltsetup	: setup time of the VDDregulators in us
+ * @clksetup	: setup time of the oscillator system clock (sys_clk) in us
+ * @voltsetup2	: Overall setup time of VDDregulators in us
+ */
+struct omap3_vdd_setuptime {
+	u16 voltsetup;
+	u16 clksetup;
+	u16 voltsetup2;
+};
+
+/**
+ * omap3_volt_board_data - vdd set up time info for OMAP3
+ * @vdd_setup_ret	: VDD setup time for retention mode
+ * @vdd_setup_off	: VDD setup time for off mode
+ * @voltoffset		: offset-time to de-assert sys_offmode
+ *					when exiting the OFF mode
+ */
+struct omap3_volt_board_data {
+	struct omap3_vdd_setuptime vdd_setup_ret;
+	struct omap3_vdd_setuptime vdd_setup_off;
+	u16 voltoffset;
+};
+
+/**
+ * omap4_volt_setuptime - vdd set up time info for OMAP4
+ * @voltsetup_ramp_up	: VDD ram up time in us
+ * @voltsetup_ramp_down	: VDD ram down time in us
+ */
+struct omap4_volt_setuptime {
+	u16 voltsetup_ramp_up;
+	u16 voltsetup_ramp_down;
+};
+
+/**
+ * omap4_volt_board_data - vdd set up time info for OMAP4
+ * @vdd_setup_ret	: VDD setup time for retention mode
+ * @vdd_setup_off	: VDD setup time for off mode
+ */
+struct omap4_volt_board_data {
+	struct omap4_volt_setuptime vdd_setup_ret;
+	struct omap4_volt_setuptime vdd_setup_off;
+};
+
+/**
+ * omap_volt_board_data - board specific voltage set up time data
+ * @omap3_board_data	: omap3 board data
+ * @omap4_board_data	: omap4 board data
+ */
+union omap_volt_board_data {
+	struct omap3_volt_board_data omap3_board_data;
+	struct omap4_volt_board_data omap4_board_data;
 };
 
 unsigned long omap_vp_get_curr_volt(struct voltagedomain *voltdm);
@@ -163,6 +242,9 @@ void omap_change_voltscale_method(struct voltagedomain *voltdm,
 struct voltagedomain *omap_voltage_domain_lookup(char *name);
 
 int omap_voltage_late_init(void);
+int omap_voltage_register_board_params(struct voltagedomain *voltdm,
+		union omap_volt_board_data *board_params);
+
 #else
 static inline int omap_voltage_register_pmic(struct voltagedomain *voltdm,
 		struct omap_volt_pmic_info *pmic_info)
@@ -176,6 +258,11 @@ static inline int omap_voltage_late_init(void)
 	return -EINVAL;
 }
 static inline struct voltagedomain *omap_voltage_domain_lookup(char *name)
+{
+	return ERR_PTR(-EINVAL);
+}
+static inline int omap_voltage_register_board_params(struct voltagedomain *voltdm,
+		struct omap_volt_board_data *board_params)
 {
 	return ERR_PTR(-EINVAL);
 }
