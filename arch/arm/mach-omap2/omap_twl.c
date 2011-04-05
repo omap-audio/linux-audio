@@ -220,7 +220,7 @@ static struct omap_volt_pmic_info omap4_iva_volt_info = {
 	.voltage_class	= VP_VC_CLASS,	
 };
 
-static struct omap_volt_pmic_info omap4_core_volt_info = {
+static struct omap_volt_pmic_info omap4430_core_volt_info = {
 	.slew_rate		= 4000,
 	.step_size		= 12500,
 	.vp_timeout_us	= OMAP4_VP_VLIMITTO_TIMEOUT_US,
@@ -240,6 +240,27 @@ static struct omap_volt_pmic_info omap4_core_volt_info = {
 	.voltage_class	= VP_VC_CLASS,	
 };
 
+/* 4460 VDD3 is supplied from VCORE1 */
+static struct omap_volt_pmic_info omap4460_core_volt_info = {
+	.slew_rate		= 4000,
+	.step_size		= 12500,
+	.vp_timeout_us	= OMAP4_VP_VLIMITTO_TIMEOUT_US,
+	.i2c_slave_addr	= OMAP4_SRI2C_SLAVE_ADDR,
+	.pmic_reg		= OMAP4_VDD_MPU_SR_VOLT_REG,
+	.vp_erroroffset	= OMAP4_VP_CONFIG_ERROROFFSET,
+	.vp_vstepmin	= OMAP4_VP_VSTEPMIN_VSTEPMIN,
+	.vp_vstepmax	= OMAP4_VP_VSTEPMAX_VSTEPMAX,
+	.vp_vddmin		= OMAP4_VP_MPU_VLIMITTO_VDDMIN,
+	.vp_vddmax		= OMAP4_VP_MPU_VLIMITTO_VDDMAX,
+	.vsel_to_uv		= twl6030_vsel_to_uv,
+	.uv_to_vsel		= twl6030_uv_to_vsel,
+	.on_cmd			= twl6030_uv_to_vsel,
+	.onlp_cmd		= twl6030_uv_to_vsel,
+	.ret_cmd		= twl6030_uv_to_vsel,
+	.off_cmd		= twl6030_uv_to_vsel,
+	.voltage_class	= VP_VC_CLASS,
+};
+
 int __init omap4_twl_init(void)
 {
 	struct voltagedomain *voltdm;
@@ -247,14 +268,19 @@ int __init omap4_twl_init(void)
 	if (!cpu_is_omap44xx())
 		return -ENODEV;
 
-	voltdm = omap_voltage_domain_lookup("mpu");
-	omap_voltage_register_pmic(voltdm, &omap4_mpu_volt_info);
+	if (!cpu_is_omap446x())	{
+		voltdm = omap_voltage_domain_lookup("mpu");
+		omap_voltage_register_pmic(voltdm, &omap4_mpu_volt_info);
 
+		voltdm = omap_voltage_domain_lookup("core");
+		omap_voltage_register_pmic(voltdm, &omap4430_core_volt_info);
+	} else {
+		voltdm = omap_voltage_domain_lookup("core");
+		omap_voltage_register_pmic(voltdm, &omap4460_core_volt_info);
+	}	
+	
 	voltdm = omap_voltage_domain_lookup("iva");
 	omap_voltage_register_pmic(voltdm, &omap4_iva_volt_info);
-
-	voltdm = omap_voltage_domain_lookup("core");
-	omap_voltage_register_pmic(voltdm, &omap4_core_volt_info);
 
 	return 0;
 }

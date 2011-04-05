@@ -103,7 +103,30 @@ struct omap_vp_param omap44xx_core_vp_data = {
 };
 
 
-static struct omap_opp_def __initdata omap44xx_opp_def_list[] = {
+static struct omap_opp_def __initdata omap443x_opp_def_list[] = {
+	/* MPU OPP1 - OPP50 */
+	OPP_INITIALIZER("mpu", true, 300000000, OMAP4430_VDD_MPU_OPP50_UV),
+	/* MPU OPP2 - OPP100 */
+	OPP_INITIALIZER("mpu", true, 600000000, OMAP4430_VDD_MPU_OPP100_UV),
+	/* MPU OPP3 - OPP-Turbo */
+	OPP_INITIALIZER("mpu", true, 800000000, OMAP4430_VDD_MPU_OPPTURBO_UV),
+	/* MPU OPP4 - OPP-SB */
+	OPP_INITIALIZER("mpu", true, 1008000000, OMAP4430_VDD_MPU_OPPNITRO_UV),
+	/* L3 OPP1 - OPP50 */
+	OPP_INITIALIZER("l3_main_1", true, 100000000, OMAP4430_VDD_CORE_OPP50_UV),
+	/* L3 OPP2 - OPP100, OPP-Turbo, OPP-SB */
+	OPP_INITIALIZER("l3_main_1", true, 200000000, OMAP4430_VDD_CORE_OPP100_UV),
+	/* IVA OPP1 - OPP50 */
+	OPP_INITIALIZER("iva", true, 133000000, OMAP4430_VDD_IVA_OPP50_UV),
+	/* IVA OPP2 - OPP100 */
+	OPP_INITIALIZER("iva", true, 266100000, OMAP4430_VDD_IVA_OPP100_UV),
+	/* IVA OPP3 - OPP-Turbo */
+	OPP_INITIALIZER("iva", false, 332000000, OMAP4430_VDD_IVA_OPPTURBO_UV),
+	/* TODO: add DSP, aess, fdif, gpu */
+};
+
+/* XXX: To be updated after receiving Operating condition addendum for 4460 */
+static struct omap_opp_def __initdata omap446x_opp_def_list[] = {
 	/* MPU OPP1 - OPP50 */
 	OPP_INITIALIZER("mpu", true, 300000000, OMAP4430_VDD_MPU_OPP50_UV),
 	/* MPU OPP2 - OPP100 */
@@ -134,9 +157,15 @@ int __init omap4_opp_init(void)
 
 	if (!cpu_is_omap44xx())
 		return r;
+/* XXX Uncomment this once below API is available
 
-	r = omap_init_opp_table(omap44xx_opp_def_list,
+	if (cpu_is_omap446x()) 
+		r = omap_init_opp_table(omap446x_opp_def_list,
 			ARRAY_SIZE(omap44xx_opp_def_list));
+	else
+*/
+	r = omap_init_opp_table(omap443x_opp_def_list,
+			ARRAY_SIZE(omap443x_opp_def_list));
 
 	return r;
 }

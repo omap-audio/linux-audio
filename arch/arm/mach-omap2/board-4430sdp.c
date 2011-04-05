@@ -51,6 +51,7 @@
 #define OMAP4_SFH7741_ENABLE_GPIO		188
 #define HDMI_GPIO_HPD 60 /* Hot plug pin for HDMI */
 #define HDMI_GPIO_LS_OE 41 /* Level shifter for HDMI */
+#define TPS6261_GPIO	7
 
 static const int sdp4430_keymap[] = {
 	KEY(0, 0, KEY_E),
@@ -849,6 +850,27 @@ static inline void board_serial_init(void)
 }
  #endif
 
+
+static void __init tps6261_board_init(void)
+{
+	int  error;
+
+	omap_mux_init_gpio(TPS6261_GPIO, OMAP_PIN_OUTPUT);
+	error = gpio_request(TPS6261_GPIO, "tps6261");
+	if (error < 0) {
+		pr_err("%s:failed to request GPIO %d, error %d\n",
+			__func__, TPS6261_GPIO, error);
+		return;
+	}
+
+	error = gpio_direction_output(TPS6261_GPIO , 1);
+	if (error < 0) {
+		pr_err("%s: GPIO configuration failed: GPIO %d,error %d\n",
+			__func__, TPS6261_GPIO, error);
+		gpio_free(TPS6261_GPIO);
+	}
+}
+
 static void __init omap_4430sdp_init(void)
 {
 	int status;
@@ -893,7 +915,10 @@ static void __init omap_4430sdp_init(void)
 	omap_voltage_register_board_params(voltdm, &omap4430sdp_iva_volt_data);
 
 	voltdm = omap_voltage_domain_lookup("core");
-	omap_voltage_register_board_params(voltdm, &omap4430sdp_core_volt_data);	
+	omap_voltage_register_board_params(voltdm, &omap4430sdp_core_volt_data);
+
+	if (cpu_is_omap446x()) 
+		tps6261_board_init();
 }
 
 static void __init omap_4430sdp_map_io(void)

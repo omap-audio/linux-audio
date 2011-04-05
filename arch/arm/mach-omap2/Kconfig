@@ -341,6 +341,12 @@ config OMAP3_SDRC_AC_TIMING
 	  wish to say no.  Selecting yes without understanding what is
 	  going on could result in system crashes;
 
+config TPS62361
+        bool "TI TPS62361 Power IC"
+        depends on I2C
+	default y
+	help
+          This driver supports TPS62361 PMIC chip. TPS62361 provides
+          one scalable VDD.
 endmenu
-
 endif

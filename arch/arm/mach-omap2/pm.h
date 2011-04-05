@@ -139,4 +139,13 @@ static inline int omap4_twl_init(void)
 }
 #endif
 
+#ifdef CONFIG_TPS62361
+int omap4_tps62361_init(void);
+#else
+static inline int omap4_tps62361_init(void)
+{
+	return -EINVAL;
+}
+#endif
+
 #endif
