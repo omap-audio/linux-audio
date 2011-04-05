@@ -42,6 +42,7 @@
 #include "hsmmc.h"
 #include "timer-gp.h"
 #include "control.h"
+#include "voltage.h"
 
 #define ETH_KS8851_IRQ			34
 #define ETH_KS8851_POWER_ON		48
@@ -249,6 +250,46 @@ static struct spi_board_info sdp4430_spi_board_info[] __initdata = {
 		.max_speed_hz           = 24000000,
 		.irq                    = ETH_KS8851_IRQ,
 	},
+};
+
+/* TODO: replace these dummy values with characterized latencies */
+static union omap_volt_board_data omap4430sdp_mpu_volt_data = {
+	.omap4_board_data = {
+		.vdd_setup_ret = {
+			.voltsetup_ramp_up	= 0xff,
+			.voltsetup_ramp_down = 0xff,
+		},
+		.vdd_setup_off = {
+			.voltsetup_ramp_up	= 0xff,
+			.voltsetup_ramp_down = 0xff,
+		},
+	}
+};
+
+static union omap_volt_board_data omap4430sdp_iva_volt_data = {
+	.omap4_board_data = {
+		.vdd_setup_ret = {
+			.voltsetup_ramp_up	= 0xff,
+			.voltsetup_ramp_down = 0xff,
+		},
+		.vdd_setup_off = {
+			.voltsetup_ramp_up	= 0xff,
+			.voltsetup_ramp_down = 0xff,
+		},
+	}
+};
+
+static union omap_volt_board_data omap4430sdp_core_volt_data = {
+	.omap4_board_data = {
+		.vdd_setup_ret = {
+			.voltsetup_ramp_up	= 0xff,
+			.voltsetup_ramp_down = 0xff,
+		},
+		.vdd_setup_off = {
+			.voltsetup_ramp_up	= 0xff,
+			.voltsetup_ramp_down = 0xff,
+		},
+	}
 };
 
 static int omap_ethernet_init(void)
@@ -812,6 +853,7 @@ static void __init omap_4430sdp_init(void)
 {
 	int status;
 	int package = OMAP_PACKAGE_CBS;
+	struct voltagedomain *voltdm;
 
 	if (omap_rev() == OMAP4430_REV_ES1_0)
 		package = OMAP_PACKAGE_CBL;
@@ -843,6 +885,15 @@ static void __init omap_4430sdp_init(void)
 		pr_err("Keypad initialization failed: %d\n", status);
 
 	omap_4430sdp_display_init();
+
+	voltdm = omap_voltage_domain_lookup("mpu");
+	omap_voltage_register_board_params(voltdm, &omap4430sdp_mpu_volt_data);
+
+	voltdm = omap_voltage_domain_lookup("iva");
+	omap_voltage_register_board_params(voltdm, &omap4430sdp_iva_volt_data);
+
+	voltdm = omap_voltage_domain_lookup("core");
+	omap_voltage_register_board_params(voltdm, &omap4430sdp_core_volt_data);	
 }
 
 static void __init omap_4430sdp_map_io(void)
@@ -861,3 +912,4 @@ MACHINE_START(OMAP_4430SDP, "OMAP4430 4430SDP board")
 	.init_machine	= omap_4430sdp_init,
 	.timer		= &omap_timer,
 MACHINE_END
+

@@ -27,12 +27,45 @@
 
 #include <mach/board-zoom.h>
 
+#include "voltage.h"
 #include "board-flash.h"
 #include "mux.h"
 #include "sdram-micron-mt46h32m32lf-6.h"
 #include "sdram-hynix-h8mbx00u0mer-0em.h"
 
 #define ZOOM3_EHCI_RESET_GPIO		64
+/*
+ * VOLTSETUP1 for RET & OFF
+ * Setup time (in us) of the VDD1 and VDD2 regulators.
+ * Number of sys_clk cycles required for VDD regulator to stabilize is
+ * devided by 8 and programmed in the register field for VDD1/VDD2.
+ */
+#define OMAP3_VOLTSETUP_VDD1_RET		28
+#define OMAP3_VOLTSETUP_VDD2_RET		26
+
+#define OMAP3_VOLTSETUP_VDD1_OFF		55
+#define OMAP3_VOLTSETUP_VDD2_OFF		49
+
+/*
+ * VOLTOFFSET for RET & OFF
+ * Offset-time to de-assert sys_offmode signal while exiting the OFF mode
+ * and when the OFF sequence is supervised by the Power IC.
+ */
+#define OMAP3_VOLTOFFSET_OFF	516
+
+#define OMAP3_SYSREQ_CKEN_TIME	31
+#define OMAP3_S2A_TIME			10041
+#define OMAP3_VDD_RAMP_TIME		1250
+
+#define OMAP3_VOLTSETUP2	(OMAP3_SYSREQ_CKEN_TIME + OMAP3_S2A_TIME + OMAP3_VDD_RAMP_TIME - OMAP3_VOLTOFFSET_OFF)
+
+/*
+ * OMAP3 CLKSETUP TIME for RET & OFF
+ * Setup time of the oscillator (sys_clk), based on number of
+ * 32 kHz clock cycles.
+ */
+#define OMAP3_CLKSETUP_RET		31
+#define OMAP3_CLKSETUP_OFF		(OMAP3_VOLTOFFSET_OFF + OMAP3_VOLTSETUP2)
 
 static void __init omap_zoom_init_early(void)
 {
@@ -115,8 +148,46 @@ static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
 	.reset_gpio_port[2]	= -EINVAL,
 };
 
+union omap_volt_board_data zoom_mpu_volt_data = {
+	.omap3_board_data = {
+		.vdd_setup_ret = {
+			.voltsetup	= OMAP3_VOLTSETUP_VDD1_RET,
+			.clksetup	= OMAP3_CLKSETUP_RET,
+			.voltsetup2		= 0,
+			},
+
+		.vdd_setup_off = {
+			.voltsetup	= OMAP3_VOLTSETUP_VDD1_OFF,
+			.clksetup	= OMAP3_CLKSETUP_OFF,
+			.voltsetup2	= OMAP3_VOLTSETUP2,
+		},
+		.voltoffset		= OMAP3_VOLTOFFSET_OFF
+	}
+};
+
+union omap_volt_board_data zoom_core_volt_data = {
+	.omap3_board_data = {
+		.vdd_setup_ret = {
+			.voltsetup	= OMAP3_VOLTSETUP_VDD2_RET,
+			.clksetup	= OMAP3_CLKSETUP_RET,
+			.voltsetup2		= 0,
+		},
+
+		.vdd_setup_off = {
+			.voltsetup	= OMAP3_VOLTSETUP_VDD2_OFF,
+			.clksetup	= OMAP3_CLKSETUP_OFF,
+			.voltsetup2	= OMAP3_VOLTSETUP2,
+		},
+
+		.voltoffset		= OMAP3_VOLTOFFSET_OFF
+	}
+};
+
+
 static void __init omap_zoom_init(void)
 {
+	struct voltagedomain *voltdm;
+
 	if (machine_is_omap_zoom2()) {
 		omap3_mux_init(board_mux, OMAP_PACKAGE_CBB);
 	} else if (machine_is_omap_zoom3()) {
@@ -130,6 +201,13 @@ static void __init omap_zoom_init(void)
 	zoom_debugboard_init();
 	zoom_peripherals_init();
 	zoom_display_init();
+
+	voltdm = omap_voltage_domain_lookup("mpu");
+	omap_voltage_register_board_params(voltdm, &zoom_mpu_volt_data);
+
+	voltdm = omap_voltage_domain_lookup("core");
+	omap_voltage_register_board_params(voltdm, &zoom_core_volt_data);
+
 }
 
 MACHINE_START(OMAP_ZOOM2, "OMAP Zoom2 board")
@@ -151,3 +229,4 @@ MACHINE_START(OMAP_ZOOM3, "OMAP Zoom3 board")
 	.init_machine	= omap_zoom_init,
 	.timer		= &omap_timer,
 MACHINE_END
+
