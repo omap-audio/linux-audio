@@ -94,11 +94,18 @@ extern struct omap_volt_data omap36xx_vddcore_volt_data[];
 extern struct omap_vp_param omap36xx_mpu_vp_data;
 extern struct omap_vp_param omap36xx_core_vp_data;
 
-extern struct omap_volt_data omap44xx_vdd_mpu_volt_data[];
-extern struct omap_volt_data omap44xx_vdd_iva_volt_data[];
-extern struct omap_volt_data omap44xx_vdd_core_volt_data[];
-extern struct omap_vp_param omap44xx_mpu_vp_data;
-extern struct omap_vp_param omap44xx_iva_vp_data;
-extern struct omap_vp_param omap44xx_core_vp_data;
+extern struct omap_volt_data omap444x_vdd_mpu_volt_data[];
+extern struct omap_volt_data omap444x_vdd_iva_volt_data[];
+extern struct omap_volt_data omap444x_vdd_core_volt_data[];
+extern struct omap_vp_param omap444x_mpu_vp_data;
+extern struct omap_vp_param omap444x_iva_vp_data;
+extern struct omap_vp_param omap444x_core_vp_data;
+
+extern struct omap_volt_data omap446x_vdd_mpu_volt_data[];
+extern struct omap_volt_data omap446x_vdd_iva_volt_data[];
+extern struct omap_volt_data omap446x_vdd_core_volt_data[];
+extern struct omap_vp_param omap446x_mpu_vp_data;
+extern struct omap_vp_param omap446x_iva_vp_data;
+extern struct omap_vp_param omap446x_core_vp_data;
 
 #endif		/* __ARCH_ARM_MACH_OMAP2_OMAP_OPP_DATA_H */
