@@ -88,6 +88,7 @@ unsigned int omap_rev(void);
  * cpu_is_omap243x():	True for OMAP2430
  * cpu_is_omap343x():	True for OMAP3430
  * cpu_is_omap443x():	True for OMAP4430
+ * cpu_is_omap446x():	True for OMAP4460
  */
 #define GET_OMAP_CLASS	(omap_rev() & 0xff)
 
@@ -123,6 +124,7 @@ IS_OMAP_SUBCLASS(243x, 0x243)
 IS_OMAP_SUBCLASS(343x, 0x343)
 IS_OMAP_SUBCLASS(363x, 0x363)
 IS_OMAP_SUBCLASS(443x, 0x443)
+IS_OMAP_SUBCLASS(446x, 0x446)
 
 IS_TI_SUBCLASS(816x, 0x816)
 
@@ -137,6 +139,7 @@ IS_TI_SUBCLASS(816x, 0x816)
 #define cpu_is_ti816x()			0
 #define cpu_is_omap44xx()		0
 #define cpu_is_omap443x()		0
+#define cpu_is_omap446x()		0
 
 #if defined(MULTI_OMAP1)
 # if defined(CONFIG_ARCH_OMAP730)
@@ -234,6 +237,7 @@ IS_TI_SUBCLASS(816x, 0x816)
  * cpu_is_omap2430():	True for OMAP2430
  * cpu_is_omap3430():	True for OMAP3430
  * cpu_is_omap4430():	True for OMAP4430
+ * cpu_is_omap4460():	True for OMAP4460
  * cpu_is_omap3505():	True for OMAP3505
  * cpu_is_omap3517():	True for OMAP3517
  */
@@ -259,8 +263,11 @@ IS_OMAP_TYPE(2422, 0x2422)
 IS_OMAP_TYPE(2423, 0x2423)
 IS_OMAP_TYPE(2430, 0x2430)
 IS_OMAP_TYPE(3430, 0x3430)
+IS_OMAP_TYPE(3630, 0x3630)
 IS_OMAP_TYPE(3505, 0x3505)
 IS_OMAP_TYPE(3517, 0x3517)
+IS_OMAP_TYPE(4430, 0x4430)
+IS_OMAP_TYPE(4460, 0x4460)
 
 #define cpu_is_omap310()		0
 #define cpu_is_omap730()		0
@@ -284,6 +291,7 @@ IS_OMAP_TYPE(3517, 0x3517)
 #define cpu_is_omap3430()		0
 #define cpu_is_omap4430()		0
 #define cpu_is_omap3630()		0
+#define cpu_is_omap4460()		0
 
 /*
  * Whether we have MULTI_OMAP1 or not, we still need to distinguish
@@ -361,8 +369,14 @@ IS_OMAP_TYPE(3517, 0x3517)
 # if defined(CONFIG_ARCH_OMAP4)
 # undef cpu_is_omap44xx
 # undef cpu_is_omap443x
+# undef cpu_is_omap446x
+# undef cpu_is_omap4430
+# undef cpu_is_omap4460
 # define cpu_is_omap44xx()		is_omap44xx()
 # define cpu_is_omap443x()		is_omap443x()
+# define cpu_is_omap446x()		is_omap446x()
+# define cpu_is_omap4430()		is_omap4430()
+# define cpu_is_omap4460()		is_omap4460()
 # endif
 
 /* Macros to detect if we have OMAP1 or OMAP2 */
@@ -410,6 +424,9 @@ IS_OMAP_TYPE(3517, 0x3517)
 #define OMAP4430_REV_ES2_1	(OMAP443X_CLASS | (0x21 << 8))
 #define OMAP4430_REV_ES2_2	(OMAP443X_CLASS | (0x22 << 8))
 
+#define OMAP446X_CLASS		0x44600044
+#define OMAP4460_REV_ES1_0	(OMAP446X_CLASS | (0x10 << 8))
+
 /*
  * omap_chip bits
  *
@@ -439,6 +456,7 @@ IS_OMAP_TYPE(3517, 0x3517)
 #define CHIP_IS_OMAP4430ES2_1		(1 << 12)
 #define CHIP_IS_OMAP4430ES2_2		(1 << 13)
 #define CHIP_IS_TI816X			(1 << 14)
+#define CHIP_IS_OMAP4460ES1_0		(1 << 15)
 
 #define CHIP_IS_OMAP24XX		(CHIP_IS_OMAP2420 | CHIP_IS_OMAP2430)
 
@@ -447,6 +465,9 @@ IS_OMAP_TYPE(3517, 0x3517)
 					 CHIP_IS_OMAP4430ES2_1 |	\
 					 CHIP_IS_OMAP4430ES2_2)
 
+#define CHIP_IS_OMAP4460		CHIP_IS_OMAP4460ES1_0
+
+#define CHIP_IS_OMAP44XX		(CHIP_IS_OMAP4430 | CHIP_IS_OMAP4460)
 /*
  * "GE" here represents "greater than or equal to" in terms of ES
  * levels.  So CHIP_GE_OMAP3430ES2 is intended to match all OMAP3430
