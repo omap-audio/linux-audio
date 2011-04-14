@@ -33,6 +33,8 @@
 #include <asm/cpu.h>
 
 #include <plat/clock.h>
+#include <plat/voltage.h>
+
 #include <plat/omap-pm.h>
 #include <plat/common.h>
 
@@ -42,6 +44,7 @@
 
 static struct cpufreq_frequency_table *freq_table;
 static struct clk *mpu_clk;
+static struct device *mpu_dev;
 
 static int omap_verify_speed(struct cpufreq_policy *policy)
 {
@@ -72,13 +75,19 @@ static unsigned int omap_getspeed(unsigned int cpu)
 	return rate;
 }
 
+extern void omap_sr_enable(struct voltagedomain *voltdm);
+extern void omap_sr_disable(struct voltagedomain *voltdm);
+
 static int omap_target(struct cpufreq_policy *policy,
 		       unsigned int target_freq,
 		       unsigned int relation)
 {
 	int i, ret = 0;
 	struct cpufreq_freqs freqs;
-
+	static struct voltagedomain *mpu_vdd;
+	unsigned long target_volt;
+	struct opp *opp;
+	unsigned long target_freq_hz = target_freq * 1000;
 	/* Changes not allowed until all CPUs are online */
 	if (is_smp() && (num_online_cpus() < NR_CPUS))
 		return ret;
@@ -91,7 +100,9 @@ static int omap_target(struct cpufreq_policy *policy,
 		target_freq = policy->max;
 
 	freqs.old = omap_getspeed(policy->cpu);
-	freqs.new = clk_round_rate(mpu_clk, target_freq * 1000) / 1000;
+	opp = opp_find_freq_ceil(mpu_dev, &target_freq_hz);
+	freqs.new = target_freq_hz / 1000;
+
 	freqs.cpu = policy->cpu;
 
 	if (freqs.old == freqs.new)
@@ -113,7 +124,20 @@ set_freq:
 	pr_info("cpufreq-omap: transition: %u --> %u\n", freqs.old, freqs.new);
 #endif
 
-	ret = clk_set_rate(mpu_clk, freqs.new * 1000);
+	target_volt = opp_get_voltage(opp);
+	mpu_vdd = omap_voltage_domain_lookup("mpu");
+
+	if (freqs.new > freqs.old) {
+		omap_sr_disable(mpu_vdd);
+		omap_voltage_scale_vdd(mpu_vdd, target_volt);
+		ret = clk_set_rate(mpu_clk, target_freq_hz);
+		omap_sr_enable(mpu_vdd);
+	} else if (freqs.new < freqs.old) {
+		omap_sr_disable(mpu_vdd);
+		ret = clk_set_rate(mpu_clk, target_freq_hz);
+		omap_voltage_scale_vdd(mpu_vdd, target_volt);
+		omap_sr_enable(mpu_vdd);
+	}
 
 	/*
 	 * Generic CPUFREQ driver jiffy update is under !SMP. So jiffies
@@ -154,7 +178,6 @@ skip_lpj:
 static int __cpuinit omap_cpu_init(struct cpufreq_policy *policy)
 {
 	int result = 0;
-	struct device *mpu_dev;
 	static cpumask_var_t cpumask;
 
 	if (cpu_is_omap24xx())
