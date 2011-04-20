@@ -23,6 +23,9 @@
 #define VOLTSCALE_VPFORCEUPDATE		1
 #define VOLTSCALE_VCBYPASS		2
 
+#define VP_VC_CLASS 0
+#define REGULATOR_CLASS 1
+
 /**
  * struct omap_vfsm_instance_data - per-voltage manager FSM register/bitfield
  * data
@@ -87,6 +90,8 @@ struct omap_volt_data {
  * @onlp_cmd:	PMIC API to send onlp command instruction
  * @ret_cmd:	PMIC API to send ret command instruction
  * @off_cmd:	PMIC API to send off command instruction
+ * @voltage_class: Voltage class used for voltage scaling (can be VP/VC method
+ * 				or regulator based method for now).
  */
 struct omap_volt_pmic_info {
 	int slew_rate;
@@ -105,6 +110,7 @@ struct omap_volt_pmic_info {
 	unsigned char (*onlp_cmd)(unsigned long uV);
 	unsigned char (*ret_cmd)(unsigned long uV);
 	unsigned char (*off_cmd)(unsigned long uV);
+	u8 voltage_class;
 };
 
 /**

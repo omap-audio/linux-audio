@@ -157,6 +157,7 @@ static struct omap_volt_pmic_info omap3_mpu_volt_info = {
 	.onlp_cmd		= twl4030_uv_to_vsel,
 	.ret_cmd		= twl4030_uv_to_vsel,
 	.off_cmd		= twl4030_uv_to_vsel,
+	.voltage_class	= VP_VC_CLASS,
 };
 
 static struct omap_volt_pmic_info omap3_core_volt_info = {
@@ -176,6 +177,7 @@ static struct omap_volt_pmic_info omap3_core_volt_info = {
 	.onlp_cmd		= twl4030_uv_to_vsel,
 	.ret_cmd		= twl4030_uv_to_vsel,
 	.off_cmd		= twl4030_uv_to_vsel,
+	.voltage_class	= VP_VC_CLASS,
 };
 
 static struct omap_volt_pmic_info omap4_mpu_volt_info = {
@@ -195,6 +197,7 @@ static struct omap_volt_pmic_info omap4_mpu_volt_info = {
 	.onlp_cmd		= twl6030_uv_to_vsel,
 	.ret_cmd		= twl6030_uv_to_vsel,
 	.off_cmd		= twl6030_uv_to_vsel,
+	.voltage_class	= VP_VC_CLASS,	
 };
 
 static struct omap_volt_pmic_info omap4_iva_volt_info = {
@@ -214,6 +217,7 @@ static struct omap_volt_pmic_info omap4_iva_volt_info = {
 	.onlp_cmd		= twl6030_uv_to_vsel,
 	.ret_cmd		= twl6030_uv_to_vsel,
 	.off_cmd		= twl6030_uv_to_vsel,
+	.voltage_class	= VP_VC_CLASS,	
 };
 
 static struct omap_volt_pmic_info omap4_core_volt_info = {
@@ -233,6 +237,7 @@ static struct omap_volt_pmic_info omap4_core_volt_info = {
 	.onlp_cmd		= twl6030_uv_to_vsel,
 	.ret_cmd		= twl6030_uv_to_vsel,
 	.off_cmd		= twl6030_uv_to_vsel,
+	.voltage_class	= VP_VC_CLASS,	
 };
 
 int __init omap4_twl_init(void)
