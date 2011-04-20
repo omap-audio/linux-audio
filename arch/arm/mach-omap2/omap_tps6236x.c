@@ -13,12 +13,15 @@
 #include <linux/io.h>
 #include <linux/kernel.h>
 #include <linux/i2c/twl.h>
+#include <linux/delay.h>
 
+#include "prm-regbits-44xx.h"
 #include "voltage.h"
-
+#include "prm44xx.h"
 #include "pm.h"
 
 #define OMAP4_SRI2C_SLAVE_ADDR		0x60
+#define TPS62361_RAMP_ADDR			0x6
 #define OMAP4_VDD_MPU_SR_VOLT_REG	0x01
 #define OMAP4_VP_CONFIG_ERROROFFSET	0x00
 #define OMAP4_VP_VSTEPMIN_VSTEPMIN	0x01
@@ -95,16 +98,38 @@ end:
 int __init omap4_tps62361_init(void)
 {
 	struct voltagedomain *voltdm;
-
+	u16 loop_cnt = 0, retries_cnt = 0;
+	u32 vc_bypass_value;
 	
 	if (!cpu_is_omap446x()) 
-		return; 0;
+		return 0;
 
 	/* Associate SYSEN to APE resource group (TWL6030 group 1) */
 	omap4_tps62361_enable();
 
 	voltdm = omap_voltage_domain_lookup("mpu");
 	omap_voltage_register_pmic(voltdm, &omap4_mpu_volt_info);
+
+	/* XXX Hack: COnfgirue RMP register for 8mV/uS ramp using vc bypass method */
+	vc_bypass_value = (2 << OMAP4430_DATA_SHIFT) | (TPS62361_RAMP_ADDR << OMAP4430_REGADDR_SHIFT) |
+			(OMAP4_SRI2C_SLAVE_ADDR << OMAP4430_SLAVEADDR_SHIFT);
+	__raw_writel(vc_bypass_value, OMAP4430_PRM_VC_VAL_BYPASS);
+	__raw_writel(vc_bypass_value | OMAP4430_VALID_MASK, OMAP4430_PRM_VC_VAL_BYPASS);
+
+	vc_bypass_value = __raw_readl(OMAP4430_PRM_VC_VAL_BYPASS);
+	while (vc_bypass_value & OMAP4430_VALID_MASK) {
+		loop_cnt++;
+
+		if (retries_cnt > 10) {
+			pr_warning("%s: Retry count exceeded\n", __func__);
+			return -ETIMEDOUT;
+		 }
+		if (loop_cnt > 50) {
+			retries_cnt++;
+			loop_cnt = 0;
+			udelay(10);
+		}
+	}
 
 	return 0;
 }
