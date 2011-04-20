@@ -27,6 +27,9 @@
 #include <linux/slab.h>
 
 #include <plat/common.h>
+#include <plat/voltage.h>
+#include <plat/vc.h>
+#include <plat/vp.h>
 
 #include "prm-regbits-34xx.h"
 #include "prm-regbits-44xx.h"
@@ -35,10 +38,6 @@
 #include "prminst44xx.h"
 #include "control.h"
 
-#include "voltage.h"
-
-#include "vc.h"
-#include "vp.h"
 
 #define VOLTAGE_DIR_SIZE	16
 

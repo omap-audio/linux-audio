@@ -37,12 +37,12 @@
 #include <plat/mmc.h>
 #include <plat/omap4-keypad.h>
 #include <plat/display.h>
+#include <plat/voltage.h>
 
 #include "mux.h"
 #include "hsmmc.h"
 #include "timer-gp.h"
 #include "control.h"
-#include "voltage.h"
 
 #define ETH_KS8851_IRQ			34
 #define ETH_KS8851_POWER_ON		48

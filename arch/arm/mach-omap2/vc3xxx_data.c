@@ -19,11 +19,10 @@
 #include <linux/init.h>
 
 #include <plat/common.h>
+#include <plat/vc.h>
 
 #include "prm-regbits-34xx.h"
-#include "voltage.h"
-
-#include "vc.h"
+#include <plat/voltage.h>
 
 /*
  * VC data common to 34xx/36xx chips

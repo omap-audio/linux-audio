@@ -17,9 +17,7 @@
 #include <linux/io.h>
 #include <linux/kernel.h>
 #include <linux/i2c/twl.h>
-
-#include "voltage.h"
-
+#include <plat/voltage.h>
 #include "pm.h"
 
 #define OMAP3_SRI2C_SLAVE_ADDR		0x12

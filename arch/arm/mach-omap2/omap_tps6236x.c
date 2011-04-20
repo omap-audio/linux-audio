@@ -14,9 +14,9 @@
 #include <linux/kernel.h>
 #include <linux/i2c/twl.h>
 #include <linux/delay.h>
+#include <plat/voltage.h>
 
 #include "prm-regbits-44xx.h"
-#include "voltage.h"
 #include "prm44xx.h"
 #include "pm.h"
 
