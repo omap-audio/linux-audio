@@ -35,6 +35,7 @@
 #include "cm2xxx_3xxx.h"
 #include "cm-regbits-34xx.h"
 #include "cm-regbits-44xx.h"
+#include "cm1_44xx.h"
 
 /* CM_AUTOIDLE_PLL*.AUTO_* bit values */
 #define DPLL_AUTOIDLE_DISABLE			0x0
@@ -316,21 +317,36 @@ static int omap3_noncore_dpll_program(struct clk *clk, u16 m, u8 n, u16 freqsel)
 	 * On OMAP4460, to obtain MPU DPLL frequency higher
 	 * than 1GHz, DCC (Duty Cycle Correction) needs to
 	 * be enabled.
+	 * Also the interconnect frequency to EMIF should
+	 * be switched between MPU clk divide by 4 (for
+	 * frequencies higher than 920Mhz) and MPU clk divide
+	 * by 2 (for frequencies lower than or equal to 920Mhz)
+	 * Lastly the async bridge to ABE must be MPU clk divide
+	 * by 8 for MPU clk > 748Mhz and MPU clk divide by 4
+	 * for lower frequencies.
 	 * TODO: For now use a strcmp, but need to find a
 	 * better way to identify the MPU dpll.
 	 */
 	if (cpu_is_omap4460() && !strcmp(clk->name, "dpll_mpu_ck")) {
-		if (dd->last_rounded_rate > 1000000000) {
-			/* Enable DCC */
-			v = __raw_readl(dd->mult_div1_reg);
-			v |= OMAP4460_DCC_EN_MASK;
-			__raw_writel(v, dd->control_reg);
-		} else {
-			/* Disable DCC */
-			v = __raw_readl(dd->mult_div1_reg);
-			v &= ~OMAP4460_DCC_EN_MASK;
-			__raw_writel(v, dd->control_reg);
-		}
+		/* DCC control */
+		v = __raw_readl(dd->mult_div1_reg);
+		if (dd->last_rounded_rate > 1000000000)
+			v |= OMAP4460_DCC_EN_MASK; /* Enable DCC */
+		else
+			v &= ~OMAP4460_DCC_EN_MASK; /* Disable DCC */
+		__raw_writel(v, dd->control_reg);
+
+		/* EMIF/ABE clock rate control */
+		v = __raw_readl(OMAP4430_CM_MPU_MPU_CLKCTRL);
+		if (dd->last_rounded_rate > 920000000)
+			v |= OMAP4460_CLKSEL_EMIF_DIV_MODE_MASK;
+		else
+			v &= ~OMAP4460_CLKSEL_EMIF_DIV_MODE_MASK;
+		if (dd->last_rounded_rate > 748000000)
+			v |= OMAP4460_CLKSEL_ABE_DIV_MODE_MASK;
+		else
+			v &= ~OMAP4460_CLKSEL_ABE_DIV_MODE_MASK;
+		__raw_writel(v, OMAP4430_CM_MPU_MPU_CLKCTRL);
 	}
 
 	/* Set DPLL multiplier, divider */
