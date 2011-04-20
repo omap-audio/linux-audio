@@ -21,10 +21,12 @@
 #include <linux/module.h>
 
 #include <plat/cpu.h>
+#include <linux/opp.h>
 
 #include "control.h"
 #include "omap_opp_data.h"
 #include "pm.h"
+#include <plat/omap_device.h>
 
 /*
  * Structures containing OMAP4430 voltage supported and various
@@ -227,6 +229,34 @@ static struct omap_opp_def __initdata omap446x_opp_def_list[] = {
 	/* TODO: add DSP, aess, fdif, gpu */
 };
 
+
+
+/**
+ * omap4_opp_enable() - Enable the OPP corresponding to freq
+ *
+ */
+static int __init omap4_opp_enable(unsigned long freq)
+{
+       int r = -ENODEV;
+       struct omap_hwmod *oh_mpu = omap_hwmod_lookup("mpu");
+       struct platform_device *pdev;
+
+       if (!oh_mpu || !oh_mpu->od) {
+               goto err;
+       } else {
+               pdev = &oh_mpu->od->pdev;
+
+               r = opp_enable(&pdev->dev, freq);
+               if (r < 0) {
+                       dev_err(&pdev->dev,
+                               "opp_enable() failed for mpu@%ld", freq);
+                       goto err;
+               }
+       }
+err:
+	return r;
+}
+
 /**
  * omap4_opp_init() - initialize omap4 opp table
  */
@@ -236,15 +266,18 @@ int __init omap4_opp_init(void)
 
 	if (!cpu_is_omap44xx())
 		return r;
-/* XXX Uncomment this once below API is available
 
 	if (cpu_is_omap446x()) 
 		r = omap_init_opp_table(omap446x_opp_def_list,
-			ARRAY_SIZE(omap44xx_opp_def_list));
+			ARRAY_SIZE(omap446x_opp_def_list));
 	else
-*/
-	r = omap_init_opp_table(omap443x_opp_def_list,
+		r = omap_init_opp_table(omap443x_opp_def_list,
 			ARRAY_SIZE(omap443x_opp_def_list));
+
+	if (omap4_has_mpu_1_5ghz())
+		omap4_opp_enable(1500000000);
+	if (omap4_has_mpu_1_2ghz())
+		omap4_opp_enable(1200000000);
 
 	return r;
 }
