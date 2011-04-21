@@ -267,17 +267,16 @@ int __init omap4_opp_init(void)
 	if (!cpu_is_omap44xx())
 		return r;
 
-	if (cpu_is_omap446x()) 
+	if (cpu_is_omap446x()) {
 		r = omap_init_opp_table(omap446x_opp_def_list,
 			ARRAY_SIZE(omap446x_opp_def_list));
-	else
+		if (omap4_has_mpu_1_5ghz())
+			omap4_opp_enable(1500000000);
+		if (omap4_has_mpu_1_2ghz())
+			omap4_opp_enable(1200000000);
+	} else
 		r = omap_init_opp_table(omap443x_opp_def_list,
 			ARRAY_SIZE(omap443x_opp_def_list));
-
-	if (omap4_has_mpu_1_5ghz())
-		omap4_opp_enable(1500000000);
-	if (omap4_has_mpu_1_2ghz())
-		omap4_opp_enable(1200000000);
 
 	return r;
 }
