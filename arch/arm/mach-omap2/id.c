@@ -361,7 +361,7 @@ static void __init omap4_check_revision(void)
 	u16 hawkeye;
 	u8 rev;
 
-	if (read_cpuid(CPUID_ID) == 0x412FC096) {
+	if (read_cpuid(CPUID_ID) == 0x412FC09A) {
 		omap_revision = OMAP4460_REV_ES1_0;
 		omap_chip.oc |= CHIP_IS_OMAP4460ES1_0;
 		return;
