@@ -62,7 +62,7 @@ int omap_type(void)
 	} else if (cpu_is_omap34xx()) {
 		val = omap_ctrl_readl(OMAP343X_CONTROL_STATUS);
 	} else if (cpu_is_omap44xx()) {
-		val = omap_ctrl_readl(OMAP4_CTRL_MODULE_CORE_STATUS);
+		val = omap_ctrl_readl(OMAP4_CTRL_MODULE_CORE_STATUS_OFFSET);
 	} else {
 		pr_err("Cannot detect omap type!\n");
 		goto out;
@@ -224,7 +224,7 @@ static void __init omap4_check_features(void)
 
 	if (omap_revision >= OMAP4460_REV_ES1_0) {
 		si_type =
-			read_tap_reg(OMAP4_CTRL_MODULE_CORE_STD_FUSE_PROD_ID_1);
+			read_tap_reg(OMAP4_CTRL_MODULE_CORE_STD_FUSE_PROD_ID_1_OFFSET);
 		switch ((si_type & (3 << 16)) >> 16) {
 		case 2:
 			/* High performance device */
