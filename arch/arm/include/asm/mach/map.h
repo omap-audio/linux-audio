@@ -27,6 +27,9 @@ struct map_desc {
 #define MT_MEMORY		9
 #define MT_ROM			10
 #define MT_MEMORY_NONCACHED	11
+#define MT_MEMORY_SO           12
+#define MT_MEMORY_SO_EXE       13
+
 #define MT_MEMORY_DTCM		12
 #define MT_MEMORY_ITCM		13
 
