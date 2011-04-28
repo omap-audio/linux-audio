@@ -3195,8 +3195,9 @@ static struct omap_clk omap44xx_clks[] = {
 	CLK("omap_hsmmc.2",	"fck",				&mmc3_fck,	CK_44XX),
 	CLK("omap_hsmmc.3",	"fck",				&mmc4_fck,	CK_44XX),
 	CLK("omap_hsmmc.4",	"fck",				&mmc5_fck,	CK_44XX),
-	CLK(NULL,	"ocp2scp_usb_phy_phy_48m",	&ocp2scp_usb_phy_phy_48m,	CK_443X),
-	CLK(NULL,	"ocp2scp_usb_phy_ick",		&ocp2scp_usb_phy_ick,	CK_443X),
+       CLK(NULL,       "ocp2scp_usb_phy_phy_48m",              &ocp2scp_usb_phy_phy_48m,       CK_44XX),
+       CLK(NULL,       "ocp2scp_usb_phy_ick",                  &ocp2scp_usb_phy_ick,   CK_44XX),
+
 	CLK(NULL,	"ocp_wp_noc_ick",		&ocp_wp_noc_ick,	CK_44XX),
 	CLK("omap_rng",	"ick",				&rng_ick,	CK_44XX),
 	CLK(NULL,	"sha2md5_fck",			&sha2md5_fck,	CK_44XX),
@@ -3246,7 +3247,8 @@ static struct omap_clk omap44xx_clks[] = {
 	CLK(NULL,	"otg_60m_gfclk",		&otg_60m_gfclk,	CK_44XX),
 	CLK(NULL,	"usb_otg_hs_xclk",		&usb_otg_hs_xclk,	CK_44XX),
 	CLK("musb-omap2430",	"ick",				&usb_otg_hs_ick,	CK_44XX),
-	CLK(NULL,	"usb_phy_cm_clk32k",		&usb_phy_cm_clk32k,	CK_443X),
+       CLK(NULL,       "usb_phy_cm_clk32k",                    &usb_phy_cm_clk32k,     CK_44XX),
+
 	CLK(NULL,	"usb_tll_hs_usb_ch2_clk",	&usb_tll_hs_usb_ch2_clk,	CK_44XX),
 	CLK(NULL,	"usb_tll_hs_usb_ch0_clk",	&usb_tll_hs_usb_ch0_clk,	CK_44XX),
 	CLK(NULL,	"usb_tll_hs_usb_ch1_clk",	&usb_tll_hs_usb_ch1_clk,	CK_44XX),
