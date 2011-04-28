@@ -293,7 +293,7 @@ static void _lookup_sddiv(struct clk *clk, u8 *sd_div, u16 m, u8 n)
  * Program the DPLL with the supplied M, N values, and wait for the DPLL to
  * lock..  Returns -EINVAL upon error, or 0 upon success.
  */
-static int omap3_noncore_dpll_program(struct clk *clk, u16 m, u8 n, u16 freqsel)
+static int omap3_noncore_dpll_program(struct clk *clk, u16 m, u8 n, u16 freqsel, unsigned long orig_rate)
 {
 	struct dpll_data *dd = clk->dpll_data;
 	u8 dco, sd_div;
@@ -330,19 +330,19 @@ static int omap3_noncore_dpll_program(struct clk *clk, u16 m, u8 n, u16 freqsel)
 	if (cpu_is_omap4460() && !strcmp(clk->name, "dpll_mpu_ck")) {
 		/* DCC control */
 		v = __raw_readl(dd->mult_div1_reg);
-		if (dd->last_rounded_rate > 1000000000)
+		if (orig_rate >1000000000)
 			v |= OMAP4460_DCC_EN_MASK; /* Enable DCC */
 		else
 			v &= ~OMAP4460_DCC_EN_MASK; /* Disable DCC */
-		__raw_writel(v, dd->control_reg);
+		__raw_writel(v, dd->mult_div1_reg);
 
 		/* EMIF/ABE clock rate control */
 		v = __raw_readl(OMAP4430_CM_MPU_MPU_CLKCTRL);
-		if (dd->last_rounded_rate > 920000000)
+		if (orig_rate > 920000000)
 			v |= OMAP4460_CLKSEL_EMIF_DIV_MODE_MASK;
 		else
 			v &= ~OMAP4460_CLKSEL_EMIF_DIV_MODE_MASK;
-		if (dd->last_rounded_rate > 748000000)
+		if (orig_rate > 748000000)
 			v |= OMAP4460_CLKSEL_ABE_DIV_MODE_MASK;
 		else
 			v &= ~OMAP4460_CLKSEL_ABE_DIV_MODE_MASK;
@@ -465,6 +465,7 @@ int omap3_noncore_dpll_set_rate(struct clk *clk, unsigned long rate)
 	u16 freqsel = 0;
 	struct dpll_data *dd;
 	int ret;
+	unsigned long orig_rate = 0;
 
 	if (!clk || !rate)
 		return -EINVAL;
@@ -492,6 +493,19 @@ int omap3_noncore_dpll_set_rate(struct clk *clk, unsigned long rate)
 		if (!ret)
 			new_parent = dd->clk_bypass;
 	} else {
+		/*
+		 * On 4460, the MPU clk for frequencies higher than 1Ghz
+		 * is sourced from CLKOUTX2_M3, instead of CLKOUT_M2, while
+		 * value of M3 is fixed to 1. Hence for frequencies higher
+		 * than 1 Ghz, lock the DPLL at half the rate so the
+		 * CLKOUTX2_M3 then matches the requested rate.
+		 */
+		if (cpu_is_omap4460() && !strcmp(clk->name, "dpll_mpu_ck")
+					&& (rate > 1000000000)) {
+			orig_rate = rate;
+			rate = rate/2;
+		}
+
 		if (dd->last_rounded_rate != rate)
 			omap2_dpll_round_rate(clk, rate);
 
@@ -506,11 +520,15 @@ int omap3_noncore_dpll_set_rate(struct clk *clk, unsigned long rate)
 				WARN_ON(1);
 		}
 
+		/* Set the rate back to original for book keeping*/
+		if (orig_rate)
+			rate = orig_rate;
+
 		pr_debug("clock: %s: set rate: locking rate to %lu.\n",
 			 clk->name, rate);
 
 		ret = omap3_noncore_dpll_program(clk, dd->last_rounded_m,
-						 dd->last_rounded_n, freqsel);
+						 dd->last_rounded_n, freqsel, orig_rate);
 		if (!ret)
 			new_parent = dd->clk_ref;
 	}
