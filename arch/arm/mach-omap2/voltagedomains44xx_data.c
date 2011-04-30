@@ -91,7 +91,7 @@ static int __init omap44xx_voltage_early_init(void)
 	 * XXX Will depend on the process, validation, and binning
 	 * for the currently-running IC
 	 */
-	if (cpu_is_omap44xx()) {
+	if (cpu_is_omap443x()) {
 		omap4_vdd_mpu_info.volt_data = omap444x_vdd_mpu_volt_data;
 		omap4_vdd_iva_info.volt_data = omap444x_vdd_iva_volt_data;
 		omap4_vdd_core_info.volt_data = omap444x_vdd_core_volt_data;
@@ -99,7 +99,7 @@ static int __init omap44xx_voltage_early_init(void)
 		omap4_vdd_mpu_info.vp_param = &omap444x_mpu_vp_data;
 		omap4_vdd_iva_info.vp_param = &omap444x_iva_vp_data;
 		omap4_vdd_core_info.vp_param = &omap444x_core_vp_data;
-	} /*else if (cpu_is_omap446x()) {
+	} else if (cpu_is_omap446x()) {
 		omap4_vdd_mpu_info.volt_data = omap446x_vdd_mpu_volt_data;
 		omap4_vdd_iva_info.volt_data = omap446x_vdd_iva_volt_data;
 		omap4_vdd_core_info.volt_data = omap446x_vdd_core_volt_data;
@@ -107,7 +107,7 @@ static int __init omap44xx_voltage_early_init(void)
 		omap4_vdd_mpu_info.vp_param = &omap446x_mpu_vp_data;
 		omap4_vdd_iva_info.vp_param = &omap446x_iva_vp_data;
 		omap4_vdd_core_info.vp_param = &omap446x_core_vp_data;
-	} */
+	}
 
 	return omap_voltage_early_init(prm_mod, prm_irqst_ocp_mod,
 				       omap4_vdd_info,
