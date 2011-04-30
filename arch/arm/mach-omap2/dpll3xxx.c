@@ -299,20 +299,6 @@ static int omap3_noncore_dpll_program(struct clk *clk, u16 m, u8 n, u16 freqsel,
 	u8 dco, sd_div;
 	u32 v;
 
-	/* 3430 ES2 TRM: 4.7.6.9 DPLL Programming Sequence */
-	_omap3_noncore_dpll_bypass(clk);
-
-	/*
-	 * Set jitter correction. No jitter correction for OMAP4 and 3630
-	 * since freqsel field is no longer present
-	 */
-	if (!cpu_is_omap44xx() && !cpu_is_omap3630()) {
-		v = __raw_readl(dd->control_reg);
-		v &= ~dd->freqsel_mask;
-		v |= freqsel << __ffs(dd->freqsel_mask);
-		__raw_writel(v, dd->control_reg);
-	}
-
 	/*
 	 * On OMAP4460, to obtain MPU DPLL frequency higher
 	 * than 1GHz, DCC (Duty Cycle Correction) needs to
@@ -330,23 +316,24 @@ static int omap3_noncore_dpll_program(struct clk *clk, u16 m, u8 n, u16 freqsel,
 	if (cpu_is_omap4460() && !strcmp(clk->name, "dpll_mpu_ck")) {
 		/* DCC control */
 		v = __raw_readl(dd->mult_div1_reg);
-		if (orig_rate >1000000000)
-			v |= OMAP4460_DCC_EN_MASK; /* Enable DCC */
-		else
+		if ((orig_rate <= 1000000000) && (v & OMAP4460_DCC_EN_MASK)) {
 			v &= ~OMAP4460_DCC_EN_MASK; /* Disable DCC */
-		__raw_writel(v, dd->mult_div1_reg);
+			__raw_writel(v, dd->mult_div1_reg);
+		} 
+	}
 
-		/* EMIF/ABE clock rate control */
-		v = __raw_readl(OMAP4430_CM_MPU_MPU_CLKCTRL);
-		if (orig_rate > 920000000)
-			v |= OMAP4460_CLKSEL_EMIF_DIV_MODE_MASK;
-		else
-			v &= ~OMAP4460_CLKSEL_EMIF_DIV_MODE_MASK;
-		if (orig_rate > 748000000)
-			v |= OMAP4460_CLKSEL_ABE_DIV_MODE_MASK;
-		else
-			v &= ~OMAP4460_CLKSEL_ABE_DIV_MODE_MASK;
-		__raw_writel(v, OMAP4430_CM_MPU_MPU_CLKCTRL);
+	/* 3430 ES2 TRM: 4.7.6.9 DPLL Programming Sequence */
+	_omap3_noncore_dpll_bypass(clk);
+
+	/*
+	 * Set jitter correction. No jitter correction for OMAP4 and 3630
+	 * since freqsel field is no longer present
+	 */
+	if (!cpu_is_omap44xx() && !cpu_is_omap3630()) {
+		v = __raw_readl(dd->control_reg);
+		v &= ~dd->freqsel_mask;
+		v |= freqsel << __ffs(dd->freqsel_mask);
+		__raw_writel(v, dd->control_reg);
 	}
 
 	/* Set DPLL multiplier, divider */
@@ -374,6 +361,30 @@ static int omap3_noncore_dpll_program(struct clk *clk, u16 m, u8 n, u16 freqsel,
 	/* REVISIT: Set ramp-up delay? */
 
 	_omap3_noncore_dpll_lock(clk);
+
+	if (cpu_is_omap4460() && !strcmp(clk->name, "dpll_mpu_ck")) {
+		/* DCC control */
+		if (orig_rate > 1000000000) {
+			v &= ~OMAP4460_DCC_COUNT_MAX_MASK;
+			v |= (5 << OMAP4460_DCC_COUNT_MAX_SHIFT);
+			__raw_writel(v, dd->mult_div1_reg);
+
+			v |= OMAP4460_DCC_EN_MASK; /* Enable DCC */
+			__raw_writel(v, dd->mult_div1_reg);
+
+		}
+		/* EMIF/ABE clock rate control */
+		v = __raw_readl(OMAP4430_CM_MPU_MPU_CLKCTRL);
+		if (orig_rate > 920000000)
+			v |= OMAP4460_CLKSEL_EMIF_DIV_MODE_MASK;
+		else
+			v &= ~OMAP4460_CLKSEL_EMIF_DIV_MODE_MASK;
+		if (orig_rate > 748000000)
+			v |= OMAP4460_CLKSEL_ABE_DIV_MODE_MASK;
+		else
+			v &= ~OMAP4460_CLKSEL_ABE_DIV_MODE_MASK;
+		__raw_writel(v, OMAP4430_CM_MPU_MPU_CLKCTRL);
+	}
 
 	return 0;
 }
