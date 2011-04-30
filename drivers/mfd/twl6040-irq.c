@@ -168,7 +168,7 @@ int twl6040_irq_init(struct twl6040 *twl6040)
 	}
 
 	ret = request_threaded_irq(twl6040->irq, NULL, twl6040_irq_thread,
-				   IRQF_TRIGGER_LOW | IRQF_ONESHOT,
+				   IRQF_ONESHOT,
 				   "twl6040", twl6040);
 	if (ret) {
 		dev_err(twl6040->dev, "failed to request IRQ %d: %d\n",
