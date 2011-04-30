@@ -299,10 +299,10 @@ void clkdm_init(struct clockdomain **clkdms,
 			clkdm_deny_idle(clkdm);
 
 		_resolve_clkdm_deps(clkdm, clkdm->wkdep_srcs);
-		clkdm_clear_all_wkdeps(clkdm);
+		//clkdm_clear_all_wkdeps(clkdm);
 
 		_resolve_clkdm_deps(clkdm, clkdm->sleepdep_srcs);
-		clkdm_clear_all_sleepdeps(clkdm);
+		//clkdm_clear_all_sleepdeps(clkdm);
 	}
 }
 
@@ -331,6 +331,7 @@ struct clockdomain *clkdm_lookup(const char *name)
 
 	return clkdm;
 }
+EXPORT_SYMBOL(clkdm_lookup);
 
 /**
  * clkdm_for_each - call function on each registered clockdomain
@@ -379,7 +380,7 @@ struct powerdomain *clkdm_get_pwrdm(struct clockdomain *clkdm)
 
 	return clkdm->pwrdm.ptr;
 }
-
+EXPORT_SYMBOL(clkdm_get_pwrdm);
 
 /* Hardware clockdomain control */
 
@@ -706,6 +707,7 @@ int clkdm_sleep(struct clockdomain *clkdm)
 
 	return arch_clkdm->clkdm_sleep(clkdm);
 }
+EXPORT_SYMBOL(clkdm_sleep);
 
 /**
  * clkdm_wakeup - force clockdomain wakeup transition
@@ -734,6 +736,7 @@ int clkdm_wakeup(struct clockdomain *clkdm)
 
 	return arch_clkdm->clkdm_wakeup(clkdm);
 }
+EXPORT_SYMBOL(clkdm_wakeup);
 
 /**
  * clkdm_allow_idle - enable hwsup idle transitions for clkdm
@@ -765,6 +768,7 @@ void clkdm_allow_idle(struct clockdomain *clkdm)
 	arch_clkdm->clkdm_allow_idle(clkdm);
 	pwrdm_clkdm_state_switch(clkdm);
 }
+EXPORT_SYMBOL(clkdm_allow_idle);
 
 /**
  * clkdm_deny_idle - disable hwsup idle transitions for clkdm
@@ -794,6 +798,7 @@ void clkdm_deny_idle(struct clockdomain *clkdm)
 
 	arch_clkdm->clkdm_deny_idle(clkdm);
 }
+EXPORT_SYMBOL(clkdm_deny_idle);
 
 
 /* Clockdomain-to-clock framework interface code */
@@ -839,6 +844,7 @@ int clkdm_clk_enable(struct clockdomain *clkdm, struct clk *clk)
 
 	return 0;
 }
+EXPORT_SYMBOL(clkdm_clk_enable);
 
 /**
  * clkdm_clk_disable - remove an enabled downstream clock from this clkdm
@@ -887,4 +893,5 @@ int clkdm_clk_disable(struct clockdomain *clkdm, struct clk *clk)
 
 	return 0;
 }
+EXPORT_SYMBOL(clkdm_clk_disable);
 
