@@ -1191,7 +1191,7 @@ int __init omap_voltage_late_init(void)
 		pr_err("%s: Unable to create voltage debugfs main dir\n",
 			__func__);
 	for (i = 0; i < nr_scalable_vdd; i++) {
-		if (vdd_info[i]->pmic_info->voltage_class == VP_VC_CLASS) {
+		if (vdd_info[i]->pmic_info && vdd_info[i]->pmic_info->voltage_class == VP_VC_CLASS) {
 			if (omap_vdd_data_configure(vdd_info[i]))
 				continue;
 			omap_vc_init(vdd_info[i]);
