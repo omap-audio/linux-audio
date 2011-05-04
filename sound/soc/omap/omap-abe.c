@@ -487,10 +487,10 @@ static void mute_fe_port(struct snd_pcm_substream *substream,
 
 	switch(dai->id) {
 	case ABE_FRONTEND_DAI_MEDIA:
+	case ABE_FRONTEND_DAI_LP_MEDIA:
 		if (omap_abe_port_is_enabled(abe_priv->abe,
 						abe_priv->port[OMAP_ABE_BE_PORT_PDM_DL2]))
 			abe_mute_gain(MIXDL2, MIX_DL2_INPUT_MM_DL);
-	case ABE_FRONTEND_DAI_LP_MEDIA:
 		if (omap_abe_port_is_enabled(abe_priv->abe,
 						abe_priv->port[OMAP_ABE_BE_PORT_PDM_DL1]))
 			abe_mute_gain(MIXDL1, MIX_DL1_INPUT_MM_DL);
@@ -527,10 +527,10 @@ static void unmute_fe_port(struct snd_pcm_substream *substream,
 
 	switch(dai->id) {
 	case ABE_FRONTEND_DAI_MEDIA:
+	case ABE_FRONTEND_DAI_LP_MEDIA:
 		if (omap_abe_port_is_enabled(abe_priv->abe,
 						abe_priv->port[OMAP_ABE_BE_PORT_PDM_DL2]))
 			abe_unmute_gain(MIXDL2, MIX_DL2_INPUT_MM_DL);
-	case ABE_FRONTEND_DAI_LP_MEDIA:
 		if (omap_abe_port_is_enabled(abe_priv->abe,
 						abe_priv->port[OMAP_ABE_BE_PORT_PDM_DL1]))
 			abe_unmute_gain(MIXDL1, MIX_DL1_INPUT_MM_DL);
