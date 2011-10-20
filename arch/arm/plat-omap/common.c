@@ -21,7 +21,9 @@
 #include <plat/vram.h>
 #include <plat/dsp.h>
 
+#include <plat/drm.h>
 #include <plat/omap-secure.h>
+#include <plat/remoteproc.h>
 
 
 #define NO_LENGTH_CHECK 0xffffffff
@@ -68,6 +70,7 @@ void __init omap_reserve(void)
 	omap_dsp_reserve_sdram_memblock();
 	omap_secure_ram_reserve_memblock();
 	omap_barrier_reserve_memblock();
+	omap_rproc_reserve_cma();
 }
 
 void __init omap_init_consistent_dma_size(void)
