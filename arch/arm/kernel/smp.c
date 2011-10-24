@@ -122,7 +122,6 @@ int __cpuinit __cpu_up(unsigned int cpu)
 }
 
 #ifdef CONFIG_HOTPLUG_CPU
-static void percpu_timer_stop(void);
 
 /*
  * __cpu_disable runs on the processor to be shutdown.
@@ -147,11 +146,6 @@ int __cpu_disable(void)
 	 * OK - migrate IRQs away from this CPU
 	 */
 	migrate_irqs();
-
-	/*
-	 * Stop the local timer for this CPU.
-	 */
-	percpu_timer_stop();
 
 	/*
 	 * Flush user cache and TLB mappings, and then remove this CPU
@@ -241,6 +235,7 @@ static void __cpuinit smp_store_cpu_info(unsigned int cpuid)
 }
 
 static void percpu_timer_setup(void);
+static void broadcast_timer_setup(void);
 
 /*
  * This is the secondary CPU boot entry.  We're using this CPUs
@@ -291,9 +286,10 @@ asmlinkage void __cpuinit secondary_start_kernel(void)
 	complete(&cpu_running);
 
 	/*
-	 * Setup the percpu timer for this CPU.
+	 * Setup the broadcast timer for this CPU.
 	 */
-	percpu_timer_setup();
+	broadcast_timer_setup();
+
 
 	local_irq_enable();
 	local_fiq_enable();
@@ -341,10 +337,10 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
 		max_cpus = ncores;
 	if (ncores > 1 && max_cpus) {
 		/*
-		 * Enable the local timer or broadcast device for the
-		 * boot CPU, but only if we have more than one CPU.
+		 * Enable the broadcast device for the boot CPU, but
+		 * only if we have more than one CPU.
 		 */
-		percpu_timer_setup();
+		broadcast_timer_setup();
 
 		/*
 		 * Initialise the present map, which describes the set of CPUs
@@ -415,7 +411,7 @@ u64 smp_irq_stat_cpu(unsigned int cpu)
 }
 
 /*
- * Timer (local or broadcast) support
+ * Broadcast timer support
  */
 static DEFINE_PER_CPU(struct clock_event_device, percpu_clockevent);
 
@@ -439,8 +435,11 @@ static void broadcast_timer_set_mode(enum clock_event_mode mode,
 {
 }
 
-static void __cpuinit broadcast_timer_setup(struct clock_event_device *evt)
+static void __cpuinit broadcast_timer_setup(void)
 {
+	unsigned int cpu = smp_processor_id();
+	struct clock_event_device *evt = &per_cpu(percpu_clockevent, cpu);
+
 	evt->name	= "dummy_timer";
 	evt->features	= CLOCK_EVT_FEAT_ONESHOT |
 			  CLOCK_EVT_FEAT_PERIODIC |
@@ -448,6 +447,8 @@ static void __cpuinit broadcast_timer_setup(struct clock_event_device *evt)
 	evt->rating	= 400;
 	evt->mult	= 1;
 	evt->set_mode	= broadcast_timer_set_mode;
+	evt->cpumask	= cpumask_of(cpu);
+	evt->broadcast	= smp_timer_broadcast;
 
 	clockevents_register_device(evt);
 }
