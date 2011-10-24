@@ -47,6 +47,7 @@ config ARCH_OMAP4
 	select ARM_GIC
 	select HAVE_SMP
 	select LOCAL_TIMERS if SMP
+	select ARM_SMP_TWD
 	select PL310_ERRATA_588369
 	select PL310_ERRATA_727915
 	select ARM_ERRATA_720789
