@@ -14,7 +14,6 @@
 #include <linux/i2c.h>
 #include <linux/spi/spi.h>
 #include <linux/regmap.h>
-#include <linux/export.h>
 #include <sound/soc.h>
 
 #include <trace/events/asoc.h>

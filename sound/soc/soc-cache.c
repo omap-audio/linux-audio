@@ -17,7 +17,6 @@
 #include <linux/lzo.h>
 #include <linux/bitmap.h>
 #include <linux/rbtree.h>
-#include <linux/export.h>
 
 #include <trace/events/asoc.h>
 
