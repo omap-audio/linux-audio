@@ -1,0 +1,13 @@
+* Texas Instruments OMAP4 McPDM
+
+Required properties:
+  - compatible : "ti,omap4-mcpdm"
+  - ti,hwmods  : List of hwmod names associated with McPDM, in most case
+                 it is "mcpdm".
+
+Example:
+
+mcpdm_dai: mcpdm@40132000 {
+	compatible = "ti,omap4-mcpdm";
+	ti,hwmods = "mcpdm";
+};
