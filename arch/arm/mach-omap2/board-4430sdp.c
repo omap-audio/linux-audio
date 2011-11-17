@@ -638,6 +638,7 @@ static struct nokia_dsi_panel_data dsi1_panel = {
 		.use_ext_te	= false,
 		.ext_te_gpio	= 101,
 		.esd_interval	= 0,
+		.use_dsi_backlight = 1,
 };
 
 static struct omap_dss_device sdp4430_lcd_device = {
@@ -687,6 +688,7 @@ static struct nokia_dsi_panel_data dsi2_panel = {
 		.use_ext_te	= false,
 		.ext_te_gpio	= 103,
 		.esd_interval	= 0,
+		.use_dsi_backlight = 1,
 };
 
 static struct omap_dss_device sdp4430_lcd2_device = {
@@ -976,6 +978,16 @@ static void __init omap_4430sdp_init(void)
 
 	omap_4430sdp_display_init();
 }
+
+static int omap_4430sdp_hack_backlight(void)
+{
+	pr_err("SDP4430: Backlight hack\n");
+	twl_i2c_write_u8(TWL_MODULE_PWM, 0x7f, 0xbe); // LED_PWM2OFF
+	twl_i2c_write_u8(TWL_MODULE_PWM, 0x7f, 0xbd); // LED_PWM2ON
+	twl_i2c_write_u8(TWL6030_MODULE_ID1, 0x30, 0x92); // TWL6030_TOGGLE3
+	return 0;
+}
+late_initcall(omap_4430sdp_hack_backlight);
 
 MACHINE_START(OMAP_4430SDP, "OMAP4430 4430SDP board")
 	/* Maintainer: Santosh Shilimkar - Texas Instruments Inc */
