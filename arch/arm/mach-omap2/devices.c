@@ -323,6 +323,10 @@ static void omap_init_mcpdm(void)
 	struct omap_hwmod *oh;
 	struct platform_device *pdev;
 
+	/* If dtb is there, the devices will be created dynamically */
+	if (of_have_populated_dt())
+		return;
+
 	oh = omap_hwmod_lookup("mcpdm");
 	if (!oh) {
 		printk(KERN_ERR "Could not look up mcpdm hw_mod\n");
