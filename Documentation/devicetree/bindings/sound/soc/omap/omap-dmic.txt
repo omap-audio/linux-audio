@@ -1,0 +1,13 @@
+* Texas Instruments OMAP4 Digital Microphone Module
+
+Required properties:
+  - compatible : "ti,omap4-dmic"
+  - ti,hwmods  : List of hwmod names associated with DMIC, in most case
+		 it is "dmic".
+
+Example:
+
+dmic_dai: dmic@4012e000 {
+	compatible = "ti,omap4-dmic";
+	ti,hwmods = "dmic";
+};
