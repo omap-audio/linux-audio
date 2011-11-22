@@ -257,8 +257,65 @@ static int __init omap4_twl6030_hsmmc_init(struct omap2_hsmmc_info *controllers)
 	return 0;
 }
 
+static struct regulator_init_data omap4_panda_vaux1 = {
+	.constraints = {
+		.min_uV			= 1000000,
+		.max_uV			= 3000000,
+		.apply_uV		= true,
+		.valid_modes_mask	= REGULATOR_MODE_NORMAL
+					| REGULATOR_MODE_STANDBY,
+		.valid_ops_mask	 = REGULATOR_CHANGE_VOLTAGE
+					| REGULATOR_CHANGE_MODE
+					| REGULATOR_CHANGE_STATUS,
+	},
+	.num_consumer_supplies  = ARRAY_SIZE(omap4_panda_vmmc5_supply),
+	.consumer_supplies      = omap4_panda_vmmc5_supply,
+};
+
+static struct regulator_init_data omap4_panda_vusim = {
+	.constraints = {
+		.min_uV			= 1200000,
+		.max_uV			= 2900000,
+		.apply_uV		= true,
+		.valid_modes_mask	= REGULATOR_MODE_NORMAL
+					| REGULATOR_MODE_STANDBY,
+		.valid_ops_mask	 = REGULATOR_CHANGE_VOLTAGE
+					| REGULATOR_CHANGE_MODE
+					| REGULATOR_CHANGE_STATUS,
+	},
+};
+
+static struct twl4030_codec_data twl6040_codec = {
+	/* single-step ramp for headset and handsfree */
+	.hs_left_step	= 0x0f,
+	.hs_right_step	= 0x0f,
+	.hf_left_step	= 0x1d,
+	.hf_right_step	= 0x1d,
+};
+
+static struct twl4030_vibra_data twl6040_vibra = {
+	.vibldrv_res = 8,
+	.vibrdrv_res = 3,
+	.viblmotor_res = 10,
+	.vibrmotor_res = 10,
+	.vddvibl_uV = 0,	/* fixed volt supply - VBAT */
+	.vddvibr_uV = 0,	/* fixed volt supply - VBAT */
+};
+
+static struct twl4030_audio_data twl6040_audio = {
+	.codec		= &twl6040_codec,
+	.vibra		= &twl6040_vibra,
+	.audpwron_gpio	= 127,
+	.naudint_irq	= OMAP44XX_IRQ_SYS_2N,
+	.irq_base	= TWL6040_CODEC_IRQ_BASE,
+};
 /* Panda board uses the common PMIC configuration */
-static struct twl4030_platform_data omap4_panda_twldata;
+static struct twl4030_platform_data omap4_panda_twldata = {
+	.audio		= &twl6040_audio,
+	/* Regulators */
+	.vusim		= &omap4_panda_vusim,
+	.vaux1		= &omap4_panda_vaux1,
+};
 
 /*
  * Display monitor features are burnt in their EEPROM as EDID data. The EEPROM
