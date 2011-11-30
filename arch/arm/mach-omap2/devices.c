@@ -331,7 +331,7 @@ OMAP_MCBSP_PLATFORM_DEVICE(5);
 static void omap_init_audio(void)
 {
 	struct omap_hwmod *oh_hdmi;
-	struct omap_device *od_hdmi;
+	struct platform_device *od_hdmi;
 	char *oh_hdmi_name = "dss_hdmi";
 	char *dev_hdmi_name = "hdmi-audio-dai";
 
