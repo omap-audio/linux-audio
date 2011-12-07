@@ -25,6 +25,7 @@
 #include <linux/regulator/fixed.h>
 #include <linux/leds.h>
 #include <linux/leds_pwm.h>
+#include <linux/platform_data/omap4-abe-twl6040.h>
 
 #include <mach/hardware.h>
 #include <mach/omap4-common.h>
@@ -377,12 +378,26 @@ static struct platform_device sdp4430_dmic_codec = {
 	.id	= -1,
 };
 
+static struct omap4_abe_twl6040_data sdp4430_abe_audio_data = {
+	.card_name = "OMAP4-SDP4430",
+	.board = OMAP4_ABE_TWL6040_SDP,
+};
+
+static struct platform_device sdp4430_abe_audio = {
+	.name		= "omap4-abe-twl6040",
+	.id		= -1,
+	.dev = {
+		.platform_data = &sdp4430_abe_audio_data,
+	},
+};
+
 static struct platform_device *sdp4430_devices[] __initdata = {
 	&sdp4430_gpio_keys_device,
 	&sdp4430_leds_gpio,
 	&sdp4430_leds_pwm,
 	&sdp4430_vbat,
 	&sdp4430_dmic_codec,
+	&sdp4430_abe_audio,
 };
 
 static struct omap_musb_board_data musb_board_data = {
