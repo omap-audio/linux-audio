@@ -119,6 +119,8 @@ static const struct snd_soc_dapm_widget omap4abe_twl6040_dapm_widgets[] = {
 	SND_SOC_DAPM_HP("Headset Stereophone", NULL),
 	SND_SOC_DAPM_SPK("Earphone Spk", NULL),
 	SND_SOC_DAPM_INPUT("FM Stereo In"),
+	SND_SOC_DAPM_LINE("FM Stereo Out"),
+	SND_SOC_DAPM_SPK("Vibrators", NULL),
 };
 
 static const struct snd_soc_dapm_route sdp4430_audio_map[] = {
@@ -145,6 +147,14 @@ static const struct snd_soc_dapm_route sdp4430_audio_map[] = {
 	/* Aux/FM Stereo In: AFML, AFMR */
 	{"AFML", NULL, "FM Stereo In"},
 	{"AFMR", NULL, "FM Stereo In"},
+
+	/* AUXL/R output to FM transmitter */
+	{"FM Stereo Out", NULL, "AUXL"},
+	{"FM Stereo Out", NULL, "AUXR"},
+
+	/* Vibra outputs */
+	{"Vibrators", NULL, "VIBRAL"},
+	{"Vibrators", NULL, "VIBRAR"},
 };
 
 static const struct snd_soc_dapm_route panda_audio_map[] = {
@@ -163,6 +173,10 @@ static const struct snd_soc_dapm_route panda_audio_map[] = {
 	/* Aux/FM Stereo In: AFML, AFMR */
 	{"AFML", NULL, "FM Stereo In"},
 	{"AFMR", NULL, "FM Stereo In"},
+
+	/* AUXL/R output to FM transmitter */
+	{"FM Stereo Out", NULL, "AUXL"},
+	{"FM Stereo Out", NULL, "AUXR"},
 };
 
 static int omap4abe_twl6040_init(struct snd_soc_pcm_runtime *rtd)
