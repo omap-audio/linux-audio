@@ -121,7 +121,7 @@ static const struct snd_soc_dapm_widget omap4abe_twl6040_dapm_widgets[] = {
 	SND_SOC_DAPM_INPUT("FM Stereo In"),
 };
 
-static const struct snd_soc_dapm_route audio_map[] = {
+static const struct snd_soc_dapm_route sdp4430_audio_map[] = {
 	/* External Mics: MAINMIC, SUBMIC with bias*/
 	{"MAINMIC", NULL, "Main Mic Bias"},
 	{"SUBMIC", NULL, "Main Mic Bias"},
@@ -141,6 +141,24 @@ static const struct snd_soc_dapm_route audio_map[] = {
 
 	/* Earphone speaker */
 	{"Earphone Spk", NULL, "EP"},
+
+	/* Aux/FM Stereo In: AFML, AFMR */
+	{"AFML", NULL, "FM Stereo In"},
+	{"AFMR", NULL, "FM Stereo In"},
+};
+
+static const struct snd_soc_dapm_route panda_audio_map[] = {
+	/* External Speakers: HFL, HFR  - through expansion connector */
+	{"Ext Spk", NULL, "HFL"},
+	{"Ext Spk", NULL, "HFR"},
+
+	/* Headset Mic: HSMIC with bias */
+	{"HSMIC", NULL, "Headset Mic Bias"},
+	{"Headset Mic Bias", NULL, "Headset Mic"},
+
+	/* Headset Stereophone (Headphone): HSOL, HSOR */
+	{"Headset Stereophone", NULL, "HSOL"},
+	{"Headset Stereophone", NULL, "HSOR"},
 
 	/* Aux/FM Stereo In: AFML, AFMR */
 	{"AFML", NULL, "FM Stereo In"},
@@ -225,15 +243,23 @@ static struct snd_soc_dai_link sdp4430_dai[] = {
 	},
 };
 
+static struct snd_soc_dai_link panda_dai[] = {
+	{
+		.name = "TWL6040",
+		.stream_name = "TWL6040",
+		.cpu_dai_name = "omap-mcpdm",
+		.codec_dai_name = "twl6040-legacy",
+		.platform_name = "omap-pcm-audio",
+		.codec_name = "twl6040-codec",
+		.init = omap4abe_twl6040_init,
+		.ops = &omap4abe_ops,
+	},
+};
+
 /* Audio machine driver */
 static struct snd_soc_card omap4abe_card = {
-	.dai_link = sdp4430_dai,
-	.num_links = ARRAY_SIZE(sdp4430_dai),
-
 	.dapm_widgets = omap4abe_twl6040_dapm_widgets,
 	.num_dapm_widgets = ARRAY_SIZE(omap4abe_twl6040_dapm_widgets),
-	.dapm_routes = audio_map,
-	.num_dapm_routes = ARRAY_SIZE(audio_map),
 };
 
 static __devinit int omap4abe_probe(struct platform_device *pdev)
@@ -253,6 +279,23 @@ static __devinit int omap4abe_probe(struct platform_device *pdev)
 		card->name = pdata->card_name;
 	} else {
 		dev_err(&pdev->dev, "Card name is not provided\n");
+		return -ENODEV;
+	}
+	switch (pdata->board) {
+	case OMAP4_ABE_TWL6040_SDP:
+		card->dai_link = sdp4430_dai;
+		card->num_links = ARRAY_SIZE(sdp4430_dai);
+		card->dapm_routes = sdp4430_audio_map;
+		card->num_dapm_routes = ARRAY_SIZE(sdp4430_audio_map);
+		break;
+	case OMAP4_ABE_TWL6040_PANDA:
+		card->dai_link = panda_dai;
+		card->num_links = ARRAY_SIZE(panda_dai);
+		card->dapm_routes = panda_audio_map;
+		card->num_dapm_routes = ARRAY_SIZE(panda_audio_map);
+		break;
+	default:
+		dev_err(&pdev->dev, "Invalid board type: %d\n", pdata->board);
 		return -ENODEV;
 	}
 

@@ -99,7 +99,8 @@ config SND_OMAP_SOC_SDP3430
 
 config SND_OMAP_SOC_OMAP4_ABE_TWL6040
 	tristate "SoC Audio support for OMAP4 based boards with twl6040 codec"
-	depends on TWL4030_CORE && SND_OMAP_SOC && MACH_OMAP_4430SDP
+	depends on TWL4030_CORE && SND_OMAP_SOC
+	depends on MACH_OMAP_4430SDP || MACH_OMAP4_PANDA
 	select SND_OMAP_SOC_DMIC
 	select SND_OMAP_SOC_MCPDM
 	select SND_SOC_TWL6040
@@ -108,6 +109,7 @@ config SND_OMAP_SOC_OMAP4_ABE_TWL6040
 	  Say Y if you want to add support for SoC audio on OMAP4 boards with
 	  twl6040 codec. This driver currently supports:
 	  - SDP4430/Blaze boards
+	  - PandaBoard
 
 config SND_OMAP_SOC_OMAP4_HDMI
 	tristate "SoC Audio support for Texas Instruments OMAP4 HDMI"
