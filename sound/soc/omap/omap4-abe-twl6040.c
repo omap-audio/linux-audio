@@ -23,6 +23,7 @@
 #include <linux/clk.h>
 #include <linux/platform_device.h>
 #include <linux/mfd/twl6040.h>
+#include <linux/platform_data/omap4-abe-twl6040.h>
 #include <linux/module.h>
 
 #include <sound/core.h>
@@ -226,7 +227,6 @@ static struct snd_soc_dai_link sdp4430_dai[] = {
 
 /* Audio machine driver */
 static struct snd_soc_card omap4abe_card = {
-	.name = "SDP4430",
 	.dai_link = sdp4430_dai,
 	.num_links = ARRAY_SIZE(sdp4430_dai),
 
@@ -236,44 +236,57 @@ static struct snd_soc_card omap4abe_card = {
 	.num_dapm_routes = ARRAY_SIZE(audio_map),
 };
 
-static struct platform_device *omap4abe_snd_device;
-
-static int __init omap4abe_soc_init(void)
+static __devinit int omap4abe_probe(struct platform_device *pdev)
 {
+	struct omap4_abe_twl6040_data *pdata = dev_get_platdata(&pdev->dev);
+	struct snd_soc_card *card = &omap4abe_card;
 	int ret;
 
-	if (!machine_is_omap_4430sdp())
-		return -ENODEV;
-	printk(KERN_INFO "SDP4430 SoC init\n");
+	card->dev = &pdev->dev;
 
-	omap4abe_snd_device = platform_device_alloc("soc-audio", -1);
-	if (!omap4abe_snd_device) {
-		printk(KERN_ERR "Platform device allocation failed\n");
-		return -ENOMEM;
+	if (!pdata) {
+		dev_err(&pdev->dev, "Missing pdata\n");
+		return -ENODEV;
 	}
 
-	platform_set_drvdata(omap4abe_snd_device, &omap4abe_card);
+	if (pdata->card_name) {
+		card->name = pdata->card_name;
+	} else {
+		dev_err(&pdev->dev, "Card name is not provided\n");
+		return -ENODEV;
+	}
 
-	ret = platform_device_add(omap4abe_snd_device);
+	ret = snd_soc_register_card(card);
 	if (ret)
-		goto err;
+		dev_err(&pdev->dev, "snd_soc_register_card() failed: %d\n",
+			ret);
 
-	return 0;
-
-err:
-	printk(KERN_ERR "Unable to add platform device\n");
-	platform_device_put(omap4abe_snd_device);
 	return ret;
 }
-module_init(omap4abe_soc_init);
 
-static void __exit omap4abe_soc_exit(void)
+static int __devexit omap4abe_remove(struct platform_device *pdev)
 {
-	platform_device_unregister(omap4abe_snd_device);
+	struct snd_soc_card *card = platform_get_drvdata(pdev);
+
+	snd_soc_unregister_card(card);
+
+	return 0;
 }
-module_exit(omap4abe_soc_exit);
+
+static struct platform_driver omap4abe_driver = {
+	.driver = {
+		.name = "omap4-abe-twl6040",
+		.owner = THIS_MODULE,
+		.pm = &snd_soc_pm_ops,
+	},
+	.probe = omap4abe_probe,
+	.remove = __devexit_p(omap4abe_remove),
+};
+
+module_platform_driver(omap4abe_driver);
 
 MODULE_AUTHOR("Misael Lopez Cruz <misael.lopez@ti.com>");
 MODULE_DESCRIPTION("ALSA SoC for OMAP4");
 MODULE_LICENSE("GPL");
+MODULE_ALIAS("platform:omap4-abe-twl6040");
 
