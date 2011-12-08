@@ -118,8 +118,8 @@ static const struct snd_soc_dapm_widget omap4abe_twl6040_dapm_widgets[] = {
 	SND_SOC_DAPM_MIC("Headset Mic", NULL),
 	SND_SOC_DAPM_HP("Headset Stereophone", NULL),
 	SND_SOC_DAPM_SPK("Earphone Spk", NULL),
-	SND_SOC_DAPM_INPUT("FM Stereo In"),
-	SND_SOC_DAPM_LINE("FM Stereo Out"),
+	SND_SOC_DAPM_LINE("FM Stereo In", NULL),
+	SND_SOC_DAPM_LINE("FM Stereo Out", NULL),
 	SND_SOC_DAPM_SPK("Vibrators", NULL),
 };
 
