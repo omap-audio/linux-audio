@@ -28,6 +28,7 @@
 #include <linux/regulator/machine.h>
 #include <linux/regulator/fixed.h>
 #include <linux/wl12xx.h>
+#include <linux/platform_data/omap4-abe-twl6040.h>
 
 #include <mach/hardware.h>
 #include <mach/omap4-common.h>
@@ -90,9 +91,23 @@ static struct platform_device leds_gpio = {
 	},
 };
 
+static struct omap4_abe_twl6040_data panda_abe_audio_data = {
+	.card_name = "OMAP4-Panda",
+	.board = OMAP4_ABE_TWL6040_PANDA,
+};
+
+static struct platform_device panda_abe_audio = {
+	.name		= "omap4-abe-twl6040",
+	.id		= -1,
+	.dev = {
+		.platform_data = &panda_abe_audio_data,
+	},
+};
+
 static struct platform_device *panda_devices[] __initdata = {
 	&leds_gpio,
 	&wl1271_device,
+	&panda_abe_audio,
 };
 
 static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
@@ -251,8 +266,25 @@ static int __init omap4_twl6030_hsmmc_init(struct omap2_hsmmc_info *controllers)
 	return 0;
 }
 
+static struct twl4030_codec_data twl6040_codec = {
+	/* single-step ramp for headset and handsfree */
+	.hs_left_step	= 0x0f,
+	.hs_right_step	= 0x0f,
+	.hf_left_step	= 0x1d,
+	.hf_right_step	= 0x1d,
+};
+
+static struct twl4030_audio_data twl6040_audio = {
+	.codec		= &twl6040_codec,
+	.audpwron_gpio	= 127,
+	.naudint_irq	= OMAP44XX_IRQ_SYS_2N,
+	.irq_base	= TWL6040_CODEC_IRQ_BASE,
+};
+
 /* Panda board uses the common PMIC configuration */
-static struct twl4030_platform_data omap4_panda_twldata;
+static struct twl4030_platform_data omap4_panda_twldata = {
+	.audio		= &twl6040_audio,
+};
 
 /*
  * Display monitor features are burnt in their EEPROM as EDID data. The EEPROM
