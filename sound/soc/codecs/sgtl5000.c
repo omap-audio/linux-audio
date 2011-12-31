@@ -1344,7 +1344,7 @@ static int sgtl5000_probe(struct snd_soc_codec *codec)
 	if (ret)
 		goto err;
 
-	snd_soc_add_controls(codec, sgtl5000_snd_controls,
+	snd_soc_add_codec_controls(codec, sgtl5000_snd_controls,
 			     ARRAY_SIZE(sgtl5000_snd_controls));
 
 	snd_soc_dapm_new_controls(&codec->dapm, sgtl5000_dapm_widgets,

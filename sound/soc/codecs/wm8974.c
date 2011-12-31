@@ -611,7 +611,7 @@ static int wm8974_probe(struct snd_soc_codec *codec)
 	}
 
 	wm8974_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
-	snd_soc_add_controls(codec, wm8974_snd_controls,
+	snd_soc_add_codec_controls(codec, wm8974_snd_controls,
 			     ARRAY_SIZE(wm8974_snd_controls));
 	wm8974_add_widgets(codec);
 

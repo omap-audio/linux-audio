@@ -1017,7 +1017,7 @@ static int wm8985_probe(struct snd_soc_codec *codec)
 	cache[WM8985_BIAS_CTRL] |= WM8985_BIASCUT;
 	codec->cache_sync = 1;
 
-	snd_soc_add_controls(codec, wm8985_snd_controls,
+	snd_soc_add_codec_controls(codec, wm8985_snd_controls,
 			     ARRAY_SIZE(wm8985_snd_controls));
 	wm8985_add_widgets(codec);
 

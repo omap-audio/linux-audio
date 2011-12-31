@@ -659,7 +659,7 @@ static int wm8971_probe(struct snd_soc_codec *codec)
 	snd_soc_update_bits(codec, WM8971_LINVOL, 0x0100, 0x0100);
 	snd_soc_update_bits(codec, WM8971_RINVOL, 0x0100, 0x0100);
 
-	snd_soc_add_controls(codec, wm8971_snd_controls,
+	snd_soc_add_codec_controls(codec, wm8971_snd_controls,
 				ARRAY_SIZE(wm8971_snd_controls));
 	wm8971_add_widgets(codec);
 
