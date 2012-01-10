@@ -476,6 +476,9 @@ extern const struct file_operations snd_pcm_f_ops[2];
 int snd_pcm_new(struct snd_card *card, const char *id, int device,
 		int playback_count, int capture_count,
 		struct snd_pcm **rpcm);
+int snd_pcm_new_soc_be(struct snd_card *card, const char *id, int device,
+		int playback_count, int capture_count,
+		struct snd_pcm ** rpcm);
 int snd_pcm_new_stream(struct snd_pcm *pcm, int stream, int substream_count);
 
 int snd_pcm_notify(struct snd_pcm_notify *notify, int nfree);
