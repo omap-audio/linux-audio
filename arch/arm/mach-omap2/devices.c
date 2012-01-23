@@ -407,6 +407,26 @@ static void __init omap_init_dmic(void)
 static inline void omap_init_dmic(void) {}
 #endif
 
+#if IS_ENABLED(CONFIG_SND_OMAP_SOC_AESS)
+static void omap_init_aess(void)
+{
+	struct omap_hwmod *oh;
+	struct platform_device *pdev;
+
+	oh = omap_hwmod_lookup("aess");
+	if (!oh) {
+		pr_err("Could not look up aess hw_mod\n");
+		return;
+	}
+
+	pdev = omap_device_build("aess", -1, oh, NULL, 0);
+	WARN(IS_ERR(pdev),
+	     "Could not build omap_device for omap-aess-audio\n");
+}
+#else
+static inline void omap_init_aess(void) {}
+#endif
+
 #if defined(CONFIG_SPI_OMAP24XX) || defined(CONFIG_SPI_OMAP24XX_MODULE)
 
 #include <linux/platform_data/spi-omap2-mcspi.h>
@@ -621,6 +641,7 @@ static int __init omap2_init_devices(void)
 	omap_init_mbox();
 	/* If dtb is there, the devices will be created dynamically */
 	if (!of_have_populated_dt()) {
+		omap_init_aess();
 		omap_init_control_usb();
 		omap_init_dmic();
 		omap_init_mcpdm();
