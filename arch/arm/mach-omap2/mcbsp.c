@@ -111,6 +111,23 @@ static int omap2_mcbsp_set_clk_src(struct device *dev, struct clk *clk,
 	return omap2_mcbsp_reparent_clk(dev, clk, fck_src_name);
 }
 
+/* McBSP CLKS source switching for OMAP4 */
+static int omap4_mcbsp_set_clk_src(struct device *dev, struct clk *clk,
+				   const char *src)
+{
+	struct omap_mcbsp *mcbsp = dev_get_drvdata(dev);
+	char fck_src_name[30];
+
+	if (!strcmp(src, "clks_ext"))
+		strcpy(fck_src_name, "pad_clks_ck");
+	else if (!strcmp(src, "clks_fclk"))
+		sprintf(fck_src_name, "mcbsp%d_sync_mux_ck", mcbsp->id);
+	else
+		return -EINVAL;
+
+	return omap2_mcbsp_reparent_clk(dev, clk, fck_src_name);
+}
+
 static int omap3_enable_st_clock(unsigned int id, bool enable)
 {
 	unsigned int w;
@@ -187,6 +204,14 @@ static int omap_init_mcbsp(struct omap_hwmod *oh, void *unused)
 					name, oh->name);
 		return PTR_ERR(pdev);
 	}
+
+	if (oh->class->rev == MCBSP_CONFIG_TYPE4)
+		pdata->set_clk_src = omap4_mcbsp_set_clk_src;
+	else
+		pdata->set_clk_src = omap2_mcbsp_set_clk_src;
+
+	if (id == 1)
+		pdata->mux_signal = omap2_mcbsp1_mux_rx_clk;
 	omap_mcbsp_count++;
 	return 0;
 }
