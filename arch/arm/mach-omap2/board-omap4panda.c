@@ -56,6 +56,10 @@
 #define HDMI_GPIO_HPD 60 /* Hot plug pin for HDMI */
 #define HDMI_GPIO_LS_OE 41 /* Level shifter for HDMI */
 
+#define FIXED_REG_VWLAN_ID	0
+#define FIXED_REG_V2V1_ID	1
+#define FIXED_REG_V1V8_ID	2
+
 /* wl127x BT, FM, GPS connectivity chip */
 static int wl1271_gpios[] = {46, -1, -1};
 static struct platform_device wl1271_device = {
@@ -117,10 +121,66 @@ static struct platform_device panda_abe_audio = {
 	},
 };
 
+static struct regulator_consumer_supply panda_vdd_v2v1_supply[] = {
+	REGULATOR_SUPPLY("v2v1", "1-004b"),
+};
+
+static struct regulator_init_data panda_v2v1smps = {
+	.constraints = {
+		.always_on		= true,
+	},
+	.num_consumer_supplies	= ARRAY_SIZE(panda_vdd_v2v1_supply),
+	.consumer_supplies	= panda_vdd_v2v1_supply,
+};
+
+static struct fixed_voltage_config panda_v2v1_pdata = {
+	.supply_name	= "VDD-V2V1",
+	.microvolts	= 2100000,
+	.init_data	= &panda_v2v1smps,
+	.gpio		= -EINVAL,
+};
+
+static struct platform_device panda_v2v1 = {
+	.name		= "reg-fixed-voltage",
+	.id		= FIXED_REG_V2V1_ID,
+	.dev = {
+		.platform_data = &panda_v2v1_pdata,
+	},
+};
+
+static struct regulator_consumer_supply panda_vio_v1v8_supply[] = {
+	REGULATOR_SUPPLY("vio", "1-004b"),
+};
+
+static struct regulator_init_data panda_v1v8smps = {
+	.constraints = {
+		.always_on		= true,
+	},
+	.num_consumer_supplies	= ARRAY_SIZE(panda_vio_v1v8_supply),
+	.consumer_supplies	= panda_vio_v1v8_supply,
+};
+
+static struct fixed_voltage_config panda_v1v8_pdata = {
+	.supply_name	= "VIO-V1V8",
+	.microvolts	= 1800000,
+	.init_data	= &panda_v1v8smps,
+	.gpio		= -EINVAL,
+};
+
+static struct platform_device panda_v1v8 = {
+	.name		= "reg-fixed-voltage",
+	.id		= FIXED_REG_V1V8_ID,
+	.dev = {
+		.platform_data = &panda_v1v8_pdata,
+	},
+};
+
 static struct platform_device *panda_devices[] __initdata = {
 	&leds_gpio,
 	&wl1271_device,
 	&panda_abe_audio,
+	&panda_v1v8,
+	&panda_v2v1,
 };
 
 static const struct usbhs_omap_board_data usbhs_bdata __initconst = {
@@ -219,7 +279,7 @@ static struct fixed_voltage_config panda_vwlan = {
 
 static struct platform_device omap_vwlan_device = {
 	.name		= "reg-fixed-voltage",
-	.id		= 1,
+	.id		= FIXED_REG_VWLAN_ID,
 	.dev = {
 		.platform_data = &panda_vwlan,
 	},
