@@ -21,30 +21,21 @@
 #include <linux/clockchips.h>
 #include <linux/interrupt.h>
 #include <linux/io.h>
-<<<<<<< current
 #include <linux/of_irq.h>
 #include <linux/of_address.h>
-=======
 #include <linux/interrupt.h>
->>>>>>> patched
 
 #include <asm/smp_twd.h>
 
-<<<<<<< current
 /* set up by the platform code */
-=======
->>>>>>> patched
 static void __iomem *twd_base;
 
 static struct clk *twd_clk;
 static unsigned long twd_timer_rate;
 
-<<<<<<< current
 static struct clock_event_device __percpu **twd_evt;
 static int twd_ppi;
 
-=======
->>>>>>> patched
 static void twd_set_mode(enum clock_event_mode mode,
 			struct clock_event_device *clk)
 {
@@ -238,11 +229,7 @@ static struct clk *twd_get_clock(void)
 /*
  * Setup the local clock events for a CPU.
  */
-<<<<<<< current
 static int __cpuinit twd_timer_setup(struct clock_event_device *clk)
-=======
-static void __cpuinit twd_timer_setup(struct clock_event_device *clk)
->>>>>>> patched
 {
 	struct clock_event_device **this_cpu_clk;
 
@@ -253,6 +240,7 @@ static void __cpuinit twd_timer_setup(struct clock_event_device *clk)
 		twd_timer_rate = clk_get_rate(twd_clk);
 	else
 		twd_calibrate_rate();
+	extern void smp_timer_broadcast(const struct cpumask *mask);
 
 	__raw_writel(0, twd_base + TWD_TIMER_CONTROL);
 
@@ -263,6 +251,11 @@ static void __cpuinit twd_timer_setup(struct clock_event_device *clk)
 	clk->set_mode = twd_set_mode;
 	clk->set_next_event = twd_set_next_event;
 	clk->irq = twd_ppi;
+	clk->shift = 20;
+	clk->mult = div_sc(twd_timer_rate, NSEC_PER_SEC, clk->shift);
+	clk->max_delta_ns = clockevent_delta2ns(0xffffffff, clk);
+	clk->min_delta_ns = clockevent_delta2ns(0xf, clk);
+	clk->broadcast	= smp_timer_broadcast;
 
 	this_cpu_clk = __this_cpu_ptr(twd_evt);
 	*this_cpu_clk = clk;
