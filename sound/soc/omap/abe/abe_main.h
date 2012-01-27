@@ -622,6 +622,7 @@ u32 abe_reset_hal(void);
 int abe_load_fw(u32 *firmware);
 int abe_reload_fw(u32 *firmware);
 u32 *abe_get_default_fw(void);
+u32 omap_abe_get_supported_fw_version(void);
 u32 abe_wakeup(void);
 u32 abe_irq_processing(void);
 u32 abe_clear_irq(void);

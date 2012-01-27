@@ -81,6 +81,12 @@ const u32 abe_firmware_array[ABE_FIRMWARE_MAX_SIZE] = {
 #include "abe_firmware.c"
 };
 
+/* FW version that this HAL supports.
+ * We cheat and since we include the FW in the driver atm we can get the
+ * FW version based on abe_firmware_array[5]. This should be updated when the
+ * FW is removed from HAL code for modular builds.
+ */
+#define OMA_ABE_SUPPORTED_FW_VERSION abe_firmware_array[5]
 
 /*
  * initialize the default values for call-backs to subroutines
@@ -112,6 +118,15 @@ void abe_init_mem(void __iomem **_io_base)
 }
 EXPORT_SYMBOL(abe_init_mem);
 
+/*
+ * omap_abe_get_supported_fw_version - return supported FW version number.
+ */
+u32 omap_abe_get_supported_fw_version(void)
+{
+	return OMA_ABE_SUPPORTED_FW_VERSION;
+}
+EXPORT_SYMBOL(omap_abe_get_supported_fw_version);
+
 /**
  * abe_load_fw_param - Load ABE Firmware memories
  * @PMEM: Pointer of Program memory data
@@ -134,6 +149,15 @@ int abe_load_fw_param(u32 *ABE_FW)
 #define ABE_FW_OFFSET 5
 	fw_ptr = ABE_FW;
 	abe->firmware_version_number = *fw_ptr++;
+
+	/* we further check version number here to make sure that the
+	 * firmware header is aligned with the firmware text */
+	if (omap_abe_get_supported_fw_version() != abe->firmware_version_number) {
+		printk(KERN_ERR "ABE: firmware text mismatch. Need %x have %x\n",
+			omap_abe_get_supported_fw_version(), abe->firmware_version_number);
+		return -EINVAL;
+	}
+
 	pmem_size = *fw_ptr++;
 	cmem_size = *fw_ptr++;
 	dmem_size = *fw_ptr++;
