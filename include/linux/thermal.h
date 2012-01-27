@@ -73,6 +73,13 @@ struct thermal_cooling_device_ops {
 #define THERMAL_TRIPS_NONE -1
 #define THERMAL_MAX_TRIPS 12
 #define THERMAL_NAME_LENGTH 20
+#define INTERVAL_HISTORY 12
+
+struct thermal_cooling_stats {
+	int cool_temp[INTERVAL_HISTORY];
+	int interval_ptr;
+};
+
 struct thermal_cooling_device {
 	int id;
 	char type[THERMAL_NAME_LENGTH];
@@ -103,6 +110,7 @@ struct thermal_zone_device {
 	struct list_head cooling_devices;
 	struct idr idr;
 	struct mutex lock;	/* protect cooling devices list */
+	struct thermal_cooling_stats *stat;
 	struct list_head node;
 	struct delayed_work poll_queue;
 };

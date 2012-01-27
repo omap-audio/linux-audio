@@ -209,6 +209,13 @@ passive
 	Valid values: 0 (disabled) or greater than 1000
 	RW, Optional
 
+trip_stats
+	This attribute presents the effective cooling generated from all the
+	cooling devices attached to a trip point. The output is a pair of value
+	for each trip point. Each pair represents
+	(trip index, cooling temperature difference in millidegree Celsius)
+	RO, Optional
+
 *****************************
 * Cooling device attributes *
 *****************************
@@ -261,6 +268,9 @@ method, the sys I/F structure will be built like this:
     |---cdev0_trip_point:	1	/* cdev0 can be used for passive */
     |---cdev1:			--->/sys/class/thermal/cooling_device3
     |---cdev1_trip_point:	2	/* cdev1 can be used for active[0]*/
+    |---trip_stats		0 0
+				1 8000	/*trip 1 causes 8 degree Celsius drop*/
+				2 3000	/*trip 2 causes 3 degree Celsius drop*/
 
 |cooling_device0:
     |---type:			Processor

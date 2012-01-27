@@ -90,6 +90,64 @@ static void release_idr(struct idr *idr, struct mutex *lock, int id)
 	if (lock)
 		mutex_unlock(lock);
 }
+static void update_cooling_stats(struct thermal_zone_device *tz, long cur_temp)
+{
+	int count, max_index, cur_interval;
+	long trip_temp, max_temp = 0, cool_temp;
+	static int last_trip_level = -1;
+
+	if (cur_temp >= tz->last_temperature)
+		return;
+
+	/* find the trip according to last temperature */
+	for (count = 0; count < tz->trips; count++) {
+		tz->ops->get_trip_temp(tz, count, &trip_temp);
+		if (tz->last_temperature >= trip_temp) {
+			if (max_temp < trip_temp) {
+				max_temp = trip_temp;
+				max_index = count;
+			}
+		}
+	}
+
+	if (!max_temp) {
+		last_trip_level = -1;
+		return;
+	}
+
+	cur_interval = tz->stat[max_index].interval_ptr;
+	cool_temp = tz->last_temperature - cur_temp;
+
+	if (last_trip_level != max_index) {
+		if (++cur_interval == INTERVAL_HISTORY)
+			cur_interval = 0;
+		tz->stat[max_index].cool_temp[cur_interval] = cool_temp;
+		tz->stat[max_index].interval_ptr = cur_interval;
+		last_trip_level = max_index;
+	} else {
+		tz->stat[max_index].cool_temp[cur_interval] += cool_temp;
+	}
+}
+
+static int calculate_cooling_temp_avg(struct thermal_zone_device *tz, int trip,
+					int *avg_cool)
+{
+	int result = 0, count = 0, used_data = 0;
+
+	if (trip > THERMAL_MAX_TRIPS)
+		return -EINVAL;
+
+	*avg_cool = 0;
+	for (count = 0; count < INTERVAL_HISTORY; count++) {
+		if (tz->stat[trip].cool_temp[count] > 0) {
+			*avg_cool += tz->stat[trip].cool_temp[count];
+			used_data++;
+		}
+	}
+	if (used_data > 1)
+		*avg_cool = (*avg_cool)/used_data;
+	return result;
+}
 
 /* sys I/F for thermal zone */
 
@@ -397,6 +455,27 @@ thermal_cooling_device_trip_point_show(struct device *dev,
 		return sprintf(buf, "%d\n", instance->trip);
 }
 
+static ssize_t
+thermal_cooling_trip_stats_show(struct device *dev,
+				struct device_attribute *attr,
+				char *buf)
+{
+	struct thermal_zone_device *tz = to_thermal_zone(dev);
+	int avg_cool = 0, result, trip_index;
+	ssize_t len = 0;
+
+	for (trip_index = 0; trip_index < tz->trips; trip_index++) {
+		result  = calculate_cooling_temp_avg(tz,
+						trip_index, &avg_cool);
+		if (!result)
+			len += sprintf(buf + len, "%d %d\n",
+					trip_index, avg_cool);
+	}
+	return len;
+}
+static DEVICE_ATTR(trip_stats, 0444,
+		   thermal_cooling_trip_stats_show, NULL);
+
 /* Device management */
 
 #if defined(CONFIG_THERMAL_HWMON)
@@ -475,7 +554,6 @@ temp_crit_show(struct device *dev, struct device_attribute *attr,
 
 	return sprintf(buf, "%ld\n", temperature);
 }
-
 
 static struct thermal_hwmon_device *
 thermal_hwmon_lookup_by_type(const struct thermal_zone_device *tz)
@@ -1029,6 +1107,8 @@ void thermal_zone_device_update(struct thermal_zone_device *tz)
 		goto leave;
 	}
 
+	update_cooling_stats(tz, temp);
+
 	for (count = 0; count < tz->trips; count++) {
 		tz->ops->get_trip_type(tz, count, &trip_type);
 		tz->ops->get_trip_temp(tz, count, &trip_temp);
@@ -1183,6 +1263,13 @@ struct thermal_zone_device *thermal_zone_device_register(char *type,
 		return ERR_PTR(result);
 	}
 
+	/*Allocate variables for cooling stats*/
+	tz->stat  = devm_kzalloc(&tz->device,
+				sizeof(struct thermal_cooling_stats) * trips,
+				GFP_KERNEL);
+	if (!tz->stat)
+		goto unregister;
+
 	/* sys I/F */
 	if (type) {
 		result = device_create_file(&tz->device, &dev_attr_type);
@@ -1212,6 +1299,12 @@ struct thermal_zone_device *thermal_zone_device_register(char *type,
 		tz->ops->get_trip_type(tz, count, &trip_type);
 		if (trip_type == THERMAL_TRIP_PASSIVE)
 			passive = 1;
+	}
+
+	if (trips > 0) {
+		result = device_create_file(&tz->device, &dev_attr_trip_stats);
+		if (result)
+			goto unregister;
 	}
 
 	if (!passive)
@@ -1291,6 +1384,7 @@ void thermal_zone_device_unregister(struct thermal_zone_device *tz)
 		device_remove_file(&tz->device,
 				   &trip_point_attrs[count * 2 + 1]);
 	}
+
 	thermal_remove_hwmon_sysfs(tz);
 	release_idr(&thermal_tz_idr, &thermal_idr_lock, tz->id);
 	idr_destroy(&tz->idr);
