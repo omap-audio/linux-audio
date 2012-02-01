@@ -565,6 +565,11 @@ static struct i2c_board_info __initdata omap5evm_i2c_1_boardinfo[] = {
 	},
 };
 
+static struct i2c_board_info __initdata omap5evm_i2c_5_boardinfo[] = {
+	{
+		I2C_BOARD_INFO("pio_a_i2c_driver", 0x22),
+	},
+};
 
 static int __init omap_5430evm_i2c_init(void)
 {
@@ -574,6 +579,8 @@ static int __init omap_5430evm_i2c_init(void)
 	omap_register_i2c_bus(2, 400, NULL, 0);
 	omap_register_i2c_bus(3, 400, NULL, 0);
 	omap_register_i2c_bus(4, 400, NULL, 0);
+	omap_register_i2c_bus(5, 400, omap5evm_i2c_5_boardinfo,
+					ARRAY_SIZE(omap5evm_i2c_5_boardinfo));
 
 	return 0;
 }
