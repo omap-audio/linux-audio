@@ -225,7 +225,7 @@ static void omap_serial_fill_default_pads(struct omap_board_data *bdata)
 		bdata->pads_cnt = ARRAY_SIZE(default_uart3_pads);
 		break;
 	case 3:
-		if (cpu_is_omap44xx()) {
+		if (cpu_is_omap44xx() || cpu_is_omap54xx()) {
 			bdata->pads = default_omap4_uart4_pads;
 			bdata->pads_cnt =
 				ARRAY_SIZE(default_omap4_uart4_pads);
@@ -427,7 +427,7 @@ void __init omap_serial_init_port(struct omap_board_data *bdata,
 
 	oh->dev_attr = uart;
 
-	if (((cpu_is_omap34xx() || cpu_is_omap44xx()) && bdata->pads)
+	if (((cpu_is_omap34xx() || cpu_is_omap44xx() || cpu_is_omap54xx()) && bdata->pads)
 			&& !uart_debug)
 		device_init_wakeup(&pdev->dev, true);
 	console_lock(); /* in case the earlycon is on the UART */
@@ -489,7 +489,7 @@ void __init omap_serial_board_init(struct omap_uart_port_info *info)
 		bdata.pads = NULL;
 		bdata.pads_cnt = 0;
 
-		if (cpu_is_omap44xx() || cpu_is_omap34xx())
+		if (cpu_is_omap44xx() || cpu_is_omap34xx() || cpu_is_omap54xx())
 			omap_serial_fill_default_pads(&bdata);
 
 		if (!info)
