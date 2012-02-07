@@ -368,9 +368,17 @@ static void __init omap4_twd_init(void)
 	if (err)
 		pr_err("twd_timer_register failed %d\n", err);
 }
+
 #else
 #define omap4_twd_init	NULL
 #endif
+
+/* main twd code wants to see this, despite it is deprecated now */             
+                                                                                
+int __cpuinit local_timer_setup(struct clock_event_device *evt)                 
+{                                                                               
+        return 0;                                                               
+}   
 
 #ifdef CONFIG_ARCH_OMAP4
 #ifdef CONFIG_LOCAL_TIMERS
