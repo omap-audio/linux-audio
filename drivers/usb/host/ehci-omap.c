@@ -42,6 +42,7 @@
 #include <plat/usb.h>
 #include <linux/regulator/consumer.h>
 #include <linux/pm_runtime.h>
+#include <linux/gpio.h>
 
 /* EHCI Register Set */
 #define EHCI_INSNREG04					(0xA0)
