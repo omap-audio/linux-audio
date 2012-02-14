@@ -5716,7 +5716,7 @@ static int __reclaim_pages(struct zone *zone, gfp_t gfp_mask, int count)
 	 * Increase level of watermarks to force kswapd do his job
 	 * to stabilise at new watermark level.
 	 */
-	__modify_min_cma_pages(zone, count);
+	__update_cma_wmark_pages(zone, count);
 
 	/* Obey watermarks as if the page was being allocated */
 	watermark = low_wmark_pages(zone) + count;
@@ -5732,7 +5732,7 @@ static int __reclaim_pages(struct zone *zone, gfp_t gfp_mask, int count)
 	}
 
 	/* Restore original watermark levels. */
-	__modify_min_cma_pages(zone, -count);
+	__update_cma_wmark_pages(zone, -count);
 
 	return count;
 }
