@@ -621,7 +621,7 @@ static int __init _voltdm_sum_time(struct voltagedomain *voltdm, void *user)
 	return 0;
 }
 
-static void omap4_set_timings(struct voltagedomain *voltdm)
+static void __init omap4_set_timings(struct voltagedomain *voltdm)
 {
 	u32 val;
 	u32 tstart, tshut;
