@@ -55,8 +55,8 @@ void __init omap_pmic_late_init(void)
 	if (!pmic_i2c_board_info.irq)
 		return;
 
-	omap3_twl_init();
-	omap4_twl_init();
+//	omap3_twl_init();
+//	omap4_twl_init();
 }
 
 #if defined(CONFIG_ARCH_OMAP3)
