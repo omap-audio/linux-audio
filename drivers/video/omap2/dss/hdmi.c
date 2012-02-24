@@ -616,7 +616,7 @@ static int hdmi_audio_hw_params(struct snd_pcm_substream *substream,
 	struct hdmi_audio_dma audio_dma;
 	struct hdmi_core_audio_config core_cfg;
 	struct hdmi_core_infoframe_audio aud_if_cfg;
-	int err, n, cts;
+	int err, n, cts, channel_alloc, channel_nr;
 	enum hdmi_core_audio_sample_freq sample_freq;
 
 	switch (params_format(params)) {
@@ -662,13 +662,47 @@ static int hdmi_audio_hw_params(struct snd_pcm_substream *substream,
 		return -EINVAL;
 	}
 
+	/* Configure the number of channels */
+	switch (params_channels(params)) {
+	case 2:
+		core_cfg.layout = HDMI_AUDIO_LAYOUT_2CH;
+		channel_alloc = 0x0;
+		channel_nr = 2;
+		audio_format.stereo_channels = HDMI_AUDIO_STEREO_ONECHANNEL;
+		audio_format.active_chnnls_msk = 0x03;
+		/* Enable one of the four available serial data channels */
+		core_cfg.i2s_cfg.active_sds = HDMI_AUDIO_I2S_SD0_EN;
+		break;
+	case 6:
+	case 8:
+		/*
+		 * For 6 channels, the TI HDMI solution requires to be
+		 * configured as 8 channels but only with 6 active channels.
+		 * The unused channels will be padded with zeros.
+		 */
+		if (params_channels(params) == 6)
+			audio_format.active_chnnls_msk = 0x3f;
+		else
+			audio_format.active_chnnls_msk = 0xff;
+		core_cfg.layout = HDMI_AUDIO_LAYOUT_8CH;
+		channel_alloc = 0x13;
+		channel_nr = 8;
+		audio_format.stereo_channels = HDMI_AUDIO_STEREO_FOURCHANNELS;
+		/* Enable all of the four available serial data channels */
+		core_cfg.i2s_cfg.active_sds = HDMI_AUDIO_I2S_SD0_EN |
+				HDMI_AUDIO_I2S_SD1_EN | HDMI_AUDIO_I2S_SD2_EN |
+				HDMI_AUDIO_I2S_SD3_EN;
+		break;
+	default:
+		pr_err("Unsupported number of channels\n");
+		return -EINVAL;
+	}
+
 	err = hdmi_config_audio_acr(ip_data, params_rate(params), &n, &cts);
 	if (err < 0)
 		return err;
 
 	/* Audio wrapper config */
-	audio_format.stereo_channels = HDMI_AUDIO_STEREO_ONECHANNEL;
-	audio_format.active_chnnls_msk = 0x03;
 	audio_format.type = HDMI_AUDIO_TYPE_LPCM;
 	audio_format.sample_order = HDMI_AUDIO_SAMPLE_LEFT_FIRST;
 	/* Disable start/stop signals of IEC 60958 blocks */
@@ -695,8 +729,6 @@ static int hdmi_audio_hw_params(struct snd_pcm_substream *substream,
 	core_cfg.i2s_cfg.direction = HDMI_AUDIO_I2S_MSB_SHIFTED_FIRST;
 	/* Set serial data to word select shift. See Phillips spec. */
 	core_cfg.i2s_cfg.shift = HDMI_AUDIO_I2S_FIRST_BIT_SHIFT;
-	/* Enable one of the four available serial data channels */
-	core_cfg.i2s_cfg.active_sds = HDMI_AUDIO_I2S_SD0_EN;
 
 	/* Core audio config */
 	core_cfg.freq_sample = sample_freq;
@@ -714,7 +746,6 @@ static int hdmi_audio_hw_params(struct snd_pcm_substream *substream,
 
 	if (core_cfg.use_mclk)
 		core_cfg.mclk_mode = HDMI_AUDIO_MCLK_128FS;
-	core_cfg.layout = HDMI_AUDIO_LAYOUT_2CH;
 	core_cfg.en_spdif = false;
 	/* Use sample frequency from channel status word */
 	core_cfg.fs_override = true;
@@ -732,10 +763,10 @@ static int hdmi_audio_hw_params(struct snd_pcm_substream *substream,
 	 * info frame audio see doc CEA861-D page 74
 	 */
 	aud_if_cfg.db1_coding_type = HDMI_INFOFRAME_AUDIO_DB1CT_FROM_STREAM;
-	aud_if_cfg.db1_channel_count = 2;
 	aud_if_cfg.db2_sample_freq = HDMI_INFOFRAME_AUDIO_DB2SF_FROM_STREAM;
 	aud_if_cfg.db2_sample_size = HDMI_INFOFRAME_AUDIO_DB2SS_FROM_STREAM;
-	aud_if_cfg.db4_channel_alloc = 0x00;
+	aud_if_cfg.db1_channel_count = channel_nr;
+	aud_if_cfg.db4_channel_alloc = channel_alloc;
 	aud_if_cfg.db5_downmix_inh = false;
 	aud_if_cfg.db5_lsv = 0;
 
@@ -775,7 +806,7 @@ static struct snd_soc_dai_driver hdmi_codec_dai_drv = {
 		.name = "hdmi-audio-codec",
 		.playback = {
 			.channels_min = 2,
-			.channels_max = 2,
+			.channels_max = 8,
 			.rates = SNDRV_PCM_RATE_32000 |
 				SNDRV_PCM_RATE_44100 | SNDRV_PCM_RATE_48000,
 			.formats = SNDRV_PCM_FMTBIT_S16_LE |
