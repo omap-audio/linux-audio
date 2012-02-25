@@ -570,6 +570,18 @@ void omapdss_hdmi_display_disable(struct omap_dss_device *dssdev)
 #if defined(CONFIG_SND_OMAP_SOC_OMAP4_HDMI) || \
 	defined(CONFIG_SND_OMAP_SOC_OMAP4_HDMI_MODULE)
 
+static int hdmi_audio_prepare(struct snd_pcm_substream *substream,
+				struct snd_soc_dai *dai)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_soc_codec *codec = rtd->codec;
+	struct hdmi_ip_data *ip_data = snd_soc_codec_get_drvdata(codec);
+
+	ip_data->ops->audio_enable(ip_data, true);
+
+	return 0;
+
+}
 static int hdmi_audio_trigger(struct snd_pcm_substream *substream, int cmd,
 				struct snd_soc_dai *dai)
 {
@@ -590,12 +602,13 @@ static int hdmi_audio_trigger(struct snd_pcm_substream *substream, int cmd,
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		omap_hwmod_set_slave_idlemode(hdmi.oh,
 			HWMOD_IDLEMODE_NO);
-		ip_data->ops->audio_enable(ip_data, true);
+		ip_data->ops->audio_start(ip_data, true);
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
 	case SNDRV_PCM_TRIGGER_SUSPEND:
 	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
 		ip_data->ops->audio_enable(ip_data, false);
+		ip_data->ops->audio_start(ip_data, false);
 		omap_hwmod_set_slave_idlemode(hdmi.oh,
 			HWMOD_IDLEMODE_SMART_WKUP);
 		break;
@@ -800,6 +813,7 @@ static struct snd_soc_dai_ops hdmi_audio_codec_ops = {
 	.hw_params = hdmi_audio_hw_params,
 	.trigger = hdmi_audio_trigger,
 	.startup = hdmi_audio_startup,
+	.prepare = hdmi_audio_prepare,
 };
 
 static struct snd_soc_dai_driver hdmi_codec_dai_drv = {
