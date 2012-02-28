@@ -77,6 +77,8 @@ static struct {
 #if defined(CONFIG_SND_OMAP_SOC_OMAP4_HDMI) || \
 	defined(CONFIG_SND_OMAP_SOC_OMAP4_HDMI_MODULE)
 	struct omap_hwmod *oh;
+
+	struct delayed_work audio_work;
 #endif
 } hdmi;
 
@@ -602,7 +604,7 @@ static int hdmi_audio_trigger(struct snd_pcm_substream *substream, int cmd,
 	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
 		omap_hwmod_set_slave_idlemode(hdmi.oh,
 			HWMOD_IDLEMODE_NO);
-		ip_data->ops->audio_start(ip_data, true);
+		schedule_delayed_work(&hdmi.audio_work, msecs_to_jiffies(1));
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
 	case SNDRV_PCM_TRIGGER_SUSPEND:
@@ -797,6 +799,11 @@ static int hdmi_audio_startup(struct snd_pcm_substream *substream,
 	return 0;
 }
 
+static void hdmi_audio_work(struct work_struct *work)
+{
+	hdmi.ip_data.ops->audio_start(&hdmi.ip_data, true);
+}
+
 static int hdmi_audio_codec_probe(struct snd_soc_codec *codec)
 {
 	struct hdmi_ip_data *priv = &hdmi.ip_data;
@@ -904,6 +911,7 @@ static int omapdss_hdmihw_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
+	INIT_DELAYED_WORK(&hdmi.audio_work, hdmi_audio_work);
 	/* Register ASoC codec DAI */
 	r = snd_soc_register_codec(&pdev->dev, &hdmi_audio_codec_drv,
 					&hdmi_codec_dai_drv, 1);
