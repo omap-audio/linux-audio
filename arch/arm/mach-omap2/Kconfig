@@ -73,6 +73,7 @@ config ARCH_OMAP5
 	select LOCAL_TIMERS if SMP                                              
 	select ARCH_HAS_OPP
 	select PM_OPP if PM
+	select USB_ARCH_HAS_XHCI
 
 comment "OMAP Core Type"
 	depends on ARCH_OMAP2
