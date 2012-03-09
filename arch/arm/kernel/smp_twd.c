@@ -226,6 +226,10 @@ static struct clk *twd_get_clock(void)
 	return clk;
 }
 
+extern void smp_timer_broadcast(const struct cpumask *mask);
+
+static struct clock_event_device __percpu **twd_evt;
+
 /*
  * Setup the local clock events for a CPU.
  */
@@ -240,7 +244,6 @@ static int __cpuinit twd_timer_setup(struct clock_event_device *clk)
 		twd_timer_rate = clk_get_rate(twd_clk);
 	else
 		twd_calibrate_rate();
-	extern void smp_timer_broadcast(const struct cpumask *mask);
 
 	__raw_writel(0, twd_base + TWD_TIMER_CONTROL);
 
