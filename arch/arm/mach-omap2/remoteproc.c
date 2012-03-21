@@ -36,6 +36,8 @@
 #define OMAP4430_CM_DSP_DSP_CLKCTRL (OMAP4430_CM1_BASE \
 		+ OMAP4430_CM1_TESLA_INST + OMAP4_CM_TESLA_TESLA_CLKCTRL_OFFSET)
 
+#define OMAP4430_CONTROL_DSP_BOOTADDR (0x4A002304)
+
 /*
  * Temporarily define the CMA base address explicitly.
  *
@@ -72,6 +74,7 @@ static struct omap_rproc_pdata omap4_rproc_data[] = {
 		.oh_name	= "dsp_c0",
 		.idle_addr	= OMAP4430_CM_DSP_DSP_CLKCTRL,
 		.idle_mask	= OMAP4430_STBYST_MASK,
+		.ctrl_bootaddr  = OMAP4430_CONTROL_DSP_BOOTADDR,
 	},
 #endif
 };

@@ -42,6 +42,7 @@ struct omap_rproc_pdata {
 	u32 idle_mask;
 	unsigned long suspend_timeout;
 	const struct rproc_ops *ops;
+	u64 ctrl_bootaddr;
 };
 
 #if defined(CONFIG_OMAP_REMOTEPROC) || defined(CONFIG_OMAP_REMOTEPROC_MODULE)

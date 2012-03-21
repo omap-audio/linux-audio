@@ -118,6 +118,20 @@ static void omap_rproc_kick(struct rproc *rproc, int vqid)
 		dev_err(rproc->dev, "omap_mbox_msg_send failed: %d\n", ret);
 }
 
+static inline int _load_boot_addr(struct rproc *rproc, u64 bootaddr)
+{
+	void __iomem *boot;
+	struct omap_rproc_pdata *pdata = rproc->dev->platform_data;
+	if (pdata->ctrl_bootaddr) {
+		boot = ioremap(pdata->ctrl_bootaddr, sizeof(u32));
+		if (!boot)
+			return -EIO;
+		writel(bootaddr, boot);
+		iounmap(boot);
+	}
+	return 0;
+}
+
 /*
  * Power up the remote processor.
  *
@@ -131,6 +145,9 @@ static int omap_rproc_start(struct rproc *rproc)
 	struct platform_device *pdev = to_platform_device(rproc->dev);
 	struct omap_rproc_pdata *pdata = pdev->dev.platform_data;
 	int ret;
+	ret = _load_boot_addr(rproc, rproc->bootaddr);
+	if (ret)
+		return ret;
 
 	oproc->nb.notifier_call = omap_rproc_mbox_callback;
 
@@ -251,7 +268,6 @@ static int __devinit omap_rproc_probe(struct platform_device *pdev)
 	}
 
 	platform_set_drvdata(pdev, rproc);
-
 	ret = rproc_register(rproc);
 	if (ret)
 		goto free_rproc;
