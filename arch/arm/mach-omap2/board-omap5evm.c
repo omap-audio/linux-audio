@@ -1290,6 +1290,7 @@ static void __init omap54xx_common_init(void)
         omap_mux_init_array(omap5432_common_mux,                                
                                               ARRAY_SIZE(omap5432_common_mux)); 
 
+	omap_5430evm_i2c_init();
 	omap5_sdp5430_wifi_init();
 
 	omap_emif_set_device_details(1, &lpddr2_elpida_4G_S4_x2_info,
@@ -1307,8 +1308,6 @@ static void __init omap54xx_common_init(void)
         omap_register_mac_device_fixup_paths(omap5evm_fixup_mac_device_paths,
                                   ARRAY_SIZE(omap5evm_fixup_mac_device_paths));
 
-	omap5evm_touch_init();
-	omap_5430evm_i2c_init();
 	omap_serial_init();
 	omap5_sdp5430_wifi_init();
 	omap2_hsmmc_init(mmc);
@@ -1341,6 +1340,8 @@ static void __init omap_5430_sevm_init(void)
         /* Disable pulls on DCC lines - necessary for EDID detection */         
         omap_writel(0x50000000, 0x4A002E20);                                    
 	
+	omap5evm_touch_init();
+
 	omap54xx_common_init();
 
 	status = omap4_keyboard_init(&evm5430_keypad_data, &keypad_data);
