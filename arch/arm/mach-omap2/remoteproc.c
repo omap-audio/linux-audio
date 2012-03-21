@@ -26,11 +26,15 @@
 #include <plat/remoteproc.h>
 #include <plat/iommu.h>
 
+#include "cm1_44xx.h"
 #include "cm2_44xx.h"
 #include "cm-regbits-44xx.h"
 
 #define OMAP4430_CM_M3_M3_CLKCTRL (OMAP4430_CM2_BASE + OMAP4430_CM2_CORE_INST \
 		+ OMAP4_CM_DUCATI_DUCATI_CLKCTRL_OFFSET)
+
+#define OMAP4430_CM_DSP_DSP_CLKCTRL (OMAP4430_CM1_BASE \
+		+ OMAP4430_CM1_TESLA_INST + OMAP4_CM_TESLA_TESLA_CLKCTRL_OFFSET)
 
 /*
  * Temporarily define the CMA base address explicitly.
@@ -38,7 +42,10 @@
  * This will go away as soon as we have the IOMMU-based generic
  * DMA API in place.
  */
+
 #define OMAP_RPROC_CMA_BASE	(0xa9800000)
+#define OMAP_RPROC_CMA_BASE_IPU	(0xa9000000)
+#define OMAP_RPROC_CMA_BASE_DSP	(0xa8800000)
 
 /*
  * These data structures define platform-specific information
@@ -57,10 +64,23 @@ static struct omap_rproc_pdata omap4_rproc_data[] = {
 		.idle_addr	= OMAP4430_CM_M3_M3_CLKCTRL,
 		.idle_mask	= OMAP4430_STBYST_MASK,
 	},
+#ifdef CONFIG_OMAP_REMOTEPROC_DSP
+	{
+		.name		= "dsp_c0",
+		.firmware	= "tesla-dsp.xe64T",
+		.mbox_name	= "mailbox-2",
+		.oh_name	= "dsp_c0",
+		.idle_addr	= OMAP4430_CM_DSP_DSP_CLKCTRL,
+		.idle_mask	= OMAP4430_STBYST_MASK,
+	},
+#endif
 };
 
 static struct omap_iommu_arch_data omap4_rproc_iommu[] = {
 	{ .name = "ducati" },
+#ifdef CONFIG_OMAP_REMOTEPROC_DSP
+	{ .name = "tesla" },
+#endif
 };
 
 /*
@@ -87,23 +107,41 @@ static struct omap_device_pm_latency omap_rproc_latency[] = {
 
 static struct platform_device omap4_ducati = {
 	.name	= "omap-rproc",
-	.id	= 1, /* reserve 0 for tesla. we respect. */
+	.id	= 1,
 };
 
+#ifdef CONFIG_OMAP_REMOTEPROC_DSP
+static struct platform_device omap4_tesla = {
+	.name	= "omap-rproc",
+	.id	= 0,
+};
+#endif
 static struct platform_device *omap4_rproc_devs[] __initdata = {
 	&omap4_ducati,
+#ifdef CONFIG_OMAP_REMOTEPROC_DSP
+	&omap4_tesla,
+#endif
 };
 
 void __init omap_rproc_reserve_cma(void)
 {
 	int ret;
-
+	pr_info("DMA contiguos memory Ducati\n");
 	/* reserve CMA memory for OMAP4's M3 "ducati" remote processor */
 	ret = dma_declare_contiguous(&omap4_ducati.dev,
 					CONFIG_OMAP_DUCATI_CMA_SIZE,
-					OMAP_RPROC_CMA_BASE, 0);
+					OMAP_RPROC_CMA_BASE_IPU, 0);
 	if (ret)
 		pr_err("dma_declare_contiguous failed %d\n", ret);
+#ifdef CONFIG_OMAP_REMOTEPROC_DSP
+	pr_info("DMA contiguos memory Tesla\n");
+	/* reserve CMA memory for OMAP4's dsp "tesla" remote processor */
+	ret = dma_declare_contiguous(&omap4_tesla.dev,
+					CONFIG_OMAP_TESLA_CMA_SIZE,
+					OMAP_RPROC_CMA_BASE_DSP , 0);
+	if (ret)
+		pr_err("dma_declare_contiguous failed %d\n", ret);
+#endif
 }
 
 static int __init omap_rproc_init(void)
