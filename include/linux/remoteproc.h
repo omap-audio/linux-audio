@@ -424,6 +424,9 @@ struct rproc {
  * @notifyid: rproc-specific unique vring index
  * @rvdev: remote vdev
  * @vq: the virtqueue of this vring
+ * @pm_lock: mutext used to protect PM functions (suspend/resume)               
+ * @pm_comp: completion used to block messages while system suspending          
+ * @suspended: flag that is set when a system suspend happened 
  */
 struct rproc_vring {
 	void *va;
@@ -434,6 +437,9 @@ struct rproc_vring {
 	int notifyid;
 	struct rproc_vdev *rvdev;
 	struct virtqueue *vq;
+	struct mutex pm_lock;
+	struct completion pm_comp;
+	bool suspended;
 };
 
 /**
@@ -454,6 +460,7 @@ struct rproc_vdev {
 	unsigned long gfeatures;
 };
 
+int rproc_kick(struct rproc *, int);
 struct rproc *rproc_get_by_name(const char *name);
 void rproc_put(struct rproc *rproc);
 
