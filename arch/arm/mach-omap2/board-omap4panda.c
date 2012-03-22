@@ -40,6 +40,8 @@
 #include <video/omapdss.h>
 
 #include <plat/board.h>
+#include <plat/dma-44xx.h>
+
 #include "common.h"
 #include <plat/usb.h>
 #include <plat/mmc.h>
