@@ -466,6 +466,11 @@ static int palmas_initialise_resource(struct palmas_resource *resource,
 			return ret;
 	}
 
+	printk("ENABLING SYSEN2\n");
+	ret = palmas_enable_sysen2(resource);
+	if (ret)
+		printk("ENABLE SYSEN2 FAILED!!!\n");
+
 	return ret;
 }
 
