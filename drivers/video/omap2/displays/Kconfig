@@ -79,4 +79,10 @@ config PANEL_N8X0
 	depends on BACKLIGHT_CLASS_DEVICE
 	help
 	  This is the LCD panel used on Nokia N8x0
+
+config PANEL_TC358766XBG
+        tristate "TC358766XBG"
+	depends on OMAP2_DSS_DSI
+	help
+	  TC358766XBG
 endmenu
