@@ -1310,6 +1310,7 @@ static void __init omap54xx_common_init(void)
                                   ARRAY_SIZE(omap5evm_fixup_mac_device_paths));
 
 	omap_serial_init();
+	omap_sdrc_init(NULL, NULL);
 	omap2_hsmmc_init(mmc);
 	omap_ehci_ohci_init();
 	platform_device_register(&leds_gpio);
