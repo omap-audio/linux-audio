@@ -645,7 +645,7 @@ static int hdmi_audio_hw_params(struct snd_pcm_substream *substream,
 		audio_format.samples_per_word = HDMI_AUDIO_ONEWORD_TWOSAMPLES;
 		audio_format.sample_size = HDMI_AUDIO_SAMPLE_16BITS;
 		audio_format.justification = HDMI_AUDIO_JUSTIFY_LEFT;
-		audio_dma.transfer_size = 0x10;
+		audio_dma.transfer_size = 4;
 		break;
 	case SNDRV_PCM_FORMAT_S24_LE:
 		core_cfg.i2s_cfg.word_max_length =
@@ -657,7 +657,7 @@ static int hdmi_audio_hw_params(struct snd_pcm_substream *substream,
 		audio_format.sample_size = HDMI_AUDIO_SAMPLE_24BITS;
 		audio_format.justification = HDMI_AUDIO_JUSTIFY_RIGHT;
 		core_cfg.i2s_cfg.justification = HDMI_AUDIO_JUSTIFY_RIGHT;
-		audio_dma.transfer_size = 0x20;
+		audio_dma.transfer_size = 8;
 		break;
 	default:
 		return -EINVAL;
@@ -725,7 +725,7 @@ static int hdmi_audio_hw_params(struct snd_pcm_substream *substream,
 
 	audio_dma.block_size = 0xC0;
 	audio_dma.mode = HDMI_AUDIO_TRANSF_DMA;
-	audio_dma.fifo_threshold = 0x20; /* in number of samples */
+	audio_dma.fifo_threshold = 8; /* in number of samples */
 
 	hdmi_wp_audio_config_dma(ip_data, &audio_dma);
 	hdmi_wp_audio_config_format(ip_data, &audio_format);
