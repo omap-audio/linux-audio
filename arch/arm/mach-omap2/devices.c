@@ -304,14 +304,6 @@ static struct platform_device omap_pcm = {
 	.id	= -1,
 };
 
-/*
- * Device for the ASoC OMAP4 HDMI machine driver
- */
-static struct platform_device omap_hdmi_audio = {
-	.name	= "omap4-hdmi-audio",
-	.id	= -1,
-};
-
 static void omap_init_audio(void)
 {
 	struct omap_hwmod *oh_hdmi;
@@ -328,8 +320,6 @@ static void omap_init_audio(void)
 			NULL, 0, false);
 		WARN(IS_ERR(od_hdmi), "%s: could not build omap_device for %s\n",
 			__func__, dev_hdmi_name);
-
-		platform_device_register(&omap_hdmi_audio);
 	}
 
 	platform_device_register(&omap_pcm);
