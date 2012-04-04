@@ -48,10 +48,10 @@ static int omap_hdmi_dai_startup(struct snd_pcm_substream *substream,
 	int err;
 	/*
 	 * Make sure that the period bytes are multiple of the DMA packet size.
-	 * Largest packet size we use is 32 32-bit words = 128 bytes
+	 * Largest packet size we use is 8 32-bit words = 32 bytes
 	 */
 	err = snd_pcm_hw_constraint_step(substream->runtime, 0,
-				 SNDRV_PCM_HW_PARAM_PERIOD_BYTES, 128);
+				 SNDRV_PCM_HW_PARAM_PERIOD_BYTES, 32);
 	if (err < 0)
 		return err;
 
@@ -66,10 +66,10 @@ static int omap_hdmi_dai_hw_params(struct snd_pcm_substream *substream,
 
 	switch (params_format(params)) {
 	case SNDRV_PCM_FORMAT_S16_LE:
-		omap_hdmi_dai_dma_params.packet_size = 16;
+		omap_hdmi_dai_dma_params.packet_size = 4;
 		break;
 	case SNDRV_PCM_FORMAT_S24_LE:
-		omap_hdmi_dai_dma_params.packet_size = 32;
+		omap_hdmi_dai_dma_params.packet_size = 8;
 		break;
 	default:
 		err = -EINVAL;
