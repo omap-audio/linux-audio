@@ -1160,6 +1160,18 @@ void hdmi_core_audio_config(struct hdmi_ip_data *ip_data,
 	r = FLD_MOD(r, cfg->en_parallel_aud_input, 2, 2);
 	r = FLD_MOD(r, cfg->en_spdif, 1, 1);
 	hdmi_write_reg(av_base, HDMI_CORE_AV_AUD_MODE, r);
+
+	/*
+	 * HACK: Swap channels to align with the following speaker layout:
+	 * 0:front left, 1:front right, 3:rear left, 4:rear right,
+	 * 5:center, 6:low-freq effect, 7:side left, 8: side right
+	 */
+	r = hdmi_read_reg(av_base, HDMI_CORE_AV_I2S_IN_MAP);
+	r = FLD_MOD(r, 0xd8, 7, 0);
+	hdmi_write_reg(av_base, HDMI_CORE_AV_I2S_IN_MAP, r);
+	r = hdmi_read_reg(av_base, HDMI_CORE_AV_SWAP_I2S);
+	r = FLD_MOD(r, 2, 7, 4);
+	hdmi_write_reg(av_base, HDMI_CORE_AV_SWAP_I2S, r);
 }
 
 void hdmi_core_audio_infoframe_config(struct hdmi_ip_data *ip_data,
