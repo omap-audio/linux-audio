@@ -1848,10 +1848,9 @@ static int soc_dapm_mux_update_power(struct snd_soc_dapm_widget *widget,
 	if (found) {
 		dapm_mark_dirty(widget, "mux change");
 		dapm_power_widgets(widget->dapm, SND_SOC_DAPM_STREAM_NOP);
-		soc_dpcm_runtime_update(widget);
 	}
 
-	return 0;
+	return found;
 }
 
 int snd_soc_dapm_mux_update_power(struct snd_soc_dapm_widget *widget,
@@ -1863,6 +1862,8 @@ int snd_soc_dapm_mux_update_power(struct snd_soc_dapm_widget *widget,
 	mutex_lock_nested(&card->dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
 	ret = soc_dapm_mux_update_power(widget, kcontrol, mux, e);
 	mutex_unlock(&card->dapm_mutex);
+	if (ret)
+		soc_dpcm_runtime_update(widget);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(snd_soc_dapm_mux_update_power);
@@ -1893,10 +1894,9 @@ static int soc_dapm_mixer_update_power(struct snd_soc_dapm_widget *widget,
 	if (found) {
 		dapm_mark_dirty(widget, "mixer update");
 		dapm_power_widgets(widget->dapm, SND_SOC_DAPM_STREAM_NOP);
-		soc_dpcm_runtime_update(widget);
 	}
 
-	return 0;
+	return found;
 }
 
 int snd_soc_dapm_mixer_update_power(struct snd_soc_dapm_widget *widget,
@@ -1908,6 +1908,8 @@ int snd_soc_dapm_mixer_update_power(struct snd_soc_dapm_widget *widget,
 	mutex_lock_nested(&card->dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
 	ret = soc_dapm_mixer_update_power(widget, kcontrol, connect);
 	mutex_unlock(&card->dapm_mutex);
+	if (ret)
+		soc_dpcm_runtime_update(widget);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(snd_soc_dapm_mixer_update_power);
