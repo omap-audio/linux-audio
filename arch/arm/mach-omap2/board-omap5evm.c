@@ -501,6 +501,7 @@ static struct omap_abe_twl6040_data omap5evm_abe_audio_data = {
 	/* PandaBoard: FM RX, PandaBoardES: audio in */
 	.has_afm	= ABE_TWL6040_LEFT | ABE_TWL6040_RIGHT,
 	.has_hsmic	= 1,
+	.has_abe	= 1,
 	/* Jack detection. */
 	.jack_detection	= 1,
 	/* MCLK input is 19.2MHz */
