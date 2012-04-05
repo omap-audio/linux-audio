@@ -960,7 +960,7 @@ int snd_soc_dapm_dai_get_connected_widgets(struct snd_soc_dai *dai, int stream,
 	if (stream == SNDRV_PCM_STREAM_PLAYBACK)
 		paths = is_connected_output_ep(dai->playback_widget, list);
 	else
-		paths = is_connected_input_ep(dai->playback_widget, list);
+		paths = is_connected_input_ep(dai->capture_widget, list);
 
 	trace_snd_soc_dapm_connected(paths, stream);
 	dapm_clear_walk(&card->dapm);
@@ -1860,10 +1860,9 @@ static int soc_dapm_mux_update_power(struct snd_soc_dapm_widget *widget,
 	if (found) {
 		dapm_mark_dirty(widget, "mux change");
 		dapm_power_widgets(widget->dapm, SND_SOC_DAPM_STREAM_NOP);
-		soc_dpcm_runtime_update(widget);
 	}
 
-	return 0;
+	return found;
 }
 
 int snd_soc_dapm_mux_update_power(struct snd_soc_dapm_widget *widget,
@@ -1875,6 +1874,8 @@ int snd_soc_dapm_mux_update_power(struct snd_soc_dapm_widget *widget,
 	mutex_lock_nested(&card->dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
 	ret = soc_dapm_mux_update_power(widget, kcontrol, mux, e);
 	mutex_unlock(&card->dapm_mutex);
+	if (ret)
+		soc_dpcm_runtime_update(widget);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(snd_soc_dapm_mux_update_power);
@@ -1905,10 +1906,9 @@ static int soc_dapm_mixer_update_power(struct snd_soc_dapm_widget *widget,
 	if (found) {
 		dapm_mark_dirty(widget, "mixer update");
 		dapm_power_widgets(widget->dapm, SND_SOC_DAPM_STREAM_NOP);
-		soc_dpcm_runtime_update(widget);
 	}
 
-	return 0;
+	return found;
 }
 
 int snd_soc_dapm_mixer_update_power(struct snd_soc_dapm_widget *widget,
@@ -1920,6 +1920,8 @@ int snd_soc_dapm_mixer_update_power(struct snd_soc_dapm_widget *widget,
 	mutex_lock_nested(&card->dapm_mutex, SND_SOC_DAPM_CLASS_RUNTIME);
 	ret = soc_dapm_mixer_update_power(widget, kcontrol, connect);
 	mutex_unlock(&card->dapm_mutex);
+	if (ret)
+		soc_dpcm_runtime_update(widget);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(snd_soc_dapm_mixer_update_power);
@@ -2265,6 +2267,7 @@ int snd_soc_dapm_add_routes(struct snd_soc_dapm_context *dapm,
 		if (ret < 0) {
 			dev_err(dapm->dev, "Failed to add route %s->%s\n",
 				route->source, route->sink);
+			mutex_unlock(&dapm->card->dapm_mutex);
 			return ret;
 		}
 		route++;
