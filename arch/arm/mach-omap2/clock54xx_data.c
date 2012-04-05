@@ -2453,6 +2453,7 @@ static struct omap_clk omap54xx_clks[] = {
 	CLK(NULL,	"usb_tll_hs_usb_ch2_clk",	&usb_tll_hs_usb_ch2_clk,	CK_54XX),
 	CLK(NULL,	"dmic_sync_mux_ck",		&dmic_sync_mux_ck,	CK_54XX),
 	CLK(NULL,	"dmic_gfclk",			&dmic_gfclk,	CK_54XX),
+	CLK(NULL,	"dmic_fck",			&dmic_gfclk,	CK_54XX),
 	CLK(NULL,	"fdif_fclk",			&fdif_fclk,	CK_54XX),
 	CLK(NULL,	"gpu_core_clk_mux_ck",		&gpu_core_clk_mux_ck,	CK_54XX),
 	CLK(NULL,	"gpu_hyd_clk_mux_ck",		&gpu_hyd_clk_mux_ck,	CK_54XX),
