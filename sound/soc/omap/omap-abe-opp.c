@@ -174,8 +174,9 @@ EXPORT_SYMBOL(omap_abe_opp_free_request);
 
 int abe_opp_set_level(struct omap_abe *abe, int opp)
 {
-	struct omap_abe_pdata *pdata = abe->pdata;
 	int ret = 0;
+#if 0
+	struct omap_abe_pdata *pdata = abe->pdata;
 
 	if (abe->opp.level > opp) {
 		/* Decrease OPP mode - no need of OPP100% */
@@ -259,6 +260,8 @@ err_down_scale:
 
 err_up_scale:
 	dev_err(abe->dev, "opp: failed to scale to OPP%d\n", opp);
+#endif
+	omap_aess_set_opp_processing(abe->aess, ABE_OPP100);
 	return ret;
 }
 
