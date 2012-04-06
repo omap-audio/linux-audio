@@ -261,6 +261,7 @@ err_down_scale:
 err_up_scale:
 	dev_err(abe->dev, "opp: failed to scale to OPP%d\n", opp);
 #endif
+	omap_aess_set_opp_processing(abe->aess, ABE_OPP100);
 	return ret;
 }
 
