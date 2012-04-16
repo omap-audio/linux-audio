@@ -21,6 +21,7 @@
 #include <linux/list.h>
 #include <linux/kobject.h>
 #include <linux/device.h>
+#include <sound/asound.h>
 
 #define DISPC_IRQ_FRAMEDONE		(1 << 0)
 #define DISPC_IRQ_VSYNC			(1 << 1)
@@ -202,6 +203,53 @@ enum omap_dss_clk_source {
 
 enum omap_hdmi_flags {
 	OMAP_HDMI_SDA_SCL_EXTERNAL_PULLUP = 1 << 0,
+};
+
+/* Stereoscopic Panel types
+ * row, column, overunder, sidebyside options
+ * are with respect to native scan order
+*/
+enum s3d_disp_type {
+	S3D_DISP_NONE = 0,
+	S3D_DISP_FRAME_SEQ,
+	S3D_DISP_ROW_IL,
+	S3D_DISP_COL_IL,
+	S3D_DISP_PIX_IL,
+	S3D_DISP_CHECKB,
+	S3D_DISP_OVERUNDER,
+	S3D_DISP_SIDEBYSIDE,
+};
+
+/* Subsampling direction is based on native panel scan order.
+*/
+enum s3d_disp_sub_sampling {
+	S3D_DISP_SUB_SAMPLE_NONE = 0,
+	S3D_DISP_SUB_SAMPLE_V,
+	S3D_DISP_SUB_SAMPLE_H,
+};
+
+/* Indicates if display expects left view first followed by right or viceversa
+ * For row interlaved displays, defines first row view
+ * For column interleaved displays, defines first column view
+ * For checkerboard, defines first pixel view
+ * For overunder, defines top view
+ * For sidebyside, defines west view
+*/
+enum s3d_disp_order {
+	S3D_DISP_ORDER_L = 0,
+	S3D_DISP_ORDER_R = 1,
+};
+
+/* S3D information */
+struct s3d_disp_info {
+	enum s3d_disp_type type;
+	enum s3d_disp_sub_sampling sub_samp;
+	enum s3d_disp_order order;
+	/* Gap between left and right views
+	 * For over/under units are lines
+	 * For sidebyside units are pixels
+	  *For other types ignored*/
+	unsigned int gap;
 };
 
 /* RFBI */
@@ -554,6 +602,7 @@ struct omap_dss_device {
 		enum omap_dss_dsi_pixel_format dsi_pix_fmt;
 		enum omap_dss_dsi_mode dsi_mode;
 		struct omap_dss_dsi_videomode_data dsi_vm_data;
+		struct s3d_disp_info s3d_info;
 	} panel;
 
 	struct {
@@ -642,6 +691,18 @@ struct omap_dss_driver {
 
 	int (*read_edid)(struct omap_dss_device *dssdev, u8 *buf, int len);
 	bool (*detect)(struct omap_dss_device *dssdev);
+	/*
+	 * For display drivers that support audio. This encompasses
+	 * HDMI and DisplayPort at the moment.
+	 */
+	int (*audio_enable)(struct omap_dss_device *dssdev, bool enable);
+	int (*audio_start)(struct omap_dss_device *dssdev, bool start);
+	bool (*audio_detect)(struct omap_dss_device *dssdev);
+	int (*audio_config)(struct omap_dss_device *dssdev,
+		struct snd_aes_iec958 *iec, struct snd_cea_861_aud_if *aud_if);
+
+	int (*s3d_enable)(struct omap_dss_device *dssdev,
+				struct s3d_disp_info *info, int code);
 };
 
 int omap_dss_register_driver(struct omap_dss_driver *);
