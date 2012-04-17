@@ -261,7 +261,7 @@ static int omap_hsmmc_resume_cdirq(struct device *dev, int slot)
 
 #ifdef CONFIG_REGULATOR
 
-static int omap_hsmmc_set_power(struct device *dev, int slot, int power_on,
+static int omap_hsmmc_1_set_power(struct device *dev, int slot, int power_on,
 				  int vdd_iopower)
 {
 	struct omap_hsmmc_host *host =
@@ -310,75 +310,13 @@ static int omap_hsmmc_set_power(struct device *dev, int slot, int power_on,
 	return ret;
 }
 
-static int omap_hsmmc_235_set_power(struct device *dev, int slot, int power_on,
-				   int vdd)
-{
-	struct omap_hsmmc_host *host =
-		platform_get_drvdata(to_platform_device(dev));
-	int ret = 0;
-
-	/*
-	 * If we don't see a Vcc regulator, assume it's a fixed
-	 * voltage always-on regulator.
-	 */
-	if (!host->vcc)
-		return 0;
-	/*
-	 * With DT, never turn OFF the regulator. This is because
-	 * the pbias cell programming support is still missing when
-	 * booting with Device tree
-	 */
-	if (of_have_populated_dt() && !vdd)
-		return 0;
-
-	if (mmc_slot(host).before_set_reg)
-		mmc_slot(host).before_set_reg(dev, slot, power_on, vdd);
-
-	/*
-	 * Assume Vcc regulator is used only to power the card ... OMAP
-	 * VDDS is used to power the pins, optionally with a transceiver to
-	 * support cards using voltages other than VDDS (1.8V nominal).  When a
-	 * transceiver is used, DAT3..7 are muxed as transceiver control pins.
-	 *
-	 * In some cases this regulator won't support enable/disable;
-	 * e.g. it's a fixed rail for a WLAN chip.
-	 *
-	 * In other cases vcc_aux switches interface power.  Example, for
-	 * eMMC cards it represents VccQ.  Sometimes transceivers or SDIO
-	 * chips/cards need an interface voltage rail too.
-	 */
-	if (power_on) {
-		ret = mmc_regulator_set_ocr(host->mmc, host->vcc, vdd);
-		/* Enable interface voltage rail, if needed */
-		if (host->vcc_aux) {
-			ret = regulator_enable(host->vcc_aux);
-			if (ret < 0)
-				ret = mmc_regulator_set_ocr(host->mmc,
-							host->vcc, 0);
-		}
-	} else {
-		/* Shut down the rail */
-		if (host->vcc_aux)
-			ret = regulator_disable(host->vcc_aux);
-		if (!ret) {
-			/* Then proceed to shut down the local regulator */
-			ret = mmc_regulator_set_ocr(host->mmc,
-						host->vcc, 0);
-		}
-	}
-
-	if (mmc_slot(host).after_set_reg)
-		mmc_slot(host).after_set_reg(dev, slot, power_on, vdd);
-
-	return ret;
-}
-
 static int omap_hsmmc_reg_get(struct omap_hsmmc_host *host)
 {
 	struct regulator *reg;
 	int ocr_value = 0;
 
-	mmc_slot(host).set_power = omap_hsmmc_set_power;
+        /* On-chip level shifting via PBIAS0/PBIAS1 */
+        mmc_slot(host).set_power = omap_hsmmc_1_set_power;
 
 	reg = regulator_get(host->dev, "vmmc");
 	if (IS_ERR(reg)) {
