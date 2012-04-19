@@ -1006,12 +1006,12 @@ int ti_hdmi_5xxx_audio_config(struct hdmi_ip_data *ip_data,
 
 void ti_hdmi_5xxx_wp_audio_enable(struct hdmi_ip_data *ip_data, bool enable)
 {
-	REG_FLD_MOD(ip_data->base_wp,
-		HDMI_WP_AUDIO_CTRL, enable, 31, 31);
 }
 
 void ti_hdmi_5xxx_audio_start(struct hdmi_ip_data *ip_data, bool enable)
 {
+	REG_FLD_MOD(ip_data->base_wp,
+		HDMI_WP_AUDIO_CTRL, enable, 31, 31);
 	REG_FLD_MOD(ip_data->base_wp,
 		HDMI_WP_AUDIO_CTRL, enable, 30, 30);
 }
