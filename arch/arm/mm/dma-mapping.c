@@ -29,6 +29,7 @@
 #include <asm/sizes.h>
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
+#include <asm/system_info.h>
 #include <asm/dma-contiguous.h>
 
 #include "mm.h"
@@ -436,7 +437,8 @@ static void *__alloc_remap_buffer(struct device *dev, size_t size, gfp_t gfp,
 	if (!page)
 		return NULL;
 
-	ptr = __dma_alloc_remap(page, size, gfp, prot);
+	ptr = __dma_alloc_remap(page, size, gfp, prot,
+					__builtin_return_address(0));
 	if (!ptr) {
 		__dma_free_buffer(page, size);
 		return NULL;
@@ -465,7 +467,8 @@ static void *__alloc_from_pool(struct device *dev, size_t size,
 	 * size. This helps reduce fragmentation of the DMA space.
 	 */
 	align = PAGE_SIZE << get_order(size);
-	c = arm_vmregion_alloc(&coherent_head, align, size, 0);
+	c = arm_vmregion_alloc(&coherent_head, align, size, 0,
+			__builtin_return_address(0));
 	if (c) {
 		void *ptr = (void *)c->vm_start;
 		struct page *page = virt_to_page(ptr);
@@ -528,8 +531,6 @@ static void __free_from_contiguous(struct device *dev, struct page *page,
 
 #define __dma_alloc_remap(page, size, gfp, prot, c)	page_address(page)
 #define __dma_free_remap(addr, size)			do { } while (0)
-
-#endif	/* CONFIG_MMU */
 
 #define nommu() 1
 

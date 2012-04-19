@@ -5739,7 +5739,7 @@ static int __reclaim_pages(struct zone *zone, gfp_t gfp_mask, int count)
 						      NULL);
 		if (!did_some_progress) {
 			/* Exhausted what can be done so it's blamo time */
-			out_of_memory(zonelist, gfp_mask, order, NULL);
+			out_of_memory(zonelist, gfp_mask, order, NULL, false);
 		}
 	}
 

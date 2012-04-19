@@ -21,7 +21,7 @@
 #include <plat/vram.h>
 #include <plat/dsp.h>
 
-#include <plat/drm.h>
+//#include <plat/drm.h>
 #include <plat/omap-secure.h>
 #include <plat/remoteproc.h>
 
