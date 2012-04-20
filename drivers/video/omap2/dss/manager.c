@@ -507,8 +507,10 @@ static int dss_mgr_wait_for_vsync(struct omap_overlay_manager *mgr)
 	} else {
 		if (mgr->id == OMAP_DSS_CHANNEL_LCD)
 			irq = DISPC_IRQ_VSYNC;
-		else
+		else if (mgr->id == OMAP_DSS_CHANNEL_LCD2)
 			irq = DISPC_IRQ_VSYNC2;
+		else
+			irq = DISPC_IRQ_VSYNC3;
 	}
 
 	r = omap_dispc_wait_for_irq_interruptible_timeout(irq, timeout);
@@ -544,6 +546,10 @@ int dss_init_overlay_managers(struct platform_device *pdev)
 		case 2:
 			mgr->name = "lcd2";
 			mgr->id = OMAP_DSS_CHANNEL_LCD2;
+			break;
+		case 3:
+			mgr->name = "lcd3";
+			mgr->id = OMAP_DSS_CHANNEL_LCD3;
 			break;
 		}
 
