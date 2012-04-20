@@ -62,17 +62,34 @@ static void abe_irq_pingpong_subroutine(u32 *sub, u32 *data)
 
 	struct snd_pcm_substream *substream = (struct snd_pcm_substream *)sub;
 	struct omap_abe *abe = (struct omap_abe *)data;
-	u32 dst, n_bytes;
+	u32 dst, n_bytes, avaliable;
 
 	omap_aess_read_next_ping_pong_buffer(abe->aess, OMAP_ABE_MM_DL_PORT, &dst, &n_bytes);
-	omap_aess_set_ping_pong_buffer(abe->aess, OMAP_ABE_MM_DL_PORT, n_bytes);
 
 	/* 1st IRQ does not signal completed period */
 	if (abe->mmap.first_irq) {
 		abe->mmap.first_irq = 0;
+		omap_aess_set_ping_pong_buffer(abe->aess, OMAP_ABE_MM_DL_PORT, n_bytes);
 	} else {
-		if (substream)
+		if (substream) {
 			snd_pcm_period_elapsed(substream);
+
+			/* Check avaliable sample inside the buffer for playback */
+			avaliable = snd_pcm_playback_avail(substream->runtime);
+			avaliable *= substream->runtime->channels;
+			if (substream->runtime->format == SNDRV_PCM_FORMAT_S16_LE)
+				avaliable *= 2;
+			else if (substream->runtime->format == SNDRV_PCM_FORMAT_S32_LE)
+				avaliable *= 4;
+			/* Add marjin due to jitter */
+			avaliable += 0x200;
+			/* Not enough data. Stop playback by setting buffer size to 0 */
+			if (avaliable < n_bytes) {
+				printk(KERN_ERR "DEBUG avaliable:%x, bytes:%x\n", avaliable, n_bytes);
+				n_bytes = 0;
+			}
+			omap_aess_set_ping_pong_buffer(abe->aess, OMAP_ABE_MM_DL_PORT, n_bytes);
+		}
 	}
 }
 
