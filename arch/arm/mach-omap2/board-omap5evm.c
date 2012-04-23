@@ -23,6 +23,7 @@
 #include <linux/mfd/palmas.h>
 #endif
 
+#include <linux/i2c/pca953x.h>
 #include <linux/i2c/twl.h>
 #include <linux/mfd/twl6040.h>
 #include <linux/platform_data/omap-abe-twl6040.h>
@@ -35,9 +36,11 @@
 #include "common.h"
 #include <asm/hardware/gic.h>
 #include <plat/common.h>
+#include "mux.h"
 
 #include <video/omapdss.h>
 #include <video/omap-panel-lg4591.h>
+#include <video/omap-panel-tc358766xbg.h>
 
 #define HDMI_GPIO_HPD 193
 
@@ -571,9 +574,17 @@ static struct i2c_board_info __initdata omap5evm_i2c_1_boardinfo[] = {
 	},
 };
 
+static struct pca953x_platform_data am3517evm_gpio_expander_info_0 = {
+	.gpio_base	= 256, //OMAP_MAX_GPIO_LINES,
+};
+
 static struct i2c_board_info __initdata omap5evm_i2c_5_boardinfo[] = {
 	{
 		I2C_BOARD_INFO("pio_a_i2c_driver", 0x22),
+	},
+	{
+		I2C_BOARD_INFO("tca6416", 0x20),
+		.platform_data = &am3517evm_gpio_expander_info_0,
 	},
 };
 
@@ -619,6 +630,9 @@ static void omap5evm_hdmi_init(void)
 
 static void __init omap5evm_display_init(void)
 {
+#define DP_INT_IRQ 171
+	omap_mux_init_gpio(DP_INT_IRQ, OMAP_PIN_INPUT_PULLDOWN);
+
 	omap5evm_lcd_init();
 	omap5evm_hdmi_init();
 	omap_display_init(&omap5evm_dss_data);
@@ -674,6 +688,63 @@ static struct omap_dss_device omap5evm_lcd_device = {
 	.channel		= OMAP_DSS_CHANNEL_LCD,
 };
 
+
+static struct tc358766xbg_board_data blazetablet_dsi_panel = {
+	.reset_gpio	= 256 + 9,
+};
+
+static struct omap_dss_device omap5evm_dp_device = {
+	.name			= "dp",
+	.driver_name		= "tc358766xbg",
+	.type			= OMAP_DISPLAY_TYPE_DSI,
+	.data			= &blazetablet_dsi_panel,
+	.phy.dsi		= {
+		.clk_lane	= 1,
+		.clk_pol	= 0,
+		.data1_lane	= 2,
+		.data1_pol	= 0,
+		.data2_lane	= 3,
+		.data2_pol	= 0,
+		.data3_lane	= 4,
+		.data3_pol	= 0,
+		.data4_lane	= 5,
+		.data4_pol	= 0,
+
+		.module = 1,
+	},
+
+	.clocks = {
+		.dispc = {
+			.channel = {
+				.lck_div	= 1,
+				.pck_div	= 2,
+				.lcd_clk_src	= OMAP_DSS_CLK_SRC_DSI2_PLL_HSDIV_DISPC,
+			},
+			.dispc_fclk_src	= OMAP_DSS_CLK_SRC_DSI2_PLL_HSDIV_DISPC,
+		},
+
+		.dsi = {
+			.regn		= 10,	/* 1.92 MHz */
+			.regm		= 140,	/* DDRCLKR 268.80 MHz */
+
+			.regm_dispc	= 3,	/* 179.20 MHz */
+			.regm_dsi	= 3,	/* 179.20 MHz */
+			.lp_clk_div	= 14,	/* 6.4 MHz */
+
+			.dsi_fclk_src	= OMAP_DSS_CLK_SRC_DSI2_PLL_HSDIV_DSI,
+		},
+	},
+
+	.panel.dsi_mode		= OMAP_DSS_DSI_VIDEO_MODE,
+	.channel		= OMAP_DSS_CHANNEL_LCD3,
+
+	//.platform_enable = &panel_enable,
+	//.platform_disable = &panel_disable,
+
+};
+
+
+
 static int omap5evm_panel_enable_hdmi(struct omap_dss_device *dssdev)
 {
 	return 0;
@@ -699,14 +770,15 @@ static struct omap_dss_device omap5evm_hdmi_device = {
 };
 
 static struct omap_dss_device *omap5evm_dss_devices[] = {
-	&omap5evm_lcd_device,
-	&omap5evm_hdmi_device,
+	&omap5evm_dp_device,
+	//&omap5evm_lcd_device,
+	//&omap5evm_hdmi_device,
 };
 
 static struct omap_dss_board_info omap5evm_dss_data = {
 	.num_devices	= ARRAY_SIZE(omap5evm_dss_devices),
 	.devices	= omap5evm_dss_devices,
-	.default_device	= &omap5evm_lcd_device,
+	.default_device	= &omap5evm_dp_device,
 };
 
 static void __init omap_5430evm_init(void)
