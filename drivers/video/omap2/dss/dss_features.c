@@ -651,7 +651,7 @@ static const struct omap_dss_features omap5_dss_features = {
 	.features = omap5_dss_feat_list,
 	.num_features = ARRAY_SIZE(omap5_dss_feat_list),
 
-	.num_mgrs = 3,
+	.num_mgrs = 4,
 	.num_ovls = 4,
 	.supported_displays = omap5_dss_supported_displays,
 	.supported_color_modes = omap4_dss_supported_color_modes,
