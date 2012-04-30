@@ -419,11 +419,11 @@ static ssize_t taal_num_errors_show(struct device *dev,
 
 	dsi_bus_lock(dssdev);
 
-	//dsi_video_mode_disable(dssdev, d2d->pixel_channel);
+	dsi_disable_video_output(dssdev, d2d->pixel_channel);
 
 	tc358766xbg_read_reg_dsi(dssdev, SYSCTRL, &val);
 
-	//dsi_video_mode_enable(dssdev, d2d->pixel_channel);
+	dsi_enable_video_output(dssdev, d2d->pixel_channel);
 
 	dsi_bus_unlock(dssdev);
 
@@ -686,7 +686,7 @@ static irqreturn_t taal_te_isr(int irq, void *data)
 	mutex_lock(&d2d->lock);
 	dsi_bus_lock(dssdev);
 
-	//dsi_video_mode_disable(dssdev, d2d->pixel_channel);
+	dsi_disable_video_output(dssdev, d2d->pixel_channel);
 
 	tc358766xbg_read_reg(dssdev, INTCTL_G, &old_mask);
 	tc358766xbg_write_reg(dssdev, INTCTL_G, 0);
@@ -723,7 +723,7 @@ static irqreturn_t taal_te_isr(int irq, void *data)
 	tc358766xbg_write_reg(dssdev, INTSTS_G, stat);
 	tc358766xbg_write_reg(dssdev, INTCTL_G, old_mask);
 
-	//dsi_video_mode_enable(dssdev, d2d->pixel_channel);
+	dsi_enable_video_output(dssdev, d2d->pixel_channel);
 
 	dsi_bus_unlock(dssdev);
 	mutex_unlock(&d2d->lock);
@@ -1484,8 +1484,8 @@ static int start_link(struct omap_dss_device *dssdev)
 			(1 << 1) | // vid_en
 			(1 << 6)); // vid_mn_gen
 
-	W(SYSCTRL, 3);	// DP0_VidSrc = Color bar
-	//W(SYSCTRL, 1);		// DP0_VidSrc = DSI
+	//W(SYSCTRL, 3);	// DP0_VidSrc = Color bar
+	W(SYSCTRL, 1);		// DP0_VidSrc = DSI
 
 	return 0;
 }
@@ -1589,7 +1589,7 @@ static int tc358766xbg_power_on(struct omap_dss_device *dssdev)
 	tc358766xbg_read_reg_dsi(dssdev, IDREG);
 	tc358766xbg_read_reg_dsi(dssdev, SYSSTAT);
 #endif
-	//dsi_video_mode_enable(dssdev, d2d->pixel_channel);
+	dsi_enable_video_output(dssdev, d2d->pixel_channel);
 
 
 
@@ -1610,7 +1610,7 @@ static void tc358766xbg_power_off(struct omap_dss_device *dssdev)
 {
 	struct tc358766xbg_data *d2d = dev_get_drvdata(&dssdev->dev);
 
-	//dsi_video_mode_disable(dssdev, d2d->pixel_channel);
+	dsi_disable_video_output(dssdev, d2d->pixel_channel);
 
 	omapdss_dsi_display_disable(dssdev, false, false);
 
