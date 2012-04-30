@@ -36,6 +36,7 @@
 #include "common.h"
 #include <asm/hardware/gic.h>
 #include <plat/common.h>
+#include "../plat-omap/include/plat/usb.h"
 #include "mux.h"
 
 #include <video/omapdss.h>
@@ -303,6 +304,7 @@ static struct regulator_init_data omap5_ldo2 = {
 					| REGULATOR_MODE_STANDBY,
 		.valid_ops_mask		= REGULATOR_CHANGE_MODE
 					| REGULATOR_CHANGE_STATUS,
+		.always_on		= true,
 		.apply_uV		= 1,
 	},
 	.num_consumer_supplies	= ARRAY_SIZE(omap5evm_lcd_panel_supply),
@@ -613,6 +615,9 @@ static void omap5evm_lcd_init(void)
 		"lcd1_reset_gpio");
 	if (r)
 		pr_err("%s: Could not get lcd1_reset_gpio\n", __func__);
+
+	/* DSIPHY */
+	omap_writel(0x1FF80000, 0x4A002E14);
 }
 
 static void omap5evm_hdmi_init(void)
@@ -770,9 +775,9 @@ static struct omap_dss_device omap5evm_hdmi_device = {
 };
 
 static struct omap_dss_device *omap5evm_dss_devices[] = {
+	&omap5evm_lcd_device,
+	&omap5evm_hdmi_device,
 	&omap5evm_dp_device,
-	//&omap5evm_lcd_device,
-	//&omap5evm_hdmi_device,
 };
 
 static struct omap_dss_board_info omap5evm_dss_data = {
