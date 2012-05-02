@@ -261,13 +261,11 @@ struct dsi_data {
 	struct clk *dss_clk;
 	struct clk *sys_clk;
 
-	int (*enable_pads)(int dsi_id, unsigned lane_mask);
-	void (*disable_pads)(int dsi_id, unsigned lane_mask);
-
 	struct dsi_clock_info current_cinfo;
 
 	bool vdds_dsi_enabled;
 	struct regulator *vdds_dsi_reg;
+	struct regulator *panel_supply;
 
 	struct {
 		enum dsi_vc_source source;
@@ -325,6 +323,8 @@ struct dsi_data {
 	unsigned long  regm_dispc_max, regm_dsi_max;
 	unsigned long  fint_min, fint_max;
 	unsigned long lpdiv_max;
+
+	int ddr_div;
 
 	unsigned num_lanes_supported;
 
@@ -1178,7 +1178,7 @@ static unsigned long dsi_get_txbyteclkhs(struct platform_device *dsidev)
 {
 	struct dsi_data *dsi = dsi_get_dsidrv_data(dsidev);
 
-	return dsi->current_cinfo.clkin4ddr / 16;
+	return dsi->current_cinfo.clkinxddr / (dsi->ddr_div * 4);
 }
 
 static unsigned long dsi_fclk_rate(struct platform_device *dsidev)
@@ -1316,20 +1316,20 @@ static int dsi_calc_clock_rates(struct omap_dss_device *dssdev,
 	if (cinfo->fint > dsi->fint_max || cinfo->fint < dsi->fint_min)
 		return -EINVAL;
 
-	cinfo->clkin4ddr = 2 * cinfo->regm * cinfo->fint;
+	cinfo->clkinxddr = 2 * cinfo->regm * cinfo->fint;
 
-	if (cinfo->clkin4ddr > 1800 * 1000 * 1000)
+	if (cinfo->clkinxddr > 1800 * 1000 * 1000)
 		return -EINVAL;
 
 	if (cinfo->regm_dispc > 0)
 		cinfo->dsi_pll_hsdiv_dispc_clk =
-			cinfo->clkin4ddr / cinfo->regm_dispc;
+			cinfo->clkinxddr / cinfo->regm_dispc;
 	else
 		cinfo->dsi_pll_hsdiv_dispc_clk = 0;
 
 	if (cinfo->regm_dsi > 0)
 		cinfo->dsi_pll_hsdiv_dsi_clk =
-			cinfo->clkin4ddr / cinfo->regm_dsi;
+			cinfo->clkinxddr / cinfo->regm_dsi;
 	else
 		cinfo->dsi_pll_hsdiv_dsi_clk = 0;
 
@@ -1399,9 +1399,9 @@ retry:
 
 			a = 2 * cur.regm * (cur.clkin/1000);
 			b = cur.regn * (cur.highfreq + 1);
-			cur.clkin4ddr = a / b * 1000;
+			cur.clkinxddr = a / b * 1000;
 
-			if (cur.clkin4ddr > 1800 * 1000 * 1000)
+			if (cur.clkinxddr > 1800 * 1000 * 1000)
 				break;
 
 			/* dsi_pll_hsdiv_dispc_clk(MHz) =
@@ -1410,7 +1410,7 @@ retry:
 					dsi->regm_dispc_max; ++cur.regm_dispc) {
 				struct dispc_clock_info cur_dispc;
 				cur.dsi_pll_hsdiv_dispc_clk =
-					cur.clkin4ddr / cur.regm_dispc;
+					cur.clkinxddr / cur.regm_dispc;
 
 				/* this will narrow down the search a bit,
 				 * but still give pixclocks below what was
@@ -1490,7 +1490,7 @@ int dsi_pll_set_clock_div(struct platform_device *dsidev,
 	dsi->current_cinfo.highfreq = cinfo->highfreq;
 
 	dsi->current_cinfo.fint = cinfo->fint;
-	dsi->current_cinfo.clkin4ddr = cinfo->clkin4ddr;
+	dsi->current_cinfo.clkinxddr = cinfo->clkinxddr;
 	dsi->current_cinfo.dsi_pll_hsdiv_dispc_clk =
 			cinfo->dsi_pll_hsdiv_dispc_clk;
 	dsi->current_cinfo.dsi_pll_hsdiv_dsi_clk =
@@ -1508,18 +1508,19 @@ int dsi_pll_set_clock_div(struct platform_device *dsidev,
 			cinfo->clkin,
 			cinfo->highfreq);
 
-	/* DSIPHY == CLKIN4DDR */
-	DSSDBG("CLKIN4DDR = 2 * %d / %d * %lu / %d = %lu\n",
+	/* DSIPHY == CLKINXDDR */
+	DSSDBG("CLKIN%dDDR = 2 * %d / %d * %lu / %d = %lu\n",
+			dsi->ddr_div,
 			cinfo->regm,
 			cinfo->regn,
 			cinfo->clkin,
 			cinfo->highfreq + 1,
-			cinfo->clkin4ddr);
+			cinfo->clkinxddr);
 
 	DSSDBG("Data rate on 1 DSI lane %ld Mbps\n",
-			cinfo->clkin4ddr / 1000 / 1000 / 2);
+			(cinfo->clkinxddr / 1000 / 1000 / dsi->ddr_div) * 2);
 
-	DSSDBG("Clock lane freq %ld Hz\n", cinfo->clkin4ddr / 4);
+	DSSDBG("Clock lane freq %ld Hz\n", cinfo->clkinxddr / dsi->ddr_div);
 
 	DSSDBG("regm_dispc = %d, %s (%s) = %lu\n", cinfo->regm_dispc,
 		dss_get_generic_clk_source_name(OMAP_DSS_CLK_SRC_DSI_PLL_HSDIV_DISPC),
@@ -1564,10 +1565,17 @@ int dsi_pll_set_clock_div(struct platform_device *dsidev,
 			0x7;
 	}
 
+	if (dss_has_feature(FEAT_DSI_PLL_SELFREQDCO))
+		f = cinfo->clkinxddr < 1000000000 ? 0x2 : 0x4;
+
 	l = dsi_read_reg(dsidev, DSI_PLL_CONFIGURATION2);
 
-	if (dss_has_feature(FEAT_DSI_PLL_FREQSEL))
-		l = FLD_MOD(l, f, 4, 1);	/* DSI_PLL_FREQSEL */
+	if (dss_has_feature(FEAT_DSI_PLL_FREQSEL) ||
+			dss_has_feature(FEAT_DSI_PLL_SELFREQDCO))
+		l = FLD_MOD(l, f, 4, 1);	/*
+						 * OMAP3: DSI_PLL_FREQSEL
+						 * OMAP5: PLL_SELFREQDCO
+						 */
 	l = FLD_MOD(l, cinfo->use_sys_clk ? 0 : 1,
 			11, 11);		/* DSI_PLL_CLKSEL */
 	l = FLD_MOD(l, cinfo->highfreq,
@@ -1575,6 +1583,8 @@ int dsi_pll_set_clock_div(struct platform_device *dsidev,
 	l = FLD_MOD(l, 1, 13, 13);		/* DSI_PLL_REFEN */
 	l = FLD_MOD(l, 0, 14, 14);		/* DSIPHY_CLKINEN */
 	l = FLD_MOD(l, 1, 20, 20);		/* DSI_HSDIVBYPASS */
+	if (dss_has_feature(FEAT_DSI_PLL_REFSEL))
+		l = FLD_MOD(l, 3, 22, 21);	/* REF_SYSCLK */
 	dsi_write_reg(dsidev, DSI_PLL_CONFIGURATION2, l);
 
 	REG_FLD_MOD(dsidev, DSI_PLL_GO, 1, 0, 0);	/* DSI_PLL_GO */
@@ -1648,6 +1658,9 @@ int dsi_pll_init(struct platform_device *dsidev, bool enable_hsclk,
 		if (r)
 			goto err0;
 		dsi->vdds_dsi_enabled = true;
+
+		if (dsi->panel_supply)
+			regulator_enable(dsi->panel_supply);
 	}
 
 	/* XXX PLL does not come out of reset without this... */
@@ -1700,6 +1713,8 @@ void dsi_pll_uninit(struct platform_device *dsidev, bool disconnect_lanes)
 	dsi_pll_power(dsidev, DSI_PLL_POWER_OFF);
 	if (disconnect_lanes) {
 		WARN_ON(!dsi->vdds_dsi_enabled);
+		if (dsi->panel_supply)
+			regulator_disable(dsi->panel_supply);
 		regulator_disable(dsi->vdds_dsi_reg);
 		dsi->vdds_dsi_enabled = false;
 	}
@@ -1731,8 +1746,8 @@ static void dsi_dump_dsidev_clocks(struct platform_device *dsidev,
 
 	seq_printf(s,	"Fint\t\t%-16luregn %u\n", cinfo->fint, cinfo->regn);
 
-	seq_printf(s,	"CLKIN4DDR\t%-16luregm %u\n",
-			cinfo->clkin4ddr, cinfo->regm);
+	seq_printf(s,	"CLKIN%dDDR\t%-16luregm %u\n",
+			dsi->ddr_div, cinfo->clkinxddr, cinfo->regm);
 
 	seq_printf(s,	"DSI_PLL_HSDIV_DISPC (%s)\t%-16luregm_dispc %u\t(%s)\n",
 			dss_feat_get_clk_source_name(dsi_module == 0 ?
@@ -1761,7 +1776,7 @@ static void dsi_dump_dsidev_clocks(struct platform_device *dsidev,
 	seq_printf(s,	"DSI_FCLK\t%lu\n", dsi_fclk_rate(dsidev));
 
 	seq_printf(s,	"DDR_CLK\t\t%lu\n",
-			cinfo->clkin4ddr / 4);
+			cinfo->clkinxddr / dsi->ddr_div);
 
 	seq_printf(s,	"TxByteClkHS\t%lu\n", dsi_get_txbyteclkhs(dsidev));
 
@@ -2071,6 +2086,8 @@ static unsigned dsi_get_line_buf_size(struct platform_device *dsidev)
 		return 1194 * 3;	/* 1194x24 bits */
 	case 6:
 		return 1365 * 3;	/* 1365x24 bits */
+	case 7:
+		return 1920 * 3;	/* 1920x24 bits */
 	default:
 		BUG();
 	}
@@ -2189,7 +2206,7 @@ static inline unsigned ns2ddr(struct platform_device *dsidev, unsigned ns)
 	struct dsi_data *dsi = dsi_get_dsidrv_data(dsidev);
 
 	/* convert time in ns to ddr ticks, rounding up */
-	unsigned long ddr_clk = dsi->current_cinfo.clkin4ddr / 4;
+	unsigned long ddr_clk = dsi->current_cinfo.clkinxddr / dsi->ddr_div;
 	return (ns * (ddr_clk / 1000 / 1000) + 999) / 1000;
 }
 
@@ -2197,7 +2214,7 @@ static inline unsigned ddr2ns(struct platform_device *dsidev, unsigned ddr)
 {
 	struct dsi_data *dsi = dsi_get_dsidrv_data(dsidev);
 
-	unsigned long ddr_clk = dsi->current_cinfo.clkin4ddr / 4;
+	unsigned long ddr_clk = dsi->current_cinfo.clkinxddr / dsi->ddr_div;
 	return ddr * 1000 * 1000 / (ddr_clk / 1000);
 }
 
@@ -2396,7 +2413,7 @@ static int dsi_cio_init(struct omap_dss_device *dssdev)
 
 	DSSDBGF();
 
-	r = dsi->enable_pads(dsidev->id, dsi_get_lane_mask(dssdev));
+	r = dss_dsi_enable_pads(dsi_get_dsidev_id(dsidev), dsi_get_lane_mask(dssdev));
 	if (r)
 		return r;
 
@@ -2506,21 +2523,20 @@ err_cio_pwr:
 		dsi_cio_disable_lane_override(dsidev);
 err_scp_clk_dom:
 	dsi_disable_scp_clk(dsidev);
-	dsi->disable_pads(dsidev->id, dsi_get_lane_mask(dssdev));
+	dss_dsi_disable_pads(dsi_get_dsidev_id(dsidev), dsi_get_lane_mask(dssdev));
 	return r;
 }
 
 static void dsi_cio_uninit(struct omap_dss_device *dssdev)
 {
 	struct platform_device *dsidev = dsi_get_dsidev_from_dssdev(dssdev);
-	struct dsi_data *dsi = dsi_get_dsidrv_data(dsidev);
 
 	/* DDR_CLK_ALWAYS_ON */
 	REG_FLD_MOD(dsidev, DSI_CLK_CTRL, 0, 13, 13);
 
 	dsi_cio_power(dsidev, DSI_COMPLEXIO_POWER_OFF);
 	dsi_disable_scp_clk(dsidev);
-	dsi->disable_pads(dsidev->id, dsi_get_lane_mask(dssdev));
+	dss_dsi_disable_pads(dsi_get_dsidev_id(dsidev), dsi_get_lane_mask(dssdev));
 }
 
 static void dsi_config_tx_fifo(struct platform_device *dsidev,
@@ -4528,6 +4544,7 @@ int dsi_init_display(struct omap_dss_device *dssdev)
 {
 	struct platform_device *dsidev = dsi_get_dsidev_from_dssdev(dssdev);
 	struct dsi_data *dsi = dsi_get_dsidrv_data(dsidev);
+	struct regulator *panel_supply;
 
 	DSSDBG("DSI init\n");
 
@@ -4547,6 +4564,14 @@ int dsi_init_display(struct omap_dss_device *dssdev)
 		}
 
 		dsi->vdds_dsi_reg = vdds_dsi;
+	}
+
+	panel_supply = regulator_get(&dsi->pdev->dev, "panel_supply");
+	if (IS_ERR(panel_supply)) {
+		DSSERR("can't get regulator for panel\n");
+		dsi->panel_supply = NULL;
+	} else {
+		dsi->panel_supply = panel_supply;
 	}
 
 	return 0;
@@ -4680,8 +4705,6 @@ static void dsi_put_clocks(struct platform_device *dsidev)
 /* DSI1 HW IP initialisation */
 static int omap_dsihw_probe(struct platform_device *dsidev)
 {
-	struct omap_display_platform_data *dss_plat_data;
-	struct omap_dss_board_info *board_info;
 	u32 rev;
 	int r, i, dsi_module = dsi_get_dsidev_id(dsidev);
 	struct resource *dsi_mem;
@@ -4694,11 +4717,6 @@ static int omap_dsihw_probe(struct platform_device *dsidev)
 	dsi->pdev = dsidev;
 	dsi_pdev_map[dsi_module] = dsidev;
 	dev_set_drvdata(&dsidev->dev, dsi);
-
-	dss_plat_data = dsidev->dev.platform_data;
-	board_info = dss_plat_data->board_data;
-	dsi->enable_pads = board_info->dsi_enable_pads;
-	dsi->disable_pads = board_info->dsi_disable_pads;
 
 	spin_lock_init(&dsi->irq_lock);
 	spin_lock_init(&dsi->errors_lock);
@@ -4761,6 +4779,8 @@ static int omap_dsihw_probe(struct platform_device *dsidev)
 
 	pm_runtime_enable(&dsidev->dev);
 
+	dsi->ddr_div = dss_feat_get_dsi_ddr_div();
+
 	r = dsi_runtime_get(dsidev);
 	if (r)
 		goto err_runtime_get;
@@ -4813,7 +4833,6 @@ static int omap_dsihw_remove(struct platform_device *dsidev)
 static int dsi_runtime_suspend(struct device *dev)
 {
 	dispc_runtime_put();
-	dss_runtime_put();
 
 	return 0;
 }
@@ -4822,20 +4841,11 @@ static int dsi_runtime_resume(struct device *dev)
 {
 	int r;
 
-	r = dss_runtime_get();
-	if (r)
-		goto err_get_dss;
-
 	r = dispc_runtime_get();
 	if (r)
-		goto err_get_dispc;
+		return r;
 
 	return 0;
-
-err_get_dispc:
-	dss_runtime_put();
-err_get_dss:
-	return r;
 }
 
 static const struct dev_pm_ops dsi_pm_ops = {

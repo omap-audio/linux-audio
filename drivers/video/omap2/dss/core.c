@@ -87,6 +87,41 @@ struct regulator *dss_get_vdds_sdi(void)
 	return reg;
 }
 
+int dss_get_ctx_loss_count(struct device *dev)
+{
+	struct omap_dss_board_info *board_data = core.pdev->dev.platform_data;
+	int cnt;
+
+	if (!board_data->get_context_loss_count)
+		return -ENOENT;
+
+	cnt = board_data->get_context_loss_count(dev);
+
+	WARN_ONCE(cnt < 0, "get_context_loss_count failed: %d\n", cnt);
+
+	return cnt;
+}
+
+int dss_dsi_enable_pads(int dsi_id, unsigned lane_mask)
+{
+	struct omap_dss_board_info *board_data = core.pdev->dev.platform_data;
+
+	if (!board_data->dsi_enable_pads)
+		return -ENOENT;
+
+	return board_data->dsi_enable_pads(dsi_id, lane_mask);
+}
+
+void dss_dsi_disable_pads(int dsi_id, unsigned lane_mask)
+{
+	struct omap_dss_board_info *board_data = core.pdev->dev.platform_data;
+
+	if (!board_data->dsi_enable_pads)
+		return;
+
+	return board_data->dsi_disable_pads(dsi_id, lane_mask);
+}
+
 #if defined(CONFIG_DEBUG_FS) && defined(CONFIG_OMAP2_DSS_DEBUG_SUPPORT)
 static int dss_debug_show(struct seq_file *s, void *unused)
 {
@@ -251,7 +286,6 @@ static int omap_dss_resume(struct platform_device *pdev)
 }
 
 static struct platform_driver omap_dss_driver = {
-	.probe          = omap_dss_probe,
 	.remove         = omap_dss_remove,
 	.shutdown	= omap_dss_shutdown,
 	.suspend	= omap_dss_suspend,
@@ -474,7 +508,7 @@ static int __init omap_dss_register_drivers(void)
 {
 	int r;
 
-	r = platform_driver_register(&omap_dss_driver);
+	r = platform_driver_probe(&omap_dss_driver, omap_dss_probe);
 	if (r)
 		return r;
 
@@ -488,6 +522,18 @@ static int __init omap_dss_register_drivers(void)
 	if (r) {
 		DSSERR("Failed to initialize dispc platform driver\n");
 		goto err_dispc;
+	}
+
+	r = dpi_init_platform_driver();
+	if (r) {
+		DSSERR("Failed to initialize dpi platform driver\n");
+		goto err_dpi;
+	}
+
+	r = sdi_init_platform_driver();
+	if (r) {
+		DSSERR("Failed to initialize sdi platform driver\n");
+		goto err_sdi;
 	}
 
 	r = rfbi_init_platform_driver();
@@ -523,6 +569,10 @@ err_dsi:
 err_venc:
 	rfbi_uninit_platform_driver();
 err_rfbi:
+	sdi_uninit_platform_driver();
+err_sdi:
+	dpi_uninit_platform_driver();
+err_dpi:
 	dispc_uninit_platform_driver();
 err_dispc:
 	dss_uninit_platform_driver();
@@ -538,6 +588,8 @@ static void __exit omap_dss_unregister_drivers(void)
 	dsi_uninit_platform_driver();
 	venc_uninit_platform_driver();
 	rfbi_uninit_platform_driver();
+	sdi_uninit_platform_driver();
+	dpi_uninit_platform_driver();
 	dispc_uninit_platform_driver();
 	dss_uninit_platform_driver();
 

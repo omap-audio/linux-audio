@@ -134,7 +134,7 @@ struct dispc_clock_info {
 struct dsi_clock_info {
 	/* rates that we get with dividers below */
 	unsigned long fint;
-	unsigned long clkin4ddr;
+	unsigned long clkinxddr;
 	unsigned long clkin;
 	unsigned long dsi_pll_hsdiv_dispc_clk;	/* OMAP3: DSI1_PLL_CLK
 						 * OMAP4: PLLx_CLK1 */
@@ -162,6 +162,9 @@ struct platform_device;
 struct bus_type *dss_get_bus(void);
 struct regulator *dss_get_vdds_dsi(void);
 struct regulator *dss_get_vdds_sdi(void);
+int dss_get_ctx_loss_count(struct device *dev);
+int dss_dsi_enable_pads(int dsi_id, unsigned lane_mask);
+void dss_dsi_disable_pads(int dsi_id, unsigned lane_mask);
 
 /* apply */
 void dss_apply_init(void);
@@ -227,9 +230,6 @@ int dss_ovl_check(struct omap_overlay *ovl,
 int dss_init_platform_driver(void);
 void dss_uninit_platform_driver(void);
 
-int dss_runtime_get(void);
-void dss_runtime_put(void);
-
 void dss_select_hdmi_venc_clk_source(enum dss_hdmi_venc_clk_source_select);
 enum dss_hdmi_venc_clk_source_select dss_get_hdmi_venc_clk_source(void);
 const char *dss_get_generic_clk_source_name(enum omap_dss_clk_source clk_src);
@@ -266,17 +266,12 @@ int dss_calc_clock_div(bool is_tft, unsigned long req_pck,
 
 /* SDI */
 #ifdef CONFIG_OMAP2_DSS_SDI
-int sdi_init(void);
-void sdi_exit(void);
+int sdi_init_platform_driver(void);
+void sdi_uninit_platform_driver(void);
 int sdi_init_display(struct omap_dss_device *display);
 #else
-static inline int sdi_init(void)
-{
-	return 0;
-}
-static inline void sdi_exit(void)
-{
-}
+static inline int sdi_init_platform_driver(void) { return 0; }
+static inline void sdi_uninit_platform_driver(void) { }
 #endif
 
 /* DSI */
@@ -378,17 +373,12 @@ static inline struct platform_device *dsi_get_dsidev_from_id(int module)
 
 /* DPI */
 #ifdef CONFIG_OMAP2_DSS_DPI
-int dpi_init(void);
-void dpi_exit(void);
+int dpi_init_platform_driver(void);
+void dpi_uninit_platform_driver(void);
 int dpi_init_display(struct omap_dss_device *dssdev);
 #else
-static inline int dpi_init(void)
-{
-	return 0;
-}
-static inline void dpi_exit(void)
-{
-}
+static inline int dpi_init_platform_driver(void) { return 0; }
+static inline void dpi_uninit_platform_driver(void) { }
 #endif
 
 /* DISPC */

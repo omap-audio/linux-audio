@@ -24,6 +24,7 @@
 #include <linux/err.h>
 #include <linux/regulator/consumer.h>
 #include <linux/export.h>
+#include <linux/platform_device.h>
 
 #include <video/omapdss.h>
 #include "dss.h"
@@ -70,10 +71,6 @@ int omapdss_sdi_display_enable(struct omap_dss_device *dssdev)
 	r = regulator_enable(sdi.vdds_sdi_reg);
 	if (r)
 		goto err_reg_enable;
-
-	r = dss_runtime_get();
-	if (r)
-		goto err_get_dss;
 
 	r = dispc_runtime_get();
 	if (r)
@@ -137,8 +134,6 @@ err_set_dss_clock_div:
 err_calc_clock_div:
 	dispc_runtime_put();
 err_get_dispc:
-	dss_runtime_put();
-err_get_dss:
 	regulator_disable(sdi.vdds_sdi_reg);
 err_reg_enable:
 	omap_dss_stop_device(dssdev);
@@ -154,7 +149,6 @@ void omapdss_sdi_display_disable(struct omap_dss_device *dssdev)
 	dss_sdi_disable();
 
 	dispc_runtime_put();
-	dss_runtime_put();
 
 	regulator_disable(sdi.vdds_sdi_reg);
 
@@ -182,11 +176,31 @@ int sdi_init_display(struct omap_dss_device *dssdev)
 	return 0;
 }
 
-int sdi_init(void)
+static int omap_sdi_probe(struct platform_device *pdev)
 {
 	return 0;
 }
 
-void sdi_exit(void)
+static int omap_sdi_remove(struct platform_device *pdev)
 {
+	return 0;
+}
+
+static struct platform_driver omap_sdi_driver = {
+	.probe		= omap_sdi_probe,
+	.remove         = omap_sdi_remove,
+	.driver         = {
+		.name   = "omapdss_sdi",
+		.owner  = THIS_MODULE,
+	},
+};
+
+int sdi_init_platform_driver(void)
+{
+	return platform_driver_register(&omap_sdi_driver);
+}
+
+void sdi_uninit_platform_driver(void)
+{
+	platform_driver_unregister(&omap_sdi_driver);
 }

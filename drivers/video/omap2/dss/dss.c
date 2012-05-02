@@ -62,6 +62,9 @@ struct dss_reg {
 #define REG_FLD_MOD(idx, val, start, end) \
 	dss_write_reg(idx, FLD_MOD(dss_read_reg(idx), val, start, end))
 
+static int dss_runtime_get(void);
+static void dss_runtime_put(void);
+
 static struct {
 	struct platform_device *pdev;
 	void __iomem    *base;
@@ -430,6 +433,9 @@ int dss_calc_clock_rates(struct dss_clock_info *cinfo)
 		if (cpu_is_omap3630() || cpu_is_omap44xx())
 			fck_div_max = 32;
 
+		if (cpu_is_omap54xx())
+			fck_div_max = 64;
+
 		if (cinfo->fck_div > fck_div_max || cinfo->fck_div == 0)
 			return -EINVAL;
 
@@ -476,7 +482,7 @@ int dss_get_clock_div(struct dss_clock_info *cinfo)
 
 		prate = clk_get_rate(clk_get_parent(dss.dpll4_m4_ck));
 
-		if (cpu_is_omap3630() || cpu_is_omap44xx())
+		if (cpu_is_omap3630() || cpu_is_omap44xx() || cpu_is_omap54xx())
 			cinfo->fck_div = prate / (cinfo->fck);
 		else
 			cinfo->fck_div = prate / (cinfo->fck / 2);
@@ -557,10 +563,13 @@ retry:
 		if (cpu_is_omap3630() || cpu_is_omap44xx())
 			fck_div_max = 32;
 
+		if (cpu_is_omap54xx())
+			fck_div_max = 64;
+
 		for (fck_div = fck_div_max; fck_div > 0; --fck_div) {
 			struct dispc_clock_info cur_dispc;
 
-			if (fck_div_max == 32)
+			if (fck_div_max == 32 || fck_div_max == 64)
 				fck = prate / fck_div;
 			else
 				fck = prate / fck_div * 2;
@@ -682,6 +691,13 @@ static int dss_get_clocks(void)
 			r = PTR_ERR(clk);
 			goto err;
 		}
+	} else if (cpu_is_omap54xx()) {
+		clk = clk_get(NULL, "dpll_per_h12x2_ck");
+		if (IS_ERR(clk)) {
+			DSSERR("Failed to get dpll_per_h12x2_ck\n");
+			r = PTR_ERR(clk);
+			goto err;
+		}
 	} else { /* omap24xx */
 		clk = NULL;
 	}
@@ -706,7 +722,7 @@ static void dss_put_clocks(void)
 	clk_put(dss.dss_clk);
 }
 
-int dss_runtime_get(void)
+static int dss_runtime_get(void)
 {
 	int r;
 
@@ -717,7 +733,7 @@ int dss_runtime_get(void)
 	return r < 0 ? r : 0;
 }
 
-void dss_runtime_put(void)
+static void dss_runtime_put(void)
 {
 	int r;
 
@@ -785,18 +801,6 @@ static int omap_dsshw_probe(struct platform_device *pdev)
 	dss.lcd_clk_source[0] = OMAP_DSS_CLK_SRC_FCK;
 	dss.lcd_clk_source[1] = OMAP_DSS_CLK_SRC_FCK;
 
-	r = dpi_init();
-	if (r) {
-		DSSERR("Failed to initialize DPI\n");
-		goto err_dpi;
-	}
-
-	r = sdi_init();
-	if (r) {
-		DSSERR("Failed to initialize SDI\n");
-		goto err_sdi;
-	}
-
 	rev = dss_read_reg(DSS_REVISION);
 	printk(KERN_INFO "OMAP DSS rev %d.%d\n",
 			FLD_GET(rev, 7, 4), FLD_GET(rev, 3, 0));
@@ -804,10 +808,7 @@ static int omap_dsshw_probe(struct platform_device *pdev)
 	dss_runtime_put();
 
 	return 0;
-err_sdi:
-	dpi_exit();
-err_dpi:
-	dss_runtime_put();
+
 err_runtime_get:
 	pm_runtime_disable(&pdev->dev);
 	dss_put_clocks();
@@ -816,9 +817,6 @@ err_runtime_get:
 
 static int omap_dsshw_remove(struct platform_device *pdev)
 {
-	dpi_exit();
-	sdi_exit();
-
 	pm_runtime_disable(&pdev->dev);
 
 	dss_put_clocks();
@@ -844,7 +842,6 @@ static const struct dev_pm_ops dss_pm_ops = {
 };
 
 static struct platform_driver omap_dsshw_driver = {
-	.probe          = omap_dsshw_probe,
 	.remove         = omap_dsshw_remove,
 	.driver         = {
 		.name   = "omapdss_dss",
@@ -855,7 +852,7 @@ static struct platform_driver omap_dsshw_driver = {
 
 int dss_init_platform_driver(void)
 {
-	return platform_driver_register(&omap_dsshw_driver);
+	return platform_driver_probe(&omap_dsshw_driver, omap_dsshw_probe);
 }
 
 void dss_uninit_platform_driver(void)
