@@ -18,6 +18,7 @@
 #include <linux/slab.h>
 #include <linux/of.h>
 #include <linux/platform_data/omap4-keypad.h>
+#include <linux/pm_runtime.h>
 
 #include <mach/hardware.h>
 #include <mach/irqs.h>
@@ -218,6 +219,12 @@ static struct platform_device omap3isp_device = {
 static struct omap_iommu_arch_data omap3_isp_iommu = {
 	.name = "isp",
 };
+
+struct isp_platform_data {
+	struct isp_v4l2_subdevs_group *subdevs;
+	void (*set_constraints)(struct isp_device *isp, bool enable);
+};
+static struct isp_platform_data bogus_isp_pdata;
 
 int omap3_init_camera(struct isp_platform_data *pdata)
 {
@@ -691,6 +698,48 @@ void __init omap242x_init_mmc(struct omap_mmc_platform_data **mmc_data)
 
 #endif
 
+static __init void omap_init_dev(char *name)
+{
+	struct platform_device *pd;
+	struct omap_hwmod *oh;
+
+	oh = omap_hwmod_lookup(name);
+	if (!oh) {
+		pr_err("Could not look up %s hwmod\n", name);
+		return;
+	}
+
+	pd = omap_device_build(name, -1, oh, NULL, 0, NULL, 0, 0);
+	if (IS_ERR(pd))
+		pr_err("Can't build omap_device for %s.\n", name);
+	else
+		pm_runtime_enable(&pd->dev);
+}
+
+static void __init omap_init_fdif(void)
+{
+	if (!cpu_is_omap44xx() && !cpu_is_omap54xx())
+		return;
+
+	omap_init_dev("fdif");
+}
+
+static void __init omap_init_sl2if(void)
+{
+	if (!cpu_is_omap44xx() && !cpu_is_omap54xx())
+		return;
+
+	omap_init_dev("sl2if");
+}
+
+static void __init omap_init_iss(void)
+{
+	if (!cpu_is_omap44xx() && !cpu_is_omap54xx())
+		return;
+
+	omap_init_dev("iss");
+}
+
 /*-------------------------------------------------------------------------*/
 
 #if defined(CONFIG_HDQ_MASTER_OMAP) || defined(CONFIG_HDQ_MASTER_OMAP_MODULE)
@@ -767,6 +816,7 @@ static int __init omap2_init_devices(void)
 	omap_init_dmic();
 	omap_init_camera();
 	omap_init_hdmi_audio();
+	omap3_init_camera(&bogus_isp_pdata);
 	omap_init_mbox();
 	omap_init_mcspi();
 	omap_init_pmu();
@@ -775,6 +825,9 @@ static int __init omap2_init_devices(void)
 	omap_init_sham();
 	omap_init_aes();
 	omap_init_vout();
+	omap_init_fdif();
+	omap_init_sl2if();
+	omap_init_iss();
 
 	return 0;
 }

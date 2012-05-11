@@ -37,6 +37,7 @@
 #include "common.h"
 #include <asm/hardware/gic.h>
 #include <plat/common.h>
+#include <plat/remoteproc.h>
 #include "common-board-devices.h"
 #include "mux.h"
 
@@ -766,10 +767,16 @@ static void __init omap_5430evm_init(void)
 	omap5evm_display_init();
 }
 
+static void __init omap_5430evm_reserve(void)
+{
+	omap_rproc_reserve_cma(RPROC_CMA_OMAP5);
+	omap_reserve();
+}
+
 MACHINE_START(OMAP5_SEVM, "OMAP5430 evm board")
 	/* Maintainer: Santosh Shilimkar - Texas Instruments Inc */
 	.atag_offset	= 0x100,
-	.reserve	= omap_reserve,
+	.reserve	= omap_5430evm_reserve,
 	.map_io		= omap5_map_io,
 	.init_early	= omap_5430evm_init_early,
 	.init_irq	= gic_init_irq,

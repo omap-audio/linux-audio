@@ -613,6 +613,9 @@ static char * const migratetype_names[MIGRATE_TYPES] = {
 	"Reclaimable",
 	"Movable",
 	"Reserve",
+#ifdef CONFIG_CMA
+	"CMA",
+#endif
 	"Isolate",
 };
 
@@ -738,7 +741,8 @@ const char * const vmstat_text[] = {
 	"pgmajfault",
 
 	TEXTS_FOR_ZONES("pgrefill")
-	TEXTS_FOR_ZONES("pgsteal")
+	TEXTS_FOR_ZONES("pgsteal_kswapd")
+	TEXTS_FOR_ZONES("pgsteal_direct")
 	TEXTS_FOR_ZONES("pgscan_kswapd")
 	TEXTS_FOR_ZONES("pgscan_direct")
 
@@ -747,7 +751,6 @@ const char * const vmstat_text[] = {
 #endif
 	"pginodesteal",
 	"slabs_scanned",
-	"kswapd_steal",
 	"kswapd_inodesteal",
 	"kswapd_low_wmark_hit_quickly",
 	"kswapd_high_wmark_hit_quickly",
