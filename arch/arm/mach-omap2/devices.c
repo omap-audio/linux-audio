@@ -365,6 +365,26 @@ static void omap_init_audio(void)
 static inline void omap_init_audio(void) {}
 #endif
 
+#if defined(CONFIG_SND_OMAP_SOC_MCASP) || \
+	defined(CONFIG_SND_OMAP_SOC_MCASP_MODULE)
+static void omap_init_mcasp(void)
+{
+	struct omap_hwmod *oh;
+	struct platform_device *pdev;
+
+	oh = omap_hwmod_lookup("mcasp");
+	if (!oh) {
+		pr_err("could not look up mcasp hw_mod\n");
+		return;
+	}
+
+	pdev = omap_device_build("omap-mcasp", -1, oh, NULL, 0);
+	WARN(IS_ERR(pdev), "Can't build omap_device for omap-mcasp-audio.\n");
+}
+#else
+static inline void omap_init_mcasp(void) {}
+#endif
+
 #if defined(CONFIG_SND_OMAP_SOC_MCPDM) || \
 		defined(CONFIG_SND_OMAP_SOC_MCPDM_MODULE)
 
@@ -648,6 +668,7 @@ static int __init omap2_init_devices(void)
 		omap_init_mcspi();
 		omap_init_sham();
 		omap_init_aes();
+		omap_init_mcasp();
 	}
 	omap_init_sti();
 	omap_init_rng();
