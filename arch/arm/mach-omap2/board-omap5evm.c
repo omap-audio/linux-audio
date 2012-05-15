@@ -514,6 +514,11 @@ static struct platform_device omap5evm_dmic_codec = {
 	.id	= -1,
 };
 
+static struct platform_device omap5evm_spdif_dit_codec = {
+	.name           = "spdif-dit",
+	.id             = -1,
+};
+
 static struct omap_abe_twl6040_data omap5evm_abe_audio_data = {
 	/* Audio out */
 	.has_hs		= ABE_TWL6040_LEFT | ABE_TWL6040_RIGHT,
@@ -546,6 +551,7 @@ static struct platform_device omap5evm_abe_audio = {
 
 static struct platform_device *omap5evm_devices[] __initdata = {
 	&omap5evm_dmic_codec,
+	&omap5evm_spdif_dit_codec,
 	&omap5evm_abe_audio,
 };
 
