@@ -912,7 +912,6 @@ static struct snd_soc_dai_link omap_abe_dai[] = {
 		.ops = &omap_abe_mcbsp_ops,
 		.be_id = OMAP_ABE_DAI_MM_FM,
 	},
-#if 0
 	{
 		.name = OMAP_ABE_BE_MM_EXT1,
 		.stream_name = "MODEM",
@@ -931,7 +930,6 @@ static struct snd_soc_dai_link omap_abe_dai[] = {
 		.be_id = OMAP_ABE_DAI_MODEM,
 		.ignore_suspend = 1,
 	},
-#endif
 	{
 		.name = OMAP_ABE_BE_DMIC0,
 		.stream_name = "DMIC0 Capture",
