@@ -35,6 +35,7 @@
 #include <sound/soc-dapm.h>
 #include <sound/initval.h>
 #include <sound/tlv.h>
+#include <sound/jack.h>
 
 #include "twl6040.h"
 
@@ -56,7 +57,9 @@
 struct twl6040_jack_data {
 	struct snd_soc_jack *jack;
 	struct delayed_work work;
+	struct delayed_work work2;
 	int report;
+	bool inserted;
 };
 
 /* codec private data */
@@ -357,6 +360,50 @@ static int twl6040_ep_drv_event(struct snd_soc_dapm_widget *w,
 	return ret;
 }
 
+static void twl6040_accessorytype_work(struct work_struct *work)
+{
+	struct twl6040_data *priv = container_of(work,
+					struct twl6040_data, hs_jack.work2.work);
+	struct snd_soc_codec *codec = priv->codec;
+	int upcres, dncres, report;
+//	int amicbctl;
+
+	if (!priv->hs_jack.inserted)
+		return;
+
+	/* This just makes the detection always fail... */
+// 	amicbctl = twl6040_read_reg_cache(codec, TWL6040_REG_AMICBCTL);
+// 	twl6040_write(codec, TWL6040_REG_AMICBCTL, amicbctl | 0x01);
+// 	usleep_range(1500, 2000);
+// 	twl6040_write(codec, TWL6040_REG_AMICBCTL, amicbctl);
+// 	msleep(100);
+
+	twl6040_write(codec, 0x24, 0x80);
+	msleep(500);
+
+	upcres = twl6040_read_reg_volatile(codec, 0x26);
+	dncres = twl6040_read_reg_volatile(codec, 0x27);
+
+	twl6040_write(codec, 0x24, 0);
+
+	if ((dncres & 0x03) != 0x03) {
+		dev_err(codec->dev, " It is not fully plugged, try again later\n");
+		queue_delayed_work(priv->workqueue, &priv->hs_jack.work2,
+					msecs_to_jiffies(500));
+		return;
+	}
+
+	if (upcres & 0x10) {
+		dev_err(codec->dev, " Looks like a headset\n");
+		report = priv->hs_jack.report = SND_JACK_HEADSET;
+	} else {
+		dev_err(codec->dev, " Looks like a headphone\n");
+		report = priv->hs_jack.report = SND_JACK_HEADPHONE;
+	}
+
+	snd_soc_jack_report(priv->hs_jack.jack, report, report);
+}
+
 static void twl6040_hs_jack_report(struct snd_soc_codec *codec,
 				   struct snd_soc_jack *jack, int report)
 {
@@ -367,10 +414,16 @@ static void twl6040_hs_jack_report(struct snd_soc_codec *codec,
 
 	/* Sync status */
 	status = twl6040_read_reg_volatile(codec, TWL6040_REG_STATUS);
-	if (status & TWL6040_PLUGCOMP)
-		snd_soc_jack_report(jack, report, report);
-	else
+	if (status & TWL6040_PLUGCOMP) {
+		dev_err(codec->dev, "Jack inserted\n");
+		priv->hs_jack.inserted = 1;
+		queue_delayed_work(priv->workqueue, &priv->hs_jack.work2,
+					   msecs_to_jiffies(0));
+	} else {
+		dev_err(codec->dev, "Jack removed\n");
+		priv->hs_jack.inserted = 0;
 		snd_soc_jack_report(jack, 0, report);
+	}
 
 	mutex_unlock(&priv->mutex);
 }
@@ -1155,6 +1208,7 @@ static int twl6040_probe(struct snd_soc_codec *codec)
 	}
 
 	INIT_DELAYED_WORK(&priv->hs_jack.work, twl6040_accessory_work);
+	INIT_DELAYED_WORK(&priv->hs_jack.work2, twl6040_accessorytype_work);
 
 	mutex_init(&priv->mutex);
 
