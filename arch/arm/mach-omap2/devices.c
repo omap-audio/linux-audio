@@ -392,6 +392,11 @@ static struct platform_device omap_abe_vxrec = {
 	.id     = -1,
 };
 
+static struct platform_device omap_abe_echo = {
+	.name   = "omap-abe-echo-dai",
+	.id     = -1,
+};
+
 static struct omap_device_pm_latency omap_aess_latency[] = {
 	{
 		.deactivate_func = omap_device_idle_hwmods,
@@ -420,6 +425,7 @@ static void omap_init_aess(void)
 	}
 
 	platform_device_register(&omap_abe_vxrec);
+	platform_device_register(&omap_abe_echo);
 }
 #else
 static inline void omap_init_aess(void) {}
