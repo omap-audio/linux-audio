@@ -23,6 +23,10 @@
 #include <linux/mfd/palmas.h>
 #endif
 
+#include <linux/i2c/twl.h>
+#include <linux/mfd/twl6040.h>
+#include <linux/platform_data/omap-abe-twl6040.h>
+
 #include <asm/mach-types.h>
 #include <asm/mach/arch.h>
 #include <asm/mach/map.h>
@@ -210,6 +214,9 @@ static struct regulator_init_data omap5_smps6 = {
 	},
 };
 
+static struct regulator_consumer_supply omap5_vdds1v8_main_supply[] = {
+	REGULATOR_SUPPLY("vio", "1-004b"),
+};
 static struct regulator_init_data omap5_smps7 = {
 	.constraints = {
 		.min_uV			= 1800000,
@@ -219,6 +226,8 @@ static struct regulator_init_data omap5_smps7 = {
 		.valid_ops_mask		= REGULATOR_CHANGE_MODE
 					| REGULATOR_CHANGE_STATUS,
 	},
+	.num_consumer_supplies	= ARRAY_SIZE(omap5_vdds1v8_main_supply),
+	.consumer_supplies	= omap5_vdds1v8_main_supply,
 };
 
 static struct regulator_init_data omap5_smps8 = {
@@ -234,7 +243,7 @@ static struct regulator_init_data omap5_smps8 = {
 };
 
 static struct regulator_consumer_supply omap5_adac_supply[] = {
-	REGULATOR_SUPPLY("vcc", "soc-audio"),
+	REGULATOR_SUPPLY("v2v1", "1-004b"),
 };
 
 static struct regulator_init_data omap5_smps9 = {
@@ -483,6 +492,82 @@ static struct palmas_platform_data palmas_omap5 = {
 };
 #endif  /* CONFIG_OMAP5_SEVM_PALMAS */
 
+static struct twl6040_codec_data twl6040_codec = {
+	/* single-step ramp for headset and handsfree */
+	.hs_left_step	= 0x0f,
+	.hs_right_step	= 0x0f,
+	.hf_left_step	= 0x1d,
+	.hf_right_step	= 0x1d,
+};
+
+static struct twl6040_vibra_data twl6040_vibra = {
+	.vibldrv_res = 8,
+	.vibrdrv_res = 3,
+	.viblmotor_res = 10,
+	.vibrmotor_res = 10,
+	.vddvibl_uV = 0,	/* fixed volt supply - VBAT */
+	.vddvibr_uV = 0,	/* fixed volt supply - VBAT */
+};
+
+static struct twl6040_platform_data twl6040_data = {
+	.codec		= &twl6040_codec,
+	.vibra		= &twl6040_vibra,
+	.audpwron_gpio	= 145,
+};
+
+static struct platform_device omap5evm_dmic_codec = {
+	.name	= "dmic-codec",
+	.id	= -1,
+};
+
+static struct platform_device omap5evm_hdmi_audio_codec = {
+	.name	= "hdmi-audio-codec",
+	.id	= -1,
+};
+
+static struct platform_device omap5evm_spdif_dit_codec = {
+	.name           = "spdif-dit",
+	.id             = -1,
+};
+
+static struct omap_abe_twl6040_data omap5evm_abe_audio_data = {
+	/* Audio out */
+	.has_hs		= ABE_TWL6040_LEFT | ABE_TWL6040_RIGHT,
+	/* HandsFree through expasion connector */
+	.has_hf		= ABE_TWL6040_LEFT | ABE_TWL6040_RIGHT,
+	/* Earpiece */
+	.has_ep		= 1,
+	/* PandaBoard: FM TX, PandaBoardES: can be connected to audio out */
+	.has_aux	= ABE_TWL6040_LEFT | ABE_TWL6040_RIGHT,
+	/* PandaBoard: FM RX, PandaBoardES: audio in */
+	.has_afm	= ABE_TWL6040_LEFT | ABE_TWL6040_RIGHT,
+	.has_abe	= 1,
+	.has_dmic	= 1,
+	.has_hsmic	= 1,
+	.has_mainmic	= 1,
+	.has_submic	= 1,
+	/* Jack detection. */
+	.jack_detection	= 1,
+	/* MCLK input is 19.2MHz */
+	.mclk_freq	= 19200000,
+	.card_name = "OMAP5EVM",
+
+};
+
+static struct platform_device omap5evm_abe_audio = {
+	.name		= "omap-abe-twl6040",
+	.id		= -1,
+	.dev = {
+		.platform_data = &omap5evm_abe_audio_data,
+	},
+};
+
+static struct platform_device *omap5evm_devices[] __initdata = {
+	&omap5evm_dmic_codec,
+	&omap5evm_hdmi_audio_codec,
+	&omap5evm_spdif_dit_codec,
+	&omap5evm_abe_audio,
+};
 static struct i2c_board_info __initdata omap5evm_i2c_1_boardinfo[] = {
 #ifdef CONFIG_OMAP5_SEVM_PALMAS
 	{
@@ -491,6 +576,11 @@ static struct i2c_board_info __initdata omap5evm_i2c_1_boardinfo[] = {
 		.irq = OMAP44XX_IRQ_SYS_1N,
 	},
 #endif
+	{
+		I2C_BOARD_INFO("twl6040", 0x4b),
+		.platform_data = &twl6040_data,
+		.irq = OMAP44XX_IRQ_SYS_2N,
+	},
 };
 
 
@@ -622,6 +712,7 @@ void __init omap_5430evm_init(void)
 {
 	omap_5430evm_i2c_init();
 
+	platform_add_devices(omap5evm_devices, ARRAY_SIZE(omap5evm_devices));
 	omap5evm_display_init();
 }
 
