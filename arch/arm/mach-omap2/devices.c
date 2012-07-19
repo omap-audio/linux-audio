@@ -828,11 +828,16 @@ static int __init omap2_init_devices(void)
 	omap_init_mbox();
 	/* If dtb is there, the devices will be created dynamically */
 	if (!of_have_populated_dt()) {
+		omap_init_mcspi();
+	}
+
+	/* OMAP5 has not DT boot for Audio due to PALMAS PMIC */
+	if (!of_have_populated_dt() || cpu_is_omap54xx()) {
 		omap_init_aess();
 		omap_init_dmic();
 		omap_init_mcpdm();
-		omap_init_mcspi();
 	}
+
 	omap_init_pmu();
 	omap_hdq_init();
 	omap_init_sti();
