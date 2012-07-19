@@ -246,8 +246,8 @@ static struct regulator_init_data omap5_smps9 = {
 		.valid_ops_mask		= REGULATOR_CHANGE_MODE
 					| REGULATOR_CHANGE_STATUS,
 	},
-	.num_consumer_supplies	= ARRAY_SIZE(omap5_adac_supply),
-	.consumer_supplies	= omap5_adac_supply,
+	.num_consumer_supplies  = ARRAY_SIZE(omap5_adac_supply),
+	.consumer_supplies      = omap5_adac_supply,
 
 };
 
@@ -468,10 +468,10 @@ static struct palmas_usb_platform_data omap5_palmas_usb = {
 
 static struct palmas_platform_data palmas_omap5 = {
 	.gpio_base = OMAP5_GPIO_END,
-#if 0
-	.power_ctrl = POWER_CTRL_NSLEEP_MASK | POWER_CTRL_ENABLE1_MASK |
-			POWER_CTRL_ENABLE1_MASK,
-#endif
+
+	.power_ctrl = PALMAS_POWER_CTRL_NSLEEP_MASK | PALMAS_POWER_CTRL_ENABLE1_MASK |
+			PALMAS_POWER_CTRL_ENABLE1_MASK,
+
 	.gpadc_pdata = &omap5_palmas_gpadc,
 	.pmic_pdata = &omap5_palmas_pmic,
 /*	.usb_pdata = &omap5_palmas_usb,*/
