@@ -39,6 +39,20 @@
 #include <video/omapdss.h>
 #include <video/omap-panel-lg4591.h>
 
+#include "mux.h"
+#include "mux54xx.h"
+
+#ifdef CONFIG_OMAP_MUX
+static struct omap_board_mux board_mux[] __initdata = {
+        OMAP5_MUX(I2C1_PMIC_SCL, OMAP_MUX_MODE0 | OMAP_PIN_INPUT),
+        OMAP5_MUX(I2C1_PMIC_SDA, OMAP_MUX_MODE0 | OMAP_PIN_INPUT),
+        OMAP5_MUX(PERSLIMBUS2_CLOCK, OMAP_MUX_MODE6 | OMAP_PIN_OUTPUT),
+        OMAP5_MUX(SYS_NIRQ2, OMAP_MUX_MODE0 | OMAP_PIN_INPUT),
+	{ .reg_offset = OMAP_MUX_TERMINATOR },
+};
+#else
+#define board_mux NULL
+#endif
 #define HDMI_GPIO_HPD 193
 
 #ifdef CONFIG_OMAP5_SEVM_PALMAS
@@ -710,6 +724,7 @@ static struct omap_dss_board_info omap5evm_dss_data = {
 
 void __init omap_5430evm_init(void)
 {
+	omap5_mux_init(board_mux, NULL, OMAP_PACKAGE_CBL);
 	omap_5430evm_i2c_init();
 
 	platform_add_devices(omap5evm_devices, ARRAY_SIZE(omap5evm_devices));
