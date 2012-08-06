@@ -3701,6 +3701,7 @@ int snd_soc_register_dai(struct device *dev,
 	dai->dev = dev;
 	dai->driver = dai_drv;
 	dai->dapm.dev = dev;
+	dai->dapm.idle_bias_off = 1;
 	if (!dai->driver->ops)
 		dai->driver->ops = &null_dai_ops;
 
@@ -3792,6 +3793,7 @@ int snd_soc_register_dais(struct device *dev,
 		else
 			dai->id = i;
 		dai->dapm.dev = dev;
+		dai->dapm.idle_bias_off = 1;
 		if (!dai->driver->ops)
 			dai->driver->ops = &null_dai_ops;
 
