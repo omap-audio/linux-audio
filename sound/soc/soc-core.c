@@ -826,7 +826,7 @@ static int soc_bind_dai_link(struct snd_soc_card *card, int num)
 	}
 
 	if (!rtd->cpu_dai) {
-		dev_dbg(card->dev, "CPU DAI %s not registered\n",
+		dev_err(card->dev, "CPU DAI %s not registered\n",
 			dai_link->cpu_dai_name);
 		return -EPROBE_DEFER;
 	}
@@ -857,14 +857,14 @@ static int soc_bind_dai_link(struct snd_soc_card *card, int num)
 		}
 
 		if (!rtd->codec_dai) {
-			dev_dbg(card->dev, "CODEC DAI %s not registered\n",
+			dev_err(card->dev, "CODEC DAI %s not registered\n",
 				dai_link->codec_dai_name);
 			return -EPROBE_DEFER;
 		}
 	}
 
 	if (!rtd->codec) {
-		dev_dbg(card->dev, "CODEC %s not registered\n",
+		dev_err(card->dev, "CODEC %s not registered\n",
 			dai_link->codec_name);
 		return -EPROBE_DEFER;
 	}
@@ -888,7 +888,7 @@ static int soc_bind_dai_link(struct snd_soc_card *card, int num)
 		rtd->platform = platform;
 	}
 	if (!rtd->platform) {
-		dev_dbg(card->dev, "platform %s not registered\n",
+		dev_err(card->dev, "platform %s not registered\n",
 			dai_link->platform_name);
 		return -EPROBE_DEFER;
 	}
@@ -1491,6 +1491,8 @@ static int soc_check_aux_dev(struct snd_soc_card *card, int num)
 		if (!strcmp(codec->name, aux_dev->codec_name))
 			return 0;
 	}
+
+	dev_err(card->dev, "%s not registered\n", aux_dev->codec_name);
 
 	return -EPROBE_DEFER;
 }
@@ -2201,6 +2203,9 @@ int snd_soc_set_runtime_hwparams(struct snd_pcm_substream *substream,
 	const struct snd_pcm_hardware *hw)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
+	/* TODO: hostless mode - remove from new_pcm() ?*/
+	if (!runtime)
+		return 0;
 	runtime->hw.info = hw->info;
 	runtime->hw.formats = hw->formats;
 	runtime->hw.period_bytes_min = hw->period_bytes_min;
@@ -2382,7 +2387,8 @@ int snd_soc_info_enum_double(struct snd_kcontrol *kcontrol,
 	if (uinfo->value.enumerated.item > e->max - 1)
 		uinfo->value.enumerated.item = e->max - 1;
 	strcpy(uinfo->value.enumerated.name,
-		e->texts[uinfo->value.enumerated.item]);
+		snd_soc_get_enum_text(e, uinfo->value.enumerated.item));
+
 	return 0;
 }
 EXPORT_SYMBOL_GPL(snd_soc_info_enum_double);
@@ -2546,7 +2552,7 @@ int snd_soc_info_enum_ext(struct snd_kcontrol *kcontrol,
 	if (uinfo->value.enumerated.item > e->max - 1)
 		uinfo->value.enumerated.item = e->max - 1;
 	strcpy(uinfo->value.enumerated.name,
-		e->texts[uinfo->value.enumerated.item]);
+		snd_soc_get_enum_text(e, uinfo->value.enumerated.item));
 	return 0;
 }
 EXPORT_SYMBOL_GPL(snd_soc_info_enum_ext);
@@ -4083,6 +4089,38 @@ found:
 	kfree(codec);
 }
 EXPORT_SYMBOL_GPL(snd_soc_unregister_codec);
+
+int snd_soc_card_new_dai_links(struct snd_soc_card *card,
+	struct snd_soc_dai_link *new, int count)
+{
+	struct snd_soc_dai_link *links;
+	size_t bytes;
+
+	bytes = (count + card->num_links) * sizeof(struct snd_soc_dai_link);
+	links = devm_kzalloc(card->dev, bytes, GFP_KERNEL);
+	if (!links)
+		return -ENOMEM;
+
+	if (card->dai_link) {
+		memcpy(links, card->dai_link,
+			card->num_links * sizeof(struct snd_soc_dai_link));
+		devm_kfree(card->dev, card->dai_link);
+	}
+	memcpy(links + card->num_links, new,
+		count * sizeof(struct snd_soc_dai_link));
+	card->dai_link = links;
+	card->num_links += count;
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(snd_soc_card_new_dai_links);
+
+void snd_soc_card_reset_dai_links(struct snd_soc_card *card)
+{
+	card->dai_link = NULL;
+	card->num_links = 0;
+}
+EXPORT_SYMBOL_GPL(snd_soc_card_reset_dai_links);
 
 /* Retrieve a card's name from device tree */
 int snd_soc_of_parse_card_name(struct snd_soc_card *card,

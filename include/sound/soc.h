@@ -279,6 +279,11 @@
 #define SOC_VALUE_ENUM_SINGLE_DECL(name, xreg, xshift, xmask, xtexts, xvalues) \
 	SOC_VALUE_ENUM_DOUBLE_DECL(name, xreg, xshift, xshift, xmask, xtexts, xvalues)
 
+
+#define snd_soc_get_enum_text(soc_enum, idx) \
+	(soc_enum->texts ? soc_enum->texts[idx] : soc_enum->dtexts[idx])
+
+
 /*
  * Component probe and remove ordering levels for components with runtime
  * dependencies.
@@ -363,6 +368,8 @@ int snd_soc_codec_set_pll(struct snd_soc_codec *codec, int pll_id, int source,
 
 int snd_soc_register_card(struct snd_soc_card *card);
 int snd_soc_unregister_card(struct snd_soc_card *card);
+int snd_soc_card_new_dai_links(struct snd_soc_card *card,
+	struct snd_soc_dai_link *new, int count);
 int snd_soc_suspend(struct device *dev);
 int snd_soc_resume(struct device *dev);
 int snd_soc_poweroff(struct device *dev);
@@ -705,6 +712,10 @@ struct snd_soc_codec {
 	struct snd_soc_dapm_context dapm;
 	unsigned int ignore_pmdown_time:1; /* pmdown_time is ignored at stop */
 
+	/* dynamic mixer and enum controls */
+	struct list_head dmixers;
+	struct list_head denums;
+
 #ifdef CONFIG_DEBUG_FS
 	struct dentry *debugfs_codec_root;
 	struct dentry *debugfs_reg;
@@ -829,6 +840,10 @@ struct snd_soc_platform {
 	struct list_head list;
 	struct list_head card_list;
 
+	/* dynamic mixer and enum controls */
+	struct list_head dmixers;
+	struct list_head denums;
+
 	struct snd_soc_dapm_context dapm;
 
 #ifdef CONFIG_DEBUG_FS
@@ -893,6 +908,9 @@ struct snd_soc_dai_link {
 
 	/* pmdown_time is ignored at stop */
 	unsigned int ignore_pmdown_time:1;
+
+	/* This DAI can support no host IO (no pcm data is copied to from host) */
+	unsigned int no_host_mode:2;
 
 	/* codec/machine specific init - e.g. add machine controls */
 	int (*init)(struct snd_soc_pcm_runtime *rtd);
@@ -1009,6 +1027,10 @@ struct snd_soc_card {
 	struct list_head dapm_list;
 	struct list_head dapm_dirty;
 
+	/* dynamic mixer and enum controls */
+	struct list_head dmixers;
+	struct list_head denums;
+
 	/* Generic DAPM context for the card */
 	struct snd_soc_dapm_context dapm;
 	struct snd_soc_dapm_stats dapm_stats;
@@ -1057,6 +1079,10 @@ struct snd_soc_pcm_runtime {
 struct soc_mixer_control {
 	int min, max, platform_max;
 	unsigned int reg, rreg, shift, rshift, invert;
+
+	/* dynamic controls */
+	struct list_head list;
+	struct snd_kcontrol *dcontrol;
 };
 
 struct soc_bytes {
@@ -1081,6 +1107,13 @@ struct soc_enum {
 	unsigned int mask;
 	const char * const *texts;
 	const unsigned int *values;
+
+	/* dynamic enum controls */
+	char **dtexts;
+	unsigned int *dvalues;
+	struct list_head list;
+	struct snd_kcontrol *dcontrol;
+
 	void *dapm;
 };
 
