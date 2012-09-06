@@ -315,7 +315,7 @@ static inline const char* of_node_full_name(struct device_node *np)
 	return "<no-node>";
 }
 
-static inline device_node *of_find_node_by_name(struct device_node *from,
+static inline struct device_node *of_find_node_by_name(struct device_node *from,
 	const char *name)
 {
 	return NULL;
