@@ -38,6 +38,7 @@
 #include "clock2xxx.h"
 #include "clock3xxx.h"
 #include "clock44xx.h"
+#include "clock54xx.h"
 #include "omap-pm.h"
 #include "sdrc.h"
 #include "control.h"
@@ -619,6 +620,12 @@ void __init omap5_init_early(void)
 	omap_prm_base_init();
 	omap_cm_base_init();
 	omap5xxx_check_revision();
+	omap54xx_voltagedomains_init();
+	omap54xx_powerdomains_init();
+	omap54xx_clockdomains_init();
+	omap54xx_hwmod_init();
+	omap_hwmod_init_postsetup();
+	omap5xxx_clk_init();
 }
 #endif
 
