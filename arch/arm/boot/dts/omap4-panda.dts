@@ -216,10 +216,6 @@
 	};
 };
 
-&mcbsp2 {
-	status = "disabled";
-};
-
 &mcbsp3 {
 	status = "disabled";
 };
