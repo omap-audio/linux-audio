@@ -366,7 +366,7 @@ static void dapm_set_path_status(struct snd_soc_dapm_widget *w,
 
 		p->connect = 0;
 		for (i = 0; i < e->max; i++) {
-			if (!(strcmp(p->name, e->texts[i])) && item == i)
+			if (!(strcmp(p->name, snd_soc_get_enum_text(e, i))) && item == i)
 				p->connect = 1;
 		}
 	}
@@ -382,7 +382,7 @@ static void dapm_set_path_status(struct snd_soc_dapm_widget *w,
 		 * that the default mux choice (the first) will be
 		 * correctly powered up during initialization.
 		 */
-		if (!strcmp(p->name, e->texts[0]))
+		if (!strcmp(p->name, snd_soc_get_enum_text(e, 0)))
 			p->connect = 1;
 	}
 	break;
@@ -400,7 +400,7 @@ static void dapm_set_path_status(struct snd_soc_dapm_widget *w,
 
 		p->connect = 0;
 		for (i = 0; i < e->max; i++) {
-			if (!(strcmp(p->name, e->texts[i])) && item == i)
+			if (!(strcmp(p->name, snd_soc_get_enum_text(e, i))) && item == i)
 				p->connect = 1;
 		}
 	}
@@ -446,11 +446,11 @@ static int dapm_connect_mux(struct snd_soc_dapm_context *dapm,
 	int i;
 
 	for (i = 0; i < e->max; i++) {
-		if (!(strcmp(control_name, e->texts[i]))) {
+		if (!(strcmp(control_name, snd_soc_get_enum_text(e, i)))) {
 			list_add(&path->list, &dapm->card->paths);
 			list_add(&path->list_sink, &dest->sources);
 			list_add(&path->list_source, &src->sinks);
-			path->name = (char*)e->texts[i];
+			path->name = (char*)snd_soc_get_enum_text(e, i);
 			dapm_set_path_status(dest, path, 0);
 			return 0;
 		}
@@ -597,8 +597,9 @@ static int dapm_new_mixer(struct snd_soc_dapm_widget *w)
 			ret = snd_ctl_add(card, path->kcontrol);
 			if (ret < 0) {
 				dev_err(dapm->dev,
-					"asoc: failed to add dapm kcontrol %s: %d\n",
-					path->long_name, ret);
+					"failed to add widget %s kcontrol %s: %d\n",
+					w->name, path->long_name, ret);
+
 				kfree(wlist);
 				kfree(path->long_name);
 				path->long_name = NULL;
@@ -1913,12 +1914,12 @@ static int soc_dapm_mux_update_power(struct snd_soc_dapm_widget *widget,
 		if (path->kcontrol != kcontrol)
 			continue;
 
-		if (!path->name || !e->texts[mux])
+		if (!path->name || !snd_soc_get_enum_text(e, mux))
 			continue;
 
 		found = 1;
 		/* we now need to match the string in the enum to the path */
-		if (!(strcmp(path->name, e->texts[mux]))) {
+		if (!(strcmp(path->name, snd_soc_get_enum_text(e, mux)))) {
 			path->connect = 1; /* new connection */
 			dapm_mark_dirty(path->source, "mux connection");
 		} else {
@@ -2068,8 +2069,39 @@ static void snd_soc_dapm_sys_remove(struct device *dev)
 	device_remove_file(dev, &dev_attr_dapm_widget);
 }
 
+static void dapm_free_dynamic_widget_controls(struct snd_soc_dapm_widget *w)
+{
+	int i;
+
+	/*
+	 * Dynamic Widgets either have 1 enum kcontrol or 1..N mixers.
+	 * The enumm may either have an array of values or strings.
+	 */
+	if (w->denum) {
+		struct soc_enum *se =
+			(struct soc_enum *)w->kcontrols[0]->private_value;
+
+		if (se->dvalues)
+			kfree(se->dvalues);
+		else {
+			for (i = 0; i < se->max; i++)
+				kfree(se->dtexts[i]);
+		}
+		kfree(se);
+	} else if (w->dmixer) {
+
+		for (i = 0; i < w->num_kcontrols; i++) {
+			struct snd_kcontrol *kcontrol = w->kcontrols[i];
+			struct soc_mixer_control *sm =
+			(struct soc_mixer_control *) kcontrol->private_value;
+
+			kfree(sm);
+		}
+	}
+}
+
 /* free all dapm widgets and resources */
-static void dapm_free_widgets(struct snd_soc_dapm_context *dapm)
+void soc_dapm_free_widgets(struct snd_soc_dapm_context *dapm)
 {
 	struct snd_soc_dapm_widget *w, *next_w;
 	struct snd_soc_dapm_path *p, *next_p;
@@ -2097,6 +2129,9 @@ static void dapm_free_widgets(struct snd_soc_dapm_context *dapm)
 			kfree(p->long_name);
 			kfree(p);
 		}
+		/* check and free and dynamic widget kcontrols */
+		if (w->num_kcontrols)
+			dapm_free_dynamic_widget_controls(w);
 		kfree(w->kcontrols);
 		kfree(w->name);
 		kfree(w);
@@ -2220,8 +2255,16 @@ static int snd_soc_dapm_add_route(struct snd_soc_dapm_context *dapm,
 	if (!wsource)
 		wsource = wtsource;
 
-	if (wsource == NULL || wsink == NULL)
+	if (wsource == NULL) {
+		dev_err(dapm->dev, "no source widget found for %s\n",
+			route->source);
 		return -ENODEV;
+	}
+	if (wsink == NULL) {
+		dev_err(dapm->dev, "no sink widget found for %s\n",
+			route->sink);
+		return -ENODEV;
+	}
 
 	path = kzalloc(sizeof(struct snd_soc_dapm_path), GFP_KERNEL);
 	if (!path)
@@ -2397,8 +2440,10 @@ int snd_soc_dapm_add_routes(struct snd_soc_dapm_context *dapm,
 	for (i = 0; i < num; i++) {
 		r = snd_soc_dapm_add_route(dapm, route);
 		if (r < 0) {
-			dev_err(dapm->dev, "Failed to add route %s->%s\n",
-				route->source, route->sink);
+			dev_err(dapm->dev, "Failed to add route %s -> %s -> %s\n",
+				route->source,
+				route->control ? route->control : "direct",
+				route->sink);
 			ret = r;
 		}
 		route++;
@@ -3780,7 +3825,7 @@ void snd_soc_dapm_free(struct snd_soc_dapm_context *dapm)
 {
 	snd_soc_dapm_sys_remove(dapm->dev);
 	dapm_debugfs_cleanup(dapm);
-	dapm_free_widgets(dapm);
+	soc_dapm_free_widgets(dapm);
 	list_del(&dapm->list);
 }
 EXPORT_SYMBOL_GPL(snd_soc_dapm_free);
