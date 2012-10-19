@@ -225,6 +225,7 @@ struct omap_aess_seq {
 
 /* main ABE structure */
 struct omap_aess {
+	struct device *dev;
 	void __iomem *io_base[5];
 	u32 firmware_version_number;
 	u16 MultiFrame[25][8];
@@ -320,7 +321,8 @@ int omap_aess_read_mixer(struct omap_aess *abe, u32 id, u32 *f_g);
 
 u32 *omap_aess_get_default_fw(void);
 
-int omap_aess_init_mem(struct omap_aess *abe, void __iomem **_io_base, u32 *fw_header);
+int omap_aess_init_mem(struct omap_aess *abe, struct device *dev,
+	void __iomem **_io_base, u32 *fw_header);
 int omap_aess_reset_hal(struct omap_aess *abe);
 int omap_aess_load_fw_param(struct omap_aess *abe, u32 *data);
 int omap_aess_load_fw(struct omap_aess *abe, u32 *firmware);
