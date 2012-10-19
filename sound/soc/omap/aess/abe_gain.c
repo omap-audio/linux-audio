@@ -314,61 +314,42 @@ int omap_aess_write_equalizer(struct omap_aess *abe,
 			     u32 id, struct omap_aess_equ *param)
 {
 	struct omap_aess_addr equ_addr;
-	u32 eq_offset, length, *src;
+	u32 length, *src;
 
 	switch (id) {
-	default:
-	case EQ1:
-		eq_offset = OMAP_AESS_CMEM_DL1_COEFS_ID;
-		memcpy(&equ_addr,
-			&abe->fw_info->map[OMAP_AESS_SMEM_DL1_M_EQ_DATA_ID],
+	case OMAP_AESS_CMEM_DL1_COEFS_ID:
+		memcpy(&equ_addr, &abe->fw_info->map[OMAP_AESS_SMEM_DL1_M_EQ_DATA_ID],
 			sizeof(struct omap_aess_addr));
 		break;
-	case EQ2L:
-		eq_offset = OMAP_AESS_CMEM_DL2_L_COEFS_ID;
-		memcpy(&equ_addr,
-			&abe->fw_info->map[OMAP_AESS_SMEM_DL2_M_LR_EQ_DATA_ID],
+	case OMAP_AESS_CMEM_DL2_L_COEFS_ID:
+		memcpy(&equ_addr, &abe->fw_info->map[OMAP_AESS_SMEM_DL2_M_LR_EQ_DATA_ID],
 			sizeof(struct omap_aess_addr));
 		break;
-	case EQ2R:
-		eq_offset = OMAP_AESS_CMEM_DL2_R_COEFS_ID;
-		memcpy(&equ_addr,
-			&abe->fw_info->map[OMAP_AESS_SMEM_DL2_M_LR_EQ_DATA_ID],
+	case OMAP_AESS_CMEM_DL2_R_COEFS_ID:
+		memcpy(&equ_addr, &abe->fw_info->map[OMAP_AESS_SMEM_DL2_M_LR_EQ_DATA_ID],
 			sizeof(struct omap_aess_addr));
 		break;
-	case EQSDT:
-		eq_offset = OMAP_AESS_CMEM_SDT_COEFS_ID;
-		memcpy(&equ_addr,
-			&abe->fw_info->map[OMAP_AESS_SMEM_SDT_F_DATA_ID],
+	case OMAP_AESS_CMEM_SDT_COEFS_ID:
+		memcpy(&equ_addr, &abe->fw_info->map[OMAP_AESS_SMEM_SDT_F_DATA_ID],
 			sizeof(struct omap_aess_addr));
 		break;
-	case EQAMIC:
-		eq_offset = OMAP_AESS_CMEM_96_48_AMIC_COEFS_ID;
-		memcpy(&equ_addr,
-			&abe->fw_info->map[OMAP_AESS_SMEM_AMIC_96_48_DATA_ID],
+	case OMAP_AESS_CMEM_96_48_AMIC_COEFS_ID:
+		memcpy(&equ_addr, &abe->fw_info->map[OMAP_AESS_SMEM_AMIC_96_48_DATA_ID],
 			sizeof(struct omap_aess_addr));
 		break;
-	case EQDMIC:
-		eq_offset = OMAP_AESS_CMEM_96_48_DMIC_COEFS_ID;
-		memcpy(&equ_addr,
-			&abe->fw_info->map[OMAP_AESS_SMEM_DMIC0_96_48_DATA_ID],
+	case OMAP_AESS_CMEM_96_48_DMIC_COEFS_ID:
+		memcpy(&equ_addr, &abe->fw_info->map[OMAP_AESS_SMEM_DMIC0_96_48_DATA_ID],
 			sizeof(struct omap_aess_addr));
 		/* three DMIC are clear at the same time DMIC0 DMIC1 DMIC2 */
 		equ_addr.bytes *= 3;
-		break;
 	}
+
 	/* reset SMEM buffers before the coefficients are loaded */
 	omap_aess_reset_mem(abe, equ_addr);
 
 	length = param->equ_length;
 	src = (u32 *) ((param->coef).type1);
-#if 0
-	/* translate in bytes */
-	if (length != abe->fw_info->map[eq_offset]>>2)
-		pr_err("size missmatch");
-#endif
-	omap_aess_mem_write(abe,
-		abe->fw_info->map[eq_offset], src);
+	omap_aess_mem_write(abe, abe->fw_info->map[id], src);
 
 	/* reset SMEM buffers after the coefficients are loaded */
 	omap_aess_reset_mem(abe, equ_addr);
