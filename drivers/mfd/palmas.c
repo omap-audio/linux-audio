@@ -302,6 +302,64 @@ static void palmas_dt_to_pdata(struct i2c_client *i2c,
 		palmas_set_pdata_irq_flag(i2c, pdata);
 }
 
+static int palmas_print_info(struct palmas *palmas)
+{
+	int ret;
+	unsigned int reg, addr;
+	int slave;
+
+	/* Read varient info from the device */
+	slave = PALMAS_BASE_TO_SLAVE(PALMAS_ID_BASE);
+	addr = PALMAS_BASE_TO_REG(PALMAS_ID_BASE, PALMAS_PRODUCT_ID_LSB);
+	ret = regmap_read(palmas->regmap[slave], addr, &reg);
+	if (ret < 0) {
+		dev_err(palmas->dev, "Unable to read ID err: %d\n", ret);
+		goto err;
+	}
+
+	palmas->id = reg;
+
+	slave = PALMAS_BASE_TO_SLAVE(PALMAS_ID_BASE);
+	addr = PALMAS_BASE_TO_REG(PALMAS_ID_BASE, PALMAS_PRODUCT_ID_MSB);
+	ret = regmap_read(palmas->regmap[slave], addr, &reg);
+	if (ret < 0) {
+        	dev_err(palmas->dev, "Unable to read ID err: %d\n", ret);
+		goto err;
+	}
+
+	palmas->id |= reg << 8;
+
+	dev_info(palmas->dev, "Product ID %x\n", palmas->id);
+
+	slave = PALMAS_BASE_TO_SLAVE(PALMAS_DESIGNREV_BASE);
+	addr = PALMAS_BASE_TO_REG(PALMAS_DESIGNREV_BASE, PALMAS_DESIGNREV);
+	ret = regmap_read(palmas->regmap[slave], addr, &reg);
+	if (ret < 0) {
+		dev_err(palmas->dev, "Unable to read DESIGNREV err: %d\n", ret);
+		goto err;
+	}
+
+	palmas->designrev = reg & PALMAS_DESIGNREV_DESIGNREV_MASK;
+
+	dev_info(palmas->dev, "Product Design Rev %x\n", palmas->designrev);
+
+	slave = PALMAS_BASE_TO_SLAVE(PALMAS_PMU_CONTROL_BASE);
+	addr = PALMAS_BASE_TO_REG(PALMAS_PMU_CONTROL_BASE, PALMAS_SW_REVISION);
+	ret = regmap_read(palmas->regmap[slave], addr, &reg);
+	if (ret < 0) {
+		dev_err(palmas->dev, "Unable to read SW_REVISION err: %d\n",
+			ret);
+		goto err;
+	}
+
+	palmas->sw_revision = reg;
+
+	dev_info(palmas->dev, "Product SW Rev %x\n", palmas->sw_revision);
+	return 0;
+err:
+	return ret;
+}
+
 static int palmas_i2c_probe(struct i2c_client *i2c,
 			    const struct i2c_device_id *id)
 {
@@ -459,6 +517,8 @@ static int palmas_i2c_probe(struct i2c_client *i2c,
 	ret = regmap_write(palmas->regmap[slave], addr, reg);
 	if (ret)
 		goto err_irq;
+
+	palmas_print_info(palmas);
 
 	/*
 	 * If we are probing with DT do this the DT way and return here
