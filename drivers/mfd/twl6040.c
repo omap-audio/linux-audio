@@ -483,6 +483,12 @@ static struct resource twl6040_codec_rsrc[] = {
 	},
 };
 
+static struct resource twl6040_buttons_rsrc[] = {
+	{
+		.flags = IORESOURCE_IRQ,
+	},
+};
+
 static bool twl6040_readable_reg(struct device *dev, unsigned int reg)
 {
 	/* Register 0 is not readable */
@@ -640,6 +646,15 @@ static int __devinit twl6040_probe(struct i2c_client *client,
 		cell->platform_data = pdata->codec;
 		cell->pdata_size = sizeof(*pdata->codec);
 	}
+	children++;
+
+	irq = regmap_irq_get_virq(twl6040->irq_data, TWL6040_IRQ_HOOK);
+	cell = &twl6040->cells[children];
+	cell->name = "twl6040-buttons";
+	twl6040_buttons_rsrc[0].start = irq;
+	twl6040_buttons_rsrc[0].end = irq;
+	cell->resources = twl6040_buttons_rsrc;
+	cell->num_resources = ARRAY_SIZE(twl6040_buttons_rsrc);
 	children++;
 
 	if (twl6040_has_vibra(pdata, node)) {
