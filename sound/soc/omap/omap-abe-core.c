@@ -342,7 +342,7 @@ void abe_fw_complete(struct snd_soc_platform *platform)
 
 	pm_runtime_put_sync(abe->dev);
 	abe_init_debugfs(abe);
-	abe->ready = 1;
+
 	return;
 
 err_opp:
@@ -367,19 +367,17 @@ static int abe_probe(struct snd_soc_platform *platform)
 	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
 	int ret;
 
-	if (abe->ready == 0)
-		return -EPROBE_DEFER;
-	else if (abe->ready == 1)
-		return 0;
-
 	pm_runtime_enable(abe->dev);
 	pm_runtime_irq_safe(abe->dev);
 
-	abe->ready = 0;
-	ret = snd_soc_fw_load_platform(platform, &soc_fw_ops, "omap4_abe_new");
-	if (ret < 0) {
-		dev_err(abe->dev, "Failed to load firmware: %d\n", ret);
+	ret = snd_soc_fw_load_platform_nowait(platform, &soc_fw_ops, "omap4_abe_new");
+	if (ret == -EPROBE_DEFER) {
 		pm_runtime_disable(abe->dev);
+		return ret;
+	}
+	if (ret < 0) {
+		pm_runtime_disable(abe->dev);
+		dev_err(abe->dev, "Failed to load firmware: %d\n", ret);
 	}
 
 	return ret;
@@ -418,7 +416,6 @@ static int __devinit abe_engine_probe(struct platform_device *pdev)
 	if (abe == NULL)
 		return -ENOMEM;
 	dev_set_drvdata(&pdev->dev, abe);
-	abe->ready = -1;
 
 	for (i = 0; i < OMAP_ABE_IO_RESOURCES; i++) {
 		res = platform_get_resource_byname(pdev, IORESOURCE_MEM,

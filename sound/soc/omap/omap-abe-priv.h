@@ -355,7 +355,6 @@ struct omap_abe {
 	u32 *fw_config;
 	u32 *fw_text;
 	const struct firmware *fw;
-	int ready;
 	int num_equ;
 
 #ifdef CONFIG_DEBUG_FS
