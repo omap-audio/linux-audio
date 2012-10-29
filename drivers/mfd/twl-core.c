@@ -652,6 +652,17 @@ add_children(struct twl4030_platform_data *pdata, unsigned irq_base,
 			return PTR_ERR(child);
 	}
 
+	if (IS_ENABLED(CONFIG_TWL6030_GPADC) && pdata->madc &&
+	    twl_class_is_6030()) {
+		pdata->madc->features = features;
+		child = add_child(1, "twl6030_gpadc",
+				pdata->madc, sizeof(*pdata->madc),
+				true, irq_base + MADC_INTR_OFFSET,
+				irq_base + GPADCSW_INTR_OFFSET);
+		if (IS_ERR(child))
+			return PTR_ERR(child);
+	}
+
 	if (IS_ENABLED(CONFIG_RTC_DRV_TWL4030)) {
 		/*
 		 * REVISIT platform_data here currently might expose the
