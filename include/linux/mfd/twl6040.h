@@ -139,6 +139,17 @@
 
 #define TWL6040_VIBDAT_MAX		0x64
 
+/* HKCTL1 (0x1C) fields */
+#define TWL6040_HKEN			(1 << 0)
+#define TWL6040_HKPARADIS		(1 << 1)
+#define TWL6040_HKRATE(x)		((x & 0x07) << 2)
+#define TWL6040_HKCNT(x)		((x & 0x07) << 5)
+
+/* HKCTL2 (0x1D) fields */
+#define TWL6040_HKSET(x)		((x & 0x3) << 0)
+#define TWL6040_HKDBNC(x)		((x & 0xf) << 3)
+#define TWL6040_HKSERDIS		(1 << 7)
+
 /* GPOCTL (0x1E) fields */
 
 #define TWL6040_GPO1			0x01
