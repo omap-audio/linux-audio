@@ -799,6 +799,7 @@ static inline void device_unlock(struct device *dev)
 }
 
 void driver_init(void);
+void driver_deferred_probe_trigger(void);
 
 /*
  * High level routines for use by the bus drivers
