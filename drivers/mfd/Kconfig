@@ -279,6 +279,14 @@ config TWL4030_MADC
 	This driver can be built as a module. If so it will be
 	named twl4030-madc
 
+config TWL6030_GPADC
+	tristate "TWL6030 GPADC (General Purpose A/D Convertor) Support"
+	depends on TWL4030_CORE
+	default n
+	help
+	  Say yes here if you want support for the TWL6030 General Purpose
+	  A/D Convertor.
+
 config TWL4030_POWER
 	bool "Support power resources on TWL4030 family chips"
 	depends on TWL4030_CORE && ARM
