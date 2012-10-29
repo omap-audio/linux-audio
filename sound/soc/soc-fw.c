@@ -27,6 +27,10 @@
 #include <sound/soc-dapm.h>
 #include <sound/soc-fw.h>
 
+static DEFINE_MUTEX(client_mutex);
+static LIST_HEAD(waiting_list);
+static LIST_HEAD(ready_list);
+
 /*
  * We make several passes over the data (since it wont necessarily be ordered)
  * and process objects in the following order. This guarantees the component
@@ -63,6 +67,8 @@ struct soc_fw {
 		struct snd_soc_fw_platform_ops *platform_ops;
 		struct snd_soc_fw_card_ops *card_ops;
 	};
+
+	struct list_head list; /* client list */
 };
 
 static int soc_fw_load_headers(struct soc_fw *sfw);
@@ -180,14 +186,13 @@ static inline void soc_fw_release_data(struct soc_fw *sfw)
 static void soc_fw_load(const struct firmware *fw, void *context)
 {
 	struct soc_fw *sfw = (struct soc_fw *)context;
-	int err;
 
-	err = soc_fw_load_headers(sfw);
-	if (err < 0)
-		dev_err(sfw->dev, "Failed to load : %s %d\n", sfw->file, err);
-	else
-		soc_fw_complete(sfw);
-	soc_fw_release_data(sfw);
+	sfw->fw = fw;
+	mutex_lock(&client_mutex);
+	list_move(&sfw->list, &ready_list);
+	mutex_unlock(&client_mutex);
+
+	driver_deferred_probe_trigger();
 }
 
 static int soc_fw_request_data_nowait(struct soc_fw *sfw)
@@ -196,10 +201,12 @@ static int soc_fw_request_data_nowait(struct soc_fw *sfw)
 
 	ret = request_firmware_nowait(THIS_MODULE, 1, sfw->file, sfw->dev,
 		GFP_KERNEL, sfw, soc_fw_load);
-	if (ret != 0)
+	if (ret != 0) {
 		dev_err(sfw->dev, "Failed to load : %s %d\n", sfw->file, ret);
+		return ret;
+	}
 
-	return ret;
+	return -EPROBE_DEFER;
 }
 
 /* check we dont overflow the data for this chunk */
@@ -1364,7 +1371,6 @@ static int soc_fw_dapm_widget_load(struct soc_fw *sfw, struct snd_soc_fw_hdr *hd
 
 	for (i = 0; i < count; i++) {
 		widget = (struct snd_soc_fw_dapm_widget*) sfw->pos;
-
 		ret = soc_fw_dapm_widget_create(sfw, widget);
 		if (ret < 0)
 			dev_err(sfw->dev, "failed to load widget %s\n",
@@ -1398,12 +1404,10 @@ static int soc_fw_coeff_load(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
 		(struct snd_soc_fw_kcontrol*)sfw->pos;
 	struct snd_soc_fw_control_hdr *control_hdr;
 	struct snd_soc_fw_hdr *vhdr;
-	int ret, i;
+	int ret;
 
-	if (sfw->pass != SOC_FW_PASS_COEFF) {
-		//sfw->pos += sizeof(struct snd_soc_fw_kcontrol) + hdr->size;
+	if (sfw->pass != SOC_FW_PASS_COEFF)
 		return 0;
-	}
 
 	/* vendor coefficient data is encapsulated with hdrs in generic
 	  coefficient controls */
@@ -1546,7 +1550,6 @@ static int soc_fw_load_headers(struct soc_fw *sfw)
 
 			sfw->hdr_pos += hdr->size + sizeof(struct snd_soc_fw_hdr);
 			hdr = (struct snd_soc_fw_hdr *)sfw->hdr_pos;
-
 		}
 		sfw->pass++;
 	}
@@ -1610,30 +1613,37 @@ static int soc_fw_unload_headers(struct soc_fw *sfw)
 static int soc_fw_load_codec(struct snd_soc_codec *codec,
 	struct snd_soc_fw_codec_ops *ops, const char *file, int nowait)
 {
-	struct soc_fw sfw;
+	struct soc_fw *sfw;
 	int ret;
 
-	memset(&sfw, 0, sizeof(sfw));
-	sfw.file = file;
-	sfw.codec = codec;
-	sfw.dev = codec->dev;
-	sfw.codec_ops = ops;
-	sfw.io_ops = ops->io_ops;
-	sfw.io_ops_count = ops->io_ops_count;
+	sfw = kzalloc(sizeof(struct soc_fw), GFP_KERNEL);
+	if (sfw == NULL)
+		return -ENOMEM;
 
-	if (nowait)
-		return soc_fw_request_data_nowait(&sfw);
-	else {
-		ret = soc_fw_request_data(&sfw);
+	sfw->file = file;
+	sfw->codec = codec;
+	sfw->dev = codec->dev;
+	sfw->codec_ops = ops;
+	sfw->io_ops = ops->io_ops;
+	sfw->io_ops_count = ops->io_ops_count;
+
+	if (nowait) {
+		ret = soc_fw_request_data_nowait(sfw);
+		if (ret < 0)
+			return ret;
+		return -EAGAIN;
+	} else {
+		ret = soc_fw_request_data(sfw);
 		if (ret != 0)
 			return ret;
 
-		ret = soc_fw_load_headers(&sfw);
+		ret = soc_fw_load_headers(sfw);
 		if (ret < 0)
-			soc_fw_complete(&sfw);
-		soc_fw_release_data(&sfw);
+			soc_fw_complete(sfw);
+		soc_fw_release_data(sfw);
 	}
 
+	kfree(sfw);
 	return ret;
 }
 
@@ -1651,57 +1661,75 @@ int snd_soc_fw_load_codec_nowait(struct snd_soc_codec *codec,
 }
 EXPORT_SYMBOL_GPL(snd_soc_fw_load_codec_nowait);
 
-int snd_soc_fw_unload_codec(struct snd_soc_codec *codec,
-	struct snd_soc_fw_codec_ops *ops, const char *file)
+static int soc_fw_exec(struct soc_fw *sfw)
 {
-	struct soc_fw sfw;
 	int ret;
 
-	memset(&sfw, 0, sizeof(sfw));
-	sfw.file = file;
-	sfw.codec = codec;
-	sfw.dev = codec->dev;
-	sfw.codec_ops = ops;
-
-	ret = soc_fw_request_data(&sfw);
-	if (ret != 0)
-		return ret;
-
-	ret = soc_fw_unload_headers(&sfw);
-	soc_fw_release_data(&sfw);
+	ret = soc_fw_load_headers(sfw);
+	if (ret == 0)
+		soc_fw_complete(sfw);
+	soc_fw_release_data(sfw);
 
 	return ret;
 }
-EXPORT_SYMBOL_GPL(snd_soc_fw_unload_codec);
+
 
 static int soc_fw_load_platform(struct snd_soc_platform *platform,
 	struct snd_soc_fw_platform_ops *ops, const char *file, int nowait)
 {
-	struct soc_fw sfw;
-	int ret;
+	struct soc_fw *sfw, *t;
+	int ret, found = 0;
 
-	memset(&sfw, 0, sizeof(sfw));
-	sfw.file = file;
-	sfw.platform = platform;
-	sfw.dev = platform->dev;
-	sfw.platform_ops = ops;
-	sfw.io_ops = ops->io_ops;
-	sfw.io_ops_count = ops->io_ops_count;
+	mutex_lock(&client_mutex);
 
-	if (nowait)
-		return soc_fw_request_data_nowait(&sfw);
-	else {
-
-		ret = soc_fw_request_data(&sfw);
-		if (ret != 0)
-			return ret;
-
-		ret = soc_fw_load_headers(&sfw);
-		if (ret == 0)
-			soc_fw_complete(&sfw);
-		soc_fw_release_data(&sfw);
+	/* check for that we are not waiting on this platfomr */
+	list_for_each_entry(sfw, &waiting_list, list) {
+		if (sfw->dev == platform->dev) {
+			mutex_unlock(&client_mutex);
+			return -EPROBE_DEFER;
+		}
 	}
 
+	list_for_each_entry_safe(sfw, t, &ready_list, list) {
+		if (sfw->dev == platform->dev) {
+			found = 1;
+			list_del(&sfw->list);
+			break;
+		}
+	}
+	mutex_unlock(&client_mutex);
+
+
+	if (found) {
+		ret = soc_fw_exec(sfw);
+		kfree(sfw);
+		return ret;
+	}
+
+	sfw = kzalloc(sizeof(struct soc_fw), GFP_KERNEL);
+	if (sfw == NULL)
+		return -ENOMEM;
+
+	sfw->file = file;
+	sfw->dev = platform->dev;
+	sfw->platform = platform;
+	sfw->platform_ops = ops;
+	sfw->io_ops = ops->io_ops;
+	sfw->io_ops_count = ops->io_ops_count;
+
+	if (nowait) {
+		mutex_lock(&client_mutex);
+		list_add(&sfw->list, &waiting_list);
+		mutex_unlock(&client_mutex);
+		return soc_fw_request_data_nowait(sfw);
+	} else {
+		ret = soc_fw_request_data(sfw);
+		if (ret != 0)
+			return ret;
+			ret = soc_fw_exec(sfw);
+	}
+
+	kfree(sfw);
 	return ret;
 }
 
@@ -1719,56 +1747,35 @@ int snd_soc_fw_load_platform_nowait(struct snd_soc_platform *platform,
 }
 EXPORT_SYMBOL_GPL(snd_soc_fw_load_platform_nowait);
 
-int snd_soc_fw_unload_platform(struct snd_soc_platform *platform,
-	struct snd_soc_fw_platform_ops *ops, const char *file)
-{
-	struct soc_fw sfw;
-	int ret;
-
-	memset(&sfw, 0, sizeof(sfw));
-	sfw.file = file;
-	sfw.platform = platform;
-	sfw.dev = platform->dev;
-	sfw.platform_ops = ops;
-	sfw.io_ops = ops->io_ops;
-	sfw.io_ops_count = ops->io_ops_count;
-
-	ret = soc_fw_request_data(&sfw);
-	if (ret != 0)
-		return ret;
-
-	ret = soc_fw_unload_headers(&sfw);
-	soc_fw_release_data(&sfw);
-
-	return ret;
-}
-EXPORT_SYMBOL_GPL(snd_soc_fw_unload_platform);
-
 static int soc_fw_load_card(struct snd_soc_card *card,
 	struct snd_soc_fw_card_ops *ops, const char *file, int nowait)
 {
-	struct soc_fw sfw;
+	struct soc_fw *sfw;
 	int ret;
 
-	memset(&sfw, 0, sizeof(sfw));
-	sfw.file = file;
-	sfw.card = card;
-	sfw.dev = card->dev;
-	sfw.card_ops = ops;
+	sfw = kzalloc(sizeof(struct soc_fw), GFP_KERNEL);
+	if (sfw == NULL)
+		return -ENOMEM;
+
+	sfw->file = file;
+	sfw->card = card;
+	sfw->dev = card->dev;
+	sfw->card_ops = ops;
 
 	if (nowait)
-		return soc_fw_request_data_nowait(&sfw);
+		return soc_fw_request_data_nowait(sfw);
 	else {
-		ret = soc_fw_request_data(&sfw);
+		ret = soc_fw_request_data(sfw);
 		if (ret != 0)
 			return ret;
 
-		ret = soc_fw_load_headers(&sfw);
+		ret = soc_fw_load_headers(sfw);
 		if (ret < 0)
-			soc_fw_complete(&sfw);
-		soc_fw_release_data(&sfw);
+			soc_fw_complete(sfw);
+		soc_fw_release_data(sfw);
 	}
 
+	kfree(sfw);
 	return ret;
 }
 
@@ -1789,22 +1796,80 @@ EXPORT_SYMBOL_GPL(snd_soc_fw_load_card_nowait);
 int snd_soc_fw_unload_card(struct snd_soc_card *card,
 	struct snd_soc_fw_card_ops *ops, const char *file)
 {
-	struct soc_fw sfw;
+	struct soc_fw *sfw;
 	int ret;
 
-	memset(&sfw, 0, sizeof(sfw));
-	sfw.file = file;
-	sfw.card = card;
-	sfw.dev = card->dev;
-	sfw.card_ops = ops;
+	sfw = kzalloc(sizeof(struct soc_fw), GFP_KERNEL);
+	if (sfw == NULL)
+		return -ENOMEM;
 
-	ret = soc_fw_request_data(&sfw);
+	sfw->file = file;
+	sfw->card = card;
+	sfw->dev = card->dev;
+	sfw->card_ops = ops;
+
+	ret = soc_fw_request_data(sfw);
 	if (ret != 0)
 		return ret;
 
-	ret = soc_fw_unload_headers(&sfw);
-	soc_fw_release_data(&sfw);
-
+	ret = soc_fw_unload_headers(sfw);
+	soc_fw_release_data(sfw);
+	kfree(sfw);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(snd_soc_fw_unload_card);
+
+int snd_soc_fw_unload_platform(struct snd_soc_platform *platform,
+	struct snd_soc_fw_platform_ops *ops, const char *file)
+{
+	struct soc_fw *sfw;
+	int ret;
+
+	sfw = kzalloc(sizeof(struct soc_fw), GFP_KERNEL);
+	if (sfw == NULL)
+		return -ENOMEM;
+
+	sfw->file = file;
+	sfw->platform = platform;
+	sfw->dev = platform->dev;
+	sfw->platform_ops = ops;
+	sfw->io_ops = ops->io_ops;
+	sfw->io_ops_count = ops->io_ops_count;
+
+	ret = soc_fw_request_data(sfw);
+	if (ret != 0)
+		return ret;
+
+	ret = soc_fw_unload_headers(sfw);
+	soc_fw_release_data(sfw);
+	kfree(sfw);
+	return ret;
+}
+EXPORT_SYMBOL_GPL(snd_soc_fw_unload_platform);
+
+
+int snd_soc_fw_unload_codec(struct snd_soc_codec *codec,
+	struct snd_soc_fw_codec_ops *ops, const char *file)
+{
+	struct soc_fw *sfw;
+	int ret;
+
+	sfw = kzalloc(sizeof(struct soc_fw), GFP_KERNEL);
+	if (sfw == NULL)
+		return -ENOMEM;
+
+	sfw->file = file;
+	sfw->codec = codec;
+	sfw->dev = codec->dev;
+	sfw->codec_ops = ops;
+
+	ret = soc_fw_request_data(sfw);
+	if (ret != 0)
+		return ret;
+
+	ret = soc_fw_unload_headers(sfw);
+	soc_fw_release_data(sfw);
+	kfree(sfw);
+	return ret;
+}
+EXPORT_SYMBOL_GPL(snd_soc_fw_unload_codec);
