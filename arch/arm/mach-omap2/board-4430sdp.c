@@ -592,6 +592,10 @@ static int __init omap4_i2c_init(void)
 			TWL_COMMON_REGULATOR_CLK32KG |
 			TWL_COMMON_REGULATOR_V1V8 |
 			TWL_COMMON_REGULATOR_V2V1);
+	/* VAUX2 need to be kept on all the time */
+	sdp4430_twldata.vaux2->constraints.always_on = true;
+	sdp4430_twldata.vaux2->constraints.min_uV = 2800000;
+	sdp4430_twldata.vaux2->constraints.max_uV = 2800000;
 	omap4_pmic_init("twl6030", &sdp4430_twldata, sdp4430_i2c_1_boardinfo,
 			ARRAY_SIZE(sdp4430_i2c_1_boardinfo));
 	omap_register_i2c_bus(2, 400, NULL, 0);
