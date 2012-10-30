@@ -621,10 +621,7 @@ static __devinit int omap_mcasp_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-	if (!request_mem_region(res->start, resource_size(res), "McASP"))
-		return -EBUSY;
-
-	mcasp->base = devm_ioremap(&pdev->dev, res->start, resource_size(res));
+	mcasp->base = devm_request_and_ioremap(&pdev->dev, res);
 	if (!mcasp->base) {
 		dev_err(&pdev->dev, "cannot remap\n");
 		return -ENOMEM;
