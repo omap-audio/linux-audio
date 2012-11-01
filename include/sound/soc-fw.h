@@ -227,6 +227,7 @@ int snd_soc_fw_load_platform_nowait(struct snd_soc_platform *platform,
 	struct snd_soc_fw_platform_ops *ops, const char *file);
 int snd_soc_fw_unload_platform(struct snd_soc_platform *platform,
 	struct snd_soc_fw_platform_ops *ops, const char *file);
+int snd_soc_fw_init_platform(struct snd_soc_platform *platform);
 
 struct snd_soc_fw_card_ops {
 
