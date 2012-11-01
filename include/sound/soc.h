@@ -783,6 +783,8 @@ struct snd_soc_codec {
 	unsigned int cache_bypass:1; /* Suppress access to the cache */
 	unsigned int suspended:1; /* Codec is in suspend PM state */
 	unsigned int probed:1; /* Codec has been probed */
+	unsigned int fw_requested:1; /* Codec probe FW has been requested */
+	unsigned int fw_ready:1; /* codec probe FW is ready */
 	unsigned int ac97_registered:1; /* Codec has been AC97 registered */
 	unsigned int ac97_created:1; /* Codec has been created by SoC */
 	unsigned int sysfs_registered:1; /* codec has been sysfs registered */
@@ -828,6 +830,7 @@ struct snd_soc_codec_driver {
 	int (*remove)(struct snd_soc_codec *);
 	int (*suspend)(struct snd_soc_codec *);
 	int (*resume)(struct snd_soc_codec *);
+	int (*fw_probe)(struct snd_soc_codec *);
 
 	/* Default control and setup, added after probe() is run */
 	const struct snd_kcontrol_new *controls;
@@ -884,6 +887,7 @@ struct snd_soc_platform_driver {
 	int (*remove)(struct snd_soc_platform *);
 	int (*suspend)(struct snd_soc_dai *dai);
 	int (*resume)(struct snd_soc_dai *dai);
+	int (*fw_probe)(struct snd_soc_platform *);
 
 	/* pcm creation and destruction */
 	int (*pcm_new)(struct snd_soc_pcm_runtime *);
@@ -932,6 +936,8 @@ struct snd_soc_platform {
 
 	unsigned int suspended:1; /* platform is suspended */
 	unsigned int probed:1;
+	unsigned int fw_requested:1; /* platform probe FW has been requested */
+	unsigned int fw_ready:1; /* platform probe FW is ready */
 
 	struct snd_soc_card *card;
 	struct list_head list;

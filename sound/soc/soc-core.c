@@ -896,6 +896,8 @@ static int soc_bind_dai_link(struct snd_soc_card *card, int num)
 		}
 
 		rtd->platform = platform;
+		platform->card = card;
+		platform->dapm.card = card;
 	}
 	if (!rtd->platform) {
 		dev_err(card->dev, "platform %s not registered\n",
@@ -1137,9 +1139,6 @@ static int soc_probe_platform(struct snd_soc_card *card,
 	const struct snd_soc_platform_driver *driver = platform->driver;
 	struct snd_soc_dai *dai;
 
-	platform->card = card;
-	platform->dapm.card = card;
-
 	if (!try_module_get(platform->dev->driver->owner))
 		return -ENODEV;
 
@@ -1320,6 +1319,53 @@ static int soc_probe_link_components(struct snd_soc_card *card, int num,
 	}
 
 	return 0;
+}
+
+static int soc_fw_probe_link_components(struct snd_soc_card *card, int num)
+{
+	struct snd_soc_pcm_runtime *rtd = &card->rtd[num];
+	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+	struct snd_soc_dai *codec_dai = rtd->codec_dai;
+	struct snd_soc_platform *platform = rtd->platform;
+	int ret = 0, err;
+
+	/* probe the CPU-side component FW, if it is a CODEC */
+	if (cpu_dai->codec && cpu_dai->codec->driver->fw_probe) {
+		if (!cpu_dai->codec->fw_requested) {
+			err = cpu_dai->codec->driver->fw_probe(cpu_dai->codec);
+			if (err < 0)
+				return err;
+			cpu_dai->codec->fw_requested = 1;
+		}
+		if (!cpu_dai->codec->fw_ready)
+			ret = 1;
+	}
+
+	/* probe the CODEC-side component FW */
+	if (codec_dai->codec->driver->fw_probe) {
+		if (!codec_dai->codec->fw_requested) {
+			err = codec_dai->codec->driver->fw_probe(codec_dai->codec);
+			if (err < 0)
+				return err;
+			codec_dai->codec->fw_requested = 1;
+		}
+		if (!codec_dai->codec->fw_ready)
+			ret = 1;
+	}
+
+	/* probe the platform FW */
+	if (platform->driver->fw_probe) {
+		if (!platform->fw_requested) {
+			err = platform->driver->fw_probe(platform);
+			if (err < 0)
+				return ret;
+			platform->fw_requested = 1;
+		}
+		if (!platform->fw_ready)
+			ret = 1;
+	}
+
+	return ret;
 }
 
 static int soc_probe_link_dais(struct snd_soc_card *card, int num, int order)
@@ -1577,21 +1623,37 @@ static int snd_soc_init_codec_cache(struct snd_soc_codec *codec,
 	return 0;
 }
 
-static int snd_soc_instantiate_card(struct snd_soc_card *card)
+int snd_soc_instantiate_card(struct snd_soc_card *card)
 {
 	struct snd_soc_codec *codec;
 	struct snd_soc_codec_conf *codec_conf;
 	enum snd_soc_compress_type compress_type;
 	struct snd_soc_dai_link *dai_link;
-	int ret, i, order, dai_fmt;
+	int ret, i, order, dai_fmt, fw_pending = 0;;
 
 	mutex_lock_nested(&card->mutex, SND_SOC_CARD_CLASS_INIT);
+
+	card->num_rtd = 0;
 
 	/* bind DAIs */
 	for (i = 0; i < card->num_links; i++) {
 		ret = soc_bind_dai_link(card, i);
 		if (ret != 0)
 			goto base_error;
+	}
+
+	/* check for any pending FW required for probe */
+	for (i = 0; i < card->num_links; i++) {
+		ret = soc_fw_probe_link_components(card, i);
+		if (ret < 0)
+			goto base_error;
+		else if (ret > 0)
+			fw_pending = 1;
+	}
+
+	if (fw_pending) {
+		mutex_unlock(&card->mutex);
+		return 0;
 	}
 
 	/* check aux_devs too */
@@ -3596,7 +3658,7 @@ int snd_soc_register_card(struct snd_soc_card *card)
 				 GFP_KERNEL);
 	if (card->rtd == NULL)
 		return -ENOMEM;
-	card->num_rtd = 0;
+
 	card->rtd_aux = &card->rtd[card->num_links];
 
 	for (i = 0; i < card->num_links; i++)
