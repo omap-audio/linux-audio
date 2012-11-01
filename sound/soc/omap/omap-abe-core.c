@@ -297,22 +297,51 @@ static int abe_vendor_unload(struct snd_soc_platform *platform,
 	return 0;
 }
 
-/* completion */
-void abe_fw_complete(struct snd_soc_platform *platform)
+static struct snd_soc_fw_platform_ops soc_fw_ops = {
+	.control_load	= abe_control_load,
+	.widget_load	= abe_widget_load,
+	.vendor_load	= abe_vendor_load,
+	.vendor_unload	= abe_vendor_unload,
+	.io_ops		= abe_ops,
+	.io_ops_count	= 7,
+};
+
+static int abe_probe_fw(struct snd_soc_platform *platform)
 {
 	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
-	int err, i;
+	int ret;
 
-	err = request_threaded_irq(abe->irq, NULL, abe_irq_handler,
+	pm_runtime_enable(abe->dev);
+	pm_runtime_irq_safe(abe->dev);
+
+	ret = snd_soc_fw_load_platform_nowait(platform, &soc_fw_ops, "omap4_abe_new");
+	if (ret < 0) {
+		pm_runtime_disable(abe->dev);
+		dev_err(abe->dev, "Failed to load firmware: %d\n", ret);
+	}
+
+	return ret;
+}
+
+static int abe_probe(struct snd_soc_platform *platform)
+{
+	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	int ret = 0, i;
+
+	ret = snd_soc_fw_init_platform(platform);
+	if (ret < 0)
+		goto err_irq;
+
+	ret = request_threaded_irq(abe->irq, NULL, abe_irq_handler,
 				IRQF_ONESHOT, "ABE", (void *)abe);
-	if (err) {
+	if (ret) {
 		dev_err(platform->dev, "request for ABE IRQ %d failed %d\n",
-				abe->irq, err);
+				abe->irq, ret);
 		goto err_irq;
 	}
 
-	err = abe_opp_init_initial_opp(abe);
-	if (err < 0)
+	ret = abe_opp_init_initial_opp(abe);
+	if (ret < 0)
 		goto err_opp;
 
 	/* aess_clk has to be enabled to access hal register.
@@ -343,43 +372,13 @@ void abe_fw_complete(struct snd_soc_platform *platform)
 	pm_runtime_put_sync(abe->dev);
 	abe_init_debugfs(abe);
 
-	return;
+	return ret;
 
 err_opp:
 	free_irq(abe->irq, (void *)abe);
 err_irq:
 	abe_free_fw(abe);
 	pm_runtime_disable(abe->dev);
-}
-
-static struct snd_soc_fw_platform_ops soc_fw_ops = {
-	.control_load	= abe_control_load,
-	.widget_load	= abe_widget_load,
-	.vendor_load	= abe_vendor_load,
-	.vendor_unload	= abe_vendor_unload,
-	.complete	= abe_fw_complete,
-	.io_ops		= abe_ops,
-	.io_ops_count	= 7,
-};
-
-static int abe_probe(struct snd_soc_platform *platform)
-{
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
-	int ret;
-
-	pm_runtime_enable(abe->dev);
-	pm_runtime_irq_safe(abe->dev);
-
-	ret = snd_soc_fw_load_platform_nowait(platform, &soc_fw_ops, "omap4_abe_new");
-	if (ret == -EPROBE_DEFER) {
-		pm_runtime_disable(abe->dev);
-		return ret;
-	}
-	if (ret < 0) {
-		pm_runtime_disable(abe->dev);
-		dev_err(abe->dev, "Failed to load firmware: %d\n", ret);
-	}
-
 	return ret;
 }
 
@@ -401,6 +400,7 @@ static struct snd_soc_platform_driver omap_aess_platform = {
 	.remove		= abe_remove,
 	.suspend	= abe_pm_suspend,
 	.resume		= abe_pm_resume,
+	.fw_probe	= abe_probe_fw,
 	.read		= abe_mixer_read,
 	.write		= abe_mixer_write,
 	.stream_event	= abe_opp_stream_event,
