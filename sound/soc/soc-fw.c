@@ -48,18 +48,23 @@ int snd_soc_instantiate_card(struct snd_soc_card *card);
 struct soc_fw {
 	const char *file;
 	const struct firmware *fw;
-	const u8 *pos;	/* read postion */
-	const u8 *hdr_pos;	/* header position */
-	unsigned int pass;
 
+	/* runtime FW parsing */
+	const u8 *pos;		/* read postion */
+	const u8 *hdr_pos;	/* header position */
+	unsigned int pass;	/* pass number */
+
+	/* component caller */
 	struct device *dev;
 	struct snd_soc_codec *codec;
 	struct snd_soc_platform *platform;
 	struct snd_soc_card *card;
 
+	/* kcontrol operations */
 	const struct snd_soc_fw_kcontrol_ops *io_ops;
 	int io_ops_count;
 
+	/* optional fw loading callbacks to componenet drivers */
 	union {
 		struct snd_soc_fw_codec_ops *codec_ops;
 		struct snd_soc_fw_platform_ops *platform_ops;
@@ -70,9 +75,10 @@ struct soc_fw {
 };
 
 static LIST_HEAD(client_list);
-static int soc_fw_load_headers(struct soc_fw *sfw);
+static int soc_fw_process_headers(struct soc_fw *sfw);
 static void soc_fw_complete(struct soc_fw *sfw);
 
+/* List of Kcontrol types and associated operations. */
 static const struct snd_soc_fw_kcontrol_ops io_ops[] = {
 	{SOC_CONTROL_IO_VOLSW, snd_soc_get_volsw,
 		snd_soc_put_volsw, snd_soc_info_volsw},
@@ -182,7 +188,20 @@ static inline void soc_fw_release_data(struct soc_fw *sfw)
 	release_firmware(sfw->fw);
 }
 
-static void soc_fw_load(const struct firmware *fw, void *context)
+static int soc_fw_process(struct soc_fw *sfw)
+{
+	int ret;
+
+	ret = soc_fw_process_headers(sfw);
+	if (ret == 0)
+		soc_fw_complete(sfw);
+	soc_fw_release_data(sfw);
+	kfree(sfw);
+
+	return ret;
+}
+
+static void soc_fw_request_complete(const struct firmware *fw, void *context)
 {
 	struct soc_fw *sfw = (struct soc_fw *)context;
 	int err = 0;
@@ -191,18 +210,15 @@ static void soc_fw_load(const struct firmware *fw, void *context)
 
 	if (err < 0)
 		dev_err(sfw->dev, "Failed to load : %s %d\n", sfw->file, err);
-	else
-		soc_fw_complete(sfw);
+	else {
+		if (sfw->codec) {
+			sfw->codec->fw_ready = 1;
+			snd_soc_instantiate_card(sfw->codec->card);
+		} else if (sfw->platform) {
 
-	//soc_fw_release_data(sfw);
-
-	if (sfw->codec) {
-		sfw->codec->fw_ready = 1;
-		snd_soc_instantiate_card(sfw->codec->card);
-	} else if (sfw->platform) {
-
-		sfw->platform->fw_ready = 1;
-		snd_soc_instantiate_card(sfw->platform->card);
+			sfw->platform->fw_ready = 1;
+			snd_soc_instantiate_card(sfw->platform->card);
+		}
 	}
 }
 
@@ -210,20 +226,20 @@ static int soc_fw_request_data_nowait(struct soc_fw *sfw)
 {
 	int ret;
 
-
 	list_add(&sfw->list, &client_list);
 
 	ret = request_firmware_nowait(THIS_MODULE, 1, sfw->file, sfw->dev,
-		GFP_KERNEL, sfw, soc_fw_load);
-	if (ret != 0)
+		GFP_KERNEL, sfw, soc_fw_request_complete);
+	if (ret != 0) {
+		list_del(&sfw->list);
 		dev_err(sfw->dev, "Failed to load : %s %d\n", sfw->file, ret);
-
+	}
 
 	return ret;
 }
 
-/* check we dont overflow the data for this chunk */
-static inline int soc_fw_check_count(struct soc_fw *sfw, size_t elem_size,
+/* check we dont overflow the data for this control chunk */
+static int soc_fw_check_control_count(struct soc_fw *sfw, size_t elem_size,
 	unsigned int count, size_t bytes)
 {
 	const u8 *end = sfw->pos + elem_size * count;
@@ -244,7 +260,7 @@ static inline int soc_fw_check_count(struct soc_fw *sfw, size_t elem_size,
 	return 0;
 }
 
-static inline int soc_fw_eof(struct soc_fw *sfw)
+static inline int soc_fw_is_eof(struct soc_fw *sfw)
 {
 	const u8 *end = sfw->hdr_pos;
 
@@ -329,6 +345,7 @@ static int soc_fw_widget_load(struct soc_fw *sfw, struct snd_soc_dapm_widget *w)
 	return 0;
 }
 
+/* tell the component driver that all firmware has been loaded in this request */
 static void soc_fw_complete(struct soc_fw *sfw)
 {
 	if (sfw->codec && sfw->codec_ops && sfw->codec_ops->complete)
@@ -388,6 +405,7 @@ static int soc_fw_add_kcontrol(struct soc_fw *sfw, struct snd_kcontrol_new *k,
 	return 0;
 }
 
+/* bind a kcontrol to it's IO handlers */
 static int soc_fw_kcontrol_bind_io(u32 io_type, struct snd_kcontrol_new *k,
 	const struct snd_soc_fw_kcontrol_ops *ops, int num_ops)
 {
@@ -406,14 +424,14 @@ static int soc_fw_kcontrol_bind_io(u32 io_type, struct snd_kcontrol_new *k,
 			k->info = ops[i].info;
 	}
 
-	/* do we need to bind external kcontrols */
+	/* let the caller know if we need to bind external kcontrols */
 	if (!k->put || !k->get || !k->info)
 		return 1;
 
 	return 0;
 }
 
-/* pass new dynamic kcontrol to component driver. mainly for external kcontrols */
+/* optionally pass new dynamic kcontrol to component driver. */
 static int soc_fw_init_kcontrol(struct soc_fw *sfw, struct snd_kcontrol_new *k)
 {
 	if (sfw->codec && sfw->codec_ops && sfw->codec_ops->control_load)
@@ -429,88 +447,189 @@ static int soc_fw_init_kcontrol(struct soc_fw *sfw, struct snd_kcontrol_new *k)
 	return 0;
 }
 
-static void soc_fw_dmixer_codec_remove(struct soc_fw *sfw, const char *name)
+void soc_fw_dcontrols_remove_widget(struct snd_soc_dapm_widget *w)
 {
-	struct snd_soc_codec *codec = sfw->codec;
+	struct snd_card *card = w->dapm->card->snd_card;
+	const unsigned int *p = NULL;
+	int i;
+
+	/*
+	 * Dynamic Widgets either have 1 enum kcontrol or 1..N mixers.
+	 * The enumm may either have an array of values or strings.
+	 */
+	if (w->denum) {
+		struct soc_enum *se =
+			(struct soc_enum *)w->kcontrols[0]->private_value;
+
+		snd_ctl_remove(card, se->dcontrol);
+		if (se->dvalues)
+			kfree(se->dvalues);
+		else {
+			for (i = 0; i < se->max; i++)
+				kfree(se->dtexts[i]);
+		}
+		kfree(se);
+	} else if (w->dmixer) {
+
+		for (i = 0; i < w->num_kcontrols; i++) {
+			struct snd_kcontrol *kcontrol = w->kcontrols[i];
+			struct soc_mixer_control *sm =
+			(struct soc_mixer_control *) kcontrol->private_value;
+
+			if (sm->dcontrol->tlv.p)
+				p = sm->dcontrol->tlv.p;
+			snd_ctl_remove(card, sm->dcontrol);
+			kfree(sm);
+			kfree(p);
+		}
+	}
+	kfree(w);
+}
+
+void soc_fw_dcontrols_remove_widgets(struct snd_soc_dapm_context *dapm)
+{
+	struct snd_soc_dapm_widget *w, *next_w;
+	struct snd_soc_dapm_path *p, *next_p;
+
+	list_for_each_entry_safe(w, next_w, &dapm->card->widgets, list) {
+		if (!w->dmixer && !w->denum && w->dapm != dapm)
+			continue;
+		list_del(&w->list);
+		/*
+		 * remove source and sink paths associated to this widget.
+		 * While removing the path, remove reference to it from both
+		 * source and sink widgets so that path is removed only once.
+		 */
+		list_for_each_entry_safe(p, next_p, &w->sources, list_sink) {
+			list_del(&p->list_sink);
+			list_del(&p->list_source);
+			list_del(&p->list);
+			kfree(p->long_name);
+			kfree(p);
+		}
+		list_for_each_entry_safe(p, next_p, &w->sinks, list_source) {
+			list_del(&p->list_sink);
+			list_del(&p->list_source);
+			list_del(&p->list);
+			kfree(p->long_name);
+			kfree(p);
+		}
+		/* check and free and dynamic widget kcontrols */
+		soc_fw_dcontrols_remove_widget(w);
+		kfree(w->kcontrols);
+		kfree(w->name);
+		kfree(w);
+	}
+}
+
+void soc_fw_dcontrols_remove_codec(struct snd_soc_codec *codec)
+{
 	struct soc_mixer_control *sm, *next_sm;
+	struct soc_enum *se, *next_se;
 	struct snd_card *card = codec->card->snd_card;
+	const unsigned int *p = NULL;
+	int i;
 
 	list_for_each_entry_safe(sm, next_sm, &codec->dmixers, list) {
 
-		/* if name is not NULL then remove matching kcontrols */
-		if (name && strcmp(name, sm->dcontrol->id.name))
-			continue;
-
+		if (sm->dcontrol->tlv.p)
+			p = sm->dcontrol->tlv.p;
 		snd_ctl_remove(card, sm->dcontrol);
 		list_del(&sm->list);
 		kfree(sm);
+		kfree(p);
+	}
+
+	list_for_each_entry_safe(se, next_se, &codec->denums, list) {
+
+		snd_ctl_remove(card, se->dcontrol);
+		list_del(&se->list);
+		if (se->dvalues)
+			kfree(se->dvalues);
+		else {
+			for (i = 0; i < se->max; i++)
+				kfree(se->dtexts[i]);
+		}
+		kfree(se);
 	}
 }
 
-static void soc_fw_dmixer_platform_remove(struct soc_fw *sfw, const char *name)
+void soc_fw_dcontrols_remove_platform(struct snd_soc_platform *platform)
 {
-	struct snd_soc_platform *platform = sfw->platform;
 	struct soc_mixer_control *sm, *next_sm;
+	struct soc_enum *se, *next_se;
 	struct snd_card *card = platform->card->snd_card;
+	const unsigned int *p = NULL;
+	int i;
 
 	list_for_each_entry_safe(sm, next_sm, &platform->dmixers, list) {
 
-		/* if name is not NULL then remove matching kcontrols */
-		if (name && strcmp(name, sm->dcontrol->id.name))
-			continue;
-
+		if (sm->dcontrol->tlv.p)
+			p = sm->dcontrol->tlv.p;
 		snd_ctl_remove(card, sm->dcontrol);
 		list_del(&sm->list);
 		kfree(sm);
+		kfree(p);
+	}
+
+	list_for_each_entry_safe(se, next_se, &platform->denums, list) {
+
+		snd_ctl_remove(card, se->dcontrol);
+		list_del(&se->list);
+		if (se->dvalues)
+			kfree(se->dvalues);
+		else {
+			for (i = 0; i < se->max; i++)
+				kfree(se->dtexts[i]);
+		}
+		kfree(se);
 	}
 }
 
-static void soc_fw_dmixer_card_remove(struct soc_fw *sfw, const char *name)
+void soc_fw_dcontrols_remove_card(struct snd_soc_card *soc_card)
 {
-	struct snd_soc_card *soc_card = sfw->card;
 	struct soc_mixer_control *sm, *next_sm;
+	struct soc_enum *se, *next_se;
 	struct snd_card *card = soc_card->snd_card;
+	const unsigned int *p = NULL;
+	int i;
 
 	list_for_each_entry_safe(sm, next_sm, &soc_card->dmixers, list) {
 
-		/* if name is not NULL then remove matching kcontrols */
-		if (name && strcmp(name, sm->dcontrol->id.name))
-			continue;
-
+		if (sm->dcontrol->tlv.p)
+			p = sm->dcontrol->tlv.p;
 		snd_ctl_remove(card, sm->dcontrol);
 		list_del(&sm->list);
 		kfree(sm);
+		kfree(p);
+	}
+
+	list_for_each_entry_safe(se, next_se, &soc_card->denums, list) {
+
+		snd_ctl_remove(card, se->dcontrol);
+		list_del(&se->list);
+		if (se->dvalues)
+			kfree(se->dvalues);
+		else {
+			for (i = 0; i < se->max; i++)
+				kfree(se->dtexts[i]);
+		}
+		kfree(se);
 	}
 }
 
-static void soc_fw_dmixer_component_remove(struct soc_fw *sfw, const char *name)
+int soc_fw_dcontrols_remove_all(struct snd_soc_card *card)
 {
-	if (sfw->codec)
-		soc_fw_dmixer_codec_remove(sfw, name);
-	else if (sfw->platform)
-		soc_fw_dmixer_platform_remove(sfw, name);
-	else if (sfw->card)
-		soc_fw_dmixer_card_remove(sfw, name);
-}
+	struct snd_soc_codec *codec;
+	struct snd_soc_platform *platform;
 
-static int soc_fw_dmixer_remove(struct soc_fw *sfw, unsigned int count,
-	size_t size)
-{
-	struct snd_soc_fw_mixer_control *mc;
-	int i;
+	list_for_each_entry(codec, &card->codec_dev_list, card_list)
+		soc_fw_dcontrols_remove_codec(codec);
 
-	if (soc_fw_check_count(sfw,
-		sizeof(struct snd_soc_fw_mixer_control), count, size)) {
-		dev_err(sfw->dev, "invalid count %d for mixer controls\n", count);
-		return -EINVAL;
-	}
+	list_for_each_entry(platform, &card->platform_dev_list, card_list)
+		soc_fw_dcontrols_remove_platform(platform);
 
-	for (i = 0; i < count; i++) {
-		mc = (struct snd_soc_fw_mixer_control*)sfw->pos;
-		sfw->pos += sizeof(struct snd_soc_fw_enum_control);
-
-		soc_fw_dmixer_component_remove(sfw, mc->hdr.name);
-	}
+	soc_fw_dcontrols_remove_card(card);
 	return 0;
 }
 
@@ -555,7 +674,7 @@ static int soc_fw_dmixer_create(struct soc_fw *sfw, unsigned int count,
 	struct snd_kcontrol_new kc;
 	int i, err, ext;
 
-	if (soc_fw_check_count(sfw,
+	if (soc_fw_check_control_count(sfw,
 		sizeof(struct snd_soc_fw_mixer_control), count, size)) {
 		dev_err(sfw->dev, "invalid count %d for controls\n", count);
 		return -EINVAL;
@@ -627,11 +746,11 @@ static int soc_fw_dmixer_create(struct soc_fw *sfw, unsigned int count,
 		err = soc_fw_add_kcontrol(sfw, &kc, &sm->dcontrol);
 		if (err < 0) {
 			dev_err(sfw->dev, "failed to add %s\n", mc->hdr.name);
+			soc_fw_free_tlv(sfw, &kc);
 			kfree(sm);
 			continue;
 		}
 
-		//soc_fw_free_tlv(sfw, &kc);
 		soc_fw_list_add_mixer(sfw, sm);
 	}
 
@@ -723,7 +842,7 @@ static int soc_fw_denum_remove(struct soc_fw *sfw, unsigned int count,
 	struct snd_soc_fw_enum_control *ec;
 	int i;
 
-	if (soc_fw_check_count(sfw,
+	if (soc_fw_check_control_count(sfw,
 		sizeof(struct snd_soc_fw_enum_control), count, size)) {
 		dev_err(sfw->dev, "invalid count %d for enum controls\n", count);
 		return -EINVAL;
@@ -793,7 +912,7 @@ static int soc_fw_denum_create(struct soc_fw *sfw, unsigned int count,
 	struct snd_kcontrol_new kc;
 	int i, ret, err, ext;
 
-	if (soc_fw_check_count(sfw,
+	if (soc_fw_check_control_count(sfw,
 		sizeof(struct snd_soc_fw_enum_control), count, size)) {
 		dev_err(sfw->dev, "invalid count %d for enum controls\n", count);
 		return -EINVAL;
@@ -967,7 +1086,7 @@ static int soc_fw_kcontrol_load(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
 	}
 	return 0;
 }
-
+#if 0
 static int soc_fw_kcontrol_unload(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
 {
 	struct snd_soc_fw_kcontrol *sfwk =
@@ -1009,7 +1128,7 @@ static int soc_fw_kcontrol_unload(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr
 	}
 	return 0;
 }
-
+#endif
 static int soc_fw_dapm_graph_load(struct soc_fw *sfw,
 	struct snd_soc_fw_hdr *hdr)
 {
@@ -1027,7 +1146,7 @@ static int soc_fw_dapm_graph_load(struct soc_fw *sfw,
 
 	sfw->pos += sizeof(struct snd_soc_fw_dapm_elems);
 
-	if (soc_fw_check_count(sfw,
+	if (soc_fw_check_control_count(sfw,
 		sizeof(struct snd_soc_fw_dapm_graph_elem), count, hdr->size)) {
 		dev_err(sfw->dev, "invalid count %d for DAPM routes\n", count);
 		return -EINVAL;
@@ -1374,7 +1493,7 @@ static int soc_fw_dapm_widget_load(struct soc_fw *sfw, struct snd_soc_fw_hdr *hd
 
 	sfw->pos += sizeof(struct snd_soc_fw_dapm_elems);
 
-	if (soc_fw_check_count(sfw,
+	if (soc_fw_check_control_count(sfw,
 		sizeof(struct snd_soc_fw_dapm_graph_elem), count, hdr->size)) {
 		dev_err(sfw->dev, "invalid count %d for widgets\n", count);
 		return -EINVAL;
@@ -1536,7 +1655,7 @@ static int soc_fw_load_header(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
 	return 0;
 }
 
-static int soc_fw_load_headers(struct soc_fw *sfw)
+static int soc_fw_process_headers(struct soc_fw *sfw)
 {
 	struct snd_soc_fw_hdr *hdr;
 	int ret;
@@ -1548,7 +1667,7 @@ static int soc_fw_load_headers(struct soc_fw *sfw)
 		sfw->hdr_pos = sfw->fw->data;
 		hdr = (struct snd_soc_fw_hdr *)sfw->hdr_pos;
 
-		while (!soc_fw_eof(sfw)) {
+		while (!soc_fw_is_eof(sfw)) {
 
 			ret = soc_valid_header(sfw, hdr);
 			if (ret < 0) {
@@ -1574,90 +1693,55 @@ static int soc_fw_load_headers(struct soc_fw *sfw)
 	return ret;
 }
 
-static int soc_fw_unload_header(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
+static int soc_fw_load(struct soc_fw *sfw, int nowait)
 {
-	if (hdr->magic != SND_SOC_FW_MAGIC) {
-		dev_err(sfw->dev, "%s does not have a valid header.\n",
-			sfw->file);
-		return -EINVAL;
-	}
-
-	dev_dbg(sfw->dev, "Got %d bytes of type %d version %d\n", hdr->size,
-		hdr->type, hdr->version);
-
-	switch (hdr->type) {
-	case SND_SOC_FW_MIXER:
-		return soc_fw_kcontrol_unload(sfw, hdr);
-	case SND_SOC_FW_DAPM_GRAPH:
-	case SND_SOC_FW_DAPM_PINS:
-	case SND_SOC_FW_DAPM_WIDGET:
-		return soc_fw_dapm_unload(sfw, hdr);
-	case SND_SOC_FW_DAI_LINK:
-		return soc_fw_dai_link_unload(sfw, hdr);
-	default:
-		return soc_fw_vendor_unload(sfw, hdr);
-	}
-
-	return 0;
-}
-
-static int soc_fw_unload_headers(struct soc_fw *sfw)
-{
-	struct snd_soc_fw_hdr *hdr =
-		(struct snd_soc_fw_hdr*)sfw->fw->data;
 	int ret;
 
-	sfw->pass = SOC_FW_PASS_START;
-	sfw->pos += sizeof(struct snd_soc_fw_hdr);
-
-	while (sfw->pass <= SOC_FW_PASS_END) {
-		while (!soc_fw_eof(sfw)) {
-			ret = soc_fw_unload_header(sfw, hdr);
-			if (ret < 0)
-				return ret;
+	if (nowait)
+		return soc_fw_request_data_nowait(sfw);
+	else {
+		ret = soc_fw_request_data(sfw);
+		if (ret != 0) {
+			kfree(sfw);
+			return ret;
 		}
-		sfw->pass++;
+		return soc_fw_process(sfw);
 	}
-
-	soc_fw_complete(sfw);
-	return 0;
 }
 
 static int soc_fw_load_codec(struct snd_soc_codec *codec,
 	struct snd_soc_fw_codec_ops *ops, const char *file, int nowait)
 {
 	struct soc_fw *sfw;
-	int ret;
 
 	sfw = kzalloc(sizeof(struct soc_fw), GFP_KERNEL);
 	if (sfw == NULL)
 		return -ENOMEM;
 
 	sfw->file = file;
-	sfw->codec = codec;
 	sfw->dev = codec->dev;
+	sfw->codec = codec;
 	sfw->codec_ops = ops;
 	sfw->io_ops = ops->io_ops;
 	sfw->io_ops_count = ops->io_ops_count;
 
-	if (nowait) {
-		ret = soc_fw_request_data_nowait(sfw);
-		if (ret < 0)
-			return ret;
-		return -EAGAIN;
-	} else {
-		ret = soc_fw_request_data(sfw);
-		if (ret != 0)
-			return ret;
+	return soc_fw_load(sfw, nowait);
+}
 
-		ret = soc_fw_load_headers(sfw);
-		if (ret < 0)
-			soc_fw_complete(sfw);
-		soc_fw_release_data(sfw);
+int snd_soc_fw_init_codec(struct snd_soc_codec *codec)
+{
+	struct soc_fw *sfw, *t;
+
+	list_for_each_entry_safe(sfw, t, &client_list, list) {
+		if (sfw->codec == codec) {
+			list_del(&sfw->list);
+			goto found;
+		}
 	}
+	return -EINVAL;
 
-	kfree(sfw);
-	return ret;
+found:
+	return soc_fw_process(sfw);
 }
 
 int snd_soc_fw_load_codec(struct snd_soc_codec *codec,
@@ -1674,24 +1758,10 @@ int snd_soc_fw_load_codec_nowait(struct snd_soc_codec *codec,
 }
 EXPORT_SYMBOL_GPL(snd_soc_fw_load_codec_nowait);
 
-static int soc_fw_exec(struct soc_fw *sfw)
-{
-	int ret;
-
-	ret = soc_fw_load_headers(sfw);
-	if (ret == 0)
-		soc_fw_complete(sfw);
-	soc_fw_release_data(sfw);
-
-	return ret;
-}
-
-
 static int soc_fw_load_platform(struct snd_soc_platform *platform,
 	struct snd_soc_fw_platform_ops *ops, const char *file, int nowait)
 {
 	struct soc_fw *sfw;
-	int ret;
 
 	sfw = kzalloc(sizeof(struct soc_fw), GFP_KERNEL);
 	if (sfw == NULL)
@@ -1704,23 +1774,12 @@ static int soc_fw_load_platform(struct snd_soc_platform *platform,
 	sfw->io_ops = ops->io_ops;
 	sfw->io_ops_count = ops->io_ops_count;
 
-	if (nowait)
-		return soc_fw_request_data_nowait(sfw);
-	else {
-		ret = soc_fw_request_data(sfw);
-		if (ret != 0)
-			return ret;
-			ret = soc_fw_exec(sfw);
-	}
-
-	kfree(sfw);
-	return ret;
+	return soc_fw_load(sfw, nowait);
 }
 
 int snd_soc_fw_init_platform(struct snd_soc_platform *platform)
 {
 	struct soc_fw *sfw, *t;
-	int ret;
 
 	list_for_each_entry_safe(sfw, t, &client_list, list) {
 		if (sfw->platform == platform) {
@@ -1731,10 +1790,7 @@ int snd_soc_fw_init_platform(struct snd_soc_platform *platform)
 	return -EINVAL;
 
 found:
-	ret = soc_fw_exec(sfw);
-
-	kfree(sfw);
-	return ret;
+	return soc_fw_process(sfw);
 }
 
 int snd_soc_fw_load_platform(struct snd_soc_platform *platform,
@@ -1755,32 +1811,35 @@ static int soc_fw_load_card(struct snd_soc_card *card,
 	struct snd_soc_fw_card_ops *ops, const char *file, int nowait)
 {
 	struct soc_fw *sfw;
-	int ret;
 
 	sfw = kzalloc(sizeof(struct soc_fw), GFP_KERNEL);
 	if (sfw == NULL)
 		return -ENOMEM;
 
 	sfw->file = file;
-	sfw->card = card;
 	sfw->dev = card->dev;
+	sfw->card = card;
 	sfw->card_ops = ops;
+	sfw->io_ops = ops->io_ops;
+	sfw->io_ops_count = ops->io_ops_count;
 
-	if (nowait)
-		return soc_fw_request_data_nowait(sfw);
-	else {
-		ret = soc_fw_request_data(sfw);
-		if (ret != 0)
-			return ret;
+	return soc_fw_load(sfw, nowait);
+}
 
-		ret = soc_fw_load_headers(sfw);
-		if (ret < 0)
-			soc_fw_complete(sfw);
-		soc_fw_release_data(sfw);
+int snd_soc_fw_init_card(struct snd_soc_card *card)
+{
+	struct soc_fw *sfw, *t;
+
+	list_for_each_entry_safe(sfw, t, &client_list, list) {
+		if (sfw->card == card) {
+			list_del(&sfw->list);
+			goto found;
+		}
 	}
+	return -EINVAL;
 
-	kfree(sfw);
-	return ret;
+found:
+	return soc_fw_process(sfw);
 }
 
 int snd_soc_fw_load_card(struct snd_soc_card *card,
@@ -1797,83 +1856,3 @@ int snd_soc_fw_load_card_nowait(struct snd_soc_card *card,
 }
 EXPORT_SYMBOL_GPL(snd_soc_fw_load_card_nowait);
 
-int snd_soc_fw_unload_card(struct snd_soc_card *card,
-	struct snd_soc_fw_card_ops *ops, const char *file)
-{
-	struct soc_fw *sfw;
-	int ret;
-
-	sfw = kzalloc(sizeof(struct soc_fw), GFP_KERNEL);
-	if (sfw == NULL)
-		return -ENOMEM;
-
-	sfw->file = file;
-	sfw->card = card;
-	sfw->dev = card->dev;
-	sfw->card_ops = ops;
-
-	ret = soc_fw_request_data(sfw);
-	if (ret != 0)
-		return ret;
-
-	ret = soc_fw_unload_headers(sfw);
-	soc_fw_release_data(sfw);
-	kfree(sfw);
-	return ret;
-}
-EXPORT_SYMBOL_GPL(snd_soc_fw_unload_card);
-
-int snd_soc_fw_unload_platform(struct snd_soc_platform *platform,
-	struct snd_soc_fw_platform_ops *ops, const char *file)
-{
-	struct soc_fw *sfw;
-	int ret;
-
-	sfw = kzalloc(sizeof(struct soc_fw), GFP_KERNEL);
-	if (sfw == NULL)
-		return -ENOMEM;
-
-	sfw->file = file;
-	sfw->platform = platform;
-	sfw->dev = platform->dev;
-	sfw->platform_ops = ops;
-	sfw->io_ops = ops->io_ops;
-	sfw->io_ops_count = ops->io_ops_count;
-
-	ret = soc_fw_request_data(sfw);
-	if (ret != 0)
-		return ret;
-
-	ret = soc_fw_unload_headers(sfw);
-	soc_fw_release_data(sfw);
-	kfree(sfw);
-	return ret;
-}
-EXPORT_SYMBOL_GPL(snd_soc_fw_unload_platform);
-
-
-int snd_soc_fw_unload_codec(struct snd_soc_codec *codec,
-	struct snd_soc_fw_codec_ops *ops, const char *file)
-{
-	struct soc_fw *sfw;
-	int ret;
-
-	sfw = kzalloc(sizeof(struct soc_fw), GFP_KERNEL);
-	if (sfw == NULL)
-		return -ENOMEM;
-
-	sfw->file = file;
-	sfw->codec = codec;
-	sfw->dev = codec->dev;
-	sfw->codec_ops = ops;
-
-	ret = soc_fw_request_data(sfw);
-	if (ret != 0)
-		return ret;
-
-	ret = soc_fw_unload_headers(sfw);
-	soc_fw_release_data(sfw);
-	kfree(sfw);
-	return ret;
-}
-EXPORT_SYMBOL_GPL(snd_soc_fw_unload_codec);

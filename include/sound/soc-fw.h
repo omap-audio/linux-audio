@@ -160,6 +160,9 @@ struct snd_soc_file_coeff_data {
 
 #ifdef __KERNEL__
 
+/*
+ * Kcontrol operations - used to map handlers onto firmware based controls.
+ */
 struct snd_soc_fw_kcontrol_ops {
 	u32 id;
 	int (*get)(struct snd_kcontrol *kcontrol,
@@ -186,10 +189,10 @@ struct snd_soc_fw_codec_ops {
 	int (*vendor_load) (struct snd_soc_codec *, struct snd_soc_fw_hdr *);
 	int (*vendor_unload) (struct snd_soc_codec *, struct snd_soc_fw_hdr *);
 
-	/* completion */
+	/* completion - called at completion of firmware loading */
 	void (*complete) (struct snd_soc_codec *);
 
-	/* kcontrols */
+	/* kcontrols operations */
 	const struct snd_soc_fw_kcontrol_ops *io_ops;
 	int io_ops_count;
 };
@@ -200,6 +203,7 @@ int snd_soc_fw_load_codec_nowait(struct snd_soc_codec *codec,
 	struct snd_soc_fw_codec_ops *ops, const char *file);
 int snd_soc_fw_unload_codec(struct snd_soc_codec *codec,
 	struct snd_soc_fw_codec_ops *ops, const char *file);
+int snd_soc_fw_init_codec(struct snd_soc_codec *codec);
 
 struct snd_soc_fw_platform_ops {
 
@@ -213,10 +217,10 @@ struct snd_soc_fw_platform_ops {
 	int (*vendor_load) (struct snd_soc_platform *, struct snd_soc_fw_hdr *);
 	int (*vendor_unload) (struct snd_soc_platform *, struct snd_soc_fw_hdr *);
 
-	/* completion */
+	/* completion - called at completion of firmware loading */
 	void (*complete) (struct snd_soc_platform *);
 
-	/* kcontrols */
+	/* kcontrols operations */
 	const struct snd_soc_fw_kcontrol_ops *io_ops;
 	int io_ops_count;
 };
@@ -244,7 +248,7 @@ struct snd_soc_fw_card_ops {
 	/* completion */
 	void (*complete) (struct snd_soc_card *);
 
-	/* kcontrols */
+	/* kcontrols operations */
 	const struct snd_soc_fw_kcontrol_ops *io_ops;
 	int io_ops_count;
 };
@@ -255,6 +259,7 @@ int snd_soc_fw_load_card_nowait(struct snd_soc_card *card,
 	struct snd_soc_fw_card_ops *ops, const char *file);
 int snd_soc_fw_unload_card(struct snd_soc_card *card,
 	struct snd_soc_fw_card_ops *ops, const char *file);
+int snd_soc_fw_init_card(struct snd_soc_card *card);
 
 static inline const void *snd_soc_fw_get_data(struct snd_soc_fw_hdr *hdr)
 {
@@ -262,6 +267,9 @@ static inline const void *snd_soc_fw_get_data(struct snd_soc_fw_hdr *hdr)
 
 	return ptr + sizeof(*hdr);
 }
+
+void soc_fw_dcontrols_remove_widget(struct snd_soc_dapm_widget *w);
+int soc_fw_dcontrols_remove_all(struct snd_soc_card *soc_card);
 
 #endif
 #endif
