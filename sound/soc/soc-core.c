@@ -40,6 +40,7 @@
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
 #include <sound/soc-dpcm.h>
+#include <sound/soc-fw.h>
 #include <sound/initval.h>
 
 #define CREATE_TRACE_POINTS
@@ -1934,6 +1935,9 @@ static int soc_cleanup_card_resources(struct snd_soc_card *card)
 
 	/* remove and free each DAI */
 	soc_remove_dai_links(card);
+
+	/* remove any dynamic kcontrols */
+	soc_fw_dcontrols_remove_all(card);
 
 	soc_cleanup_card_debugfs(card);
 
