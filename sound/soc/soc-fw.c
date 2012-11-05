@@ -17,7 +17,6 @@
  *  data is passed to component drivers for bespoke handling.
  */
 
-#define DEBUG
 #include <linux/kernel.h>
 #include <linux/export.h>
 #include <linux/list.h>
@@ -26,8 +25,6 @@
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
 #include <sound/soc-fw.h>
-
-int snd_soc_instantiate_card(struct snd_soc_card *card);
 
 /*
  * We make several passes over the data (since it wont necessarily be ordered)
@@ -115,19 +112,7 @@ static const struct snd_soc_fw_kcontrol_ops io_ops[] = {
 		snd_soc_dapm_put_pin_switch, snd_soc_dapm_info_pin_switch},
 };
 
-static void sfw_dump(struct soc_fw *sfw)
-{
-	struct snd_soc_fw_hdr *hdr = (struct snd_soc_fw_hdr*)sfw->hdr_pos;
-	int i;
-
-	dev_dbg(sfw->dev, "header: magic %x type %d vendor %d version %d size 0x%x\n",
-		hdr->magic, hdr->type, hdr->vendor_type, hdr->version, hdr->size);
-
-	for (i = 0; i < 24; i++)
-		dev_dbg(sfw->dev, "data: offset 0x%x = 0x%x\n",
-		(char*) sfw->hdr_pos - (char*) sfw->fw->data + i,
-		*(((char*)sfw->hdr_pos) + i));
-}
+int snd_soc_instantiate_card(struct snd_soc_card *card);
 
 static inline void soc_fw_list_add_enum(struct soc_fw *sfw, struct soc_enum *se)
 {
@@ -204,21 +189,15 @@ static int soc_fw_process(struct soc_fw *sfw)
 static void soc_fw_request_complete(const struct firmware *fw, void *context)
 {
 	struct soc_fw *sfw = (struct soc_fw *)context;
-	int err = 0;
 
 	sfw->fw = fw;
 
-	if (err < 0)
-		dev_err(sfw->dev, "Failed to load : %s %d\n", sfw->file, err);
-	else {
-		if (sfw->codec) {
-			sfw->codec->fw_ready = 1;
-			snd_soc_instantiate_card(sfw->codec->card);
-		} else if (sfw->platform) {
-
-			sfw->platform->fw_ready = 1;
-			snd_soc_instantiate_card(sfw->platform->card);
-		}
+	if (sfw->codec) {
+		sfw->codec->fw_ready = 1;
+		snd_soc_instantiate_card(sfw->codec->card);
+	} else if (sfw->platform) {
+		sfw->platform->fw_ready = 1;
+		snd_soc_instantiate_card(sfw->platform->card);
 	}
 }
 
@@ -307,26 +286,6 @@ static int soc_fw_vendor_load(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
 		return 0;
 
 	return soc_fw_vendor_load_(sfw, hdr);
-}
-
-static int soc_fw_vendor_unload(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
-{
-	int ret = 0;
-
-	if (sfw->codec && sfw->codec_ops && sfw->codec_ops->vendor_unload)
-		ret = sfw->codec_ops->vendor_unload(sfw->codec, hdr);
-
-	if (sfw->platform && sfw->platform_ops && sfw->platform_ops->vendor_unload)
-		ret = sfw->platform_ops->vendor_unload(sfw->platform, hdr);
-
-	if (sfw->card && sfw->card_ops && sfw->card_ops->vendor_unload)
-		ret = sfw->card_ops->vendor_unload(sfw->card, hdr);
-
-	if (ret < 0)
-		dev_err(sfw->dev, "vendor unload failed at offset %d/0x%x for type %d:%d\n",
-			soc_fw_get_hdr_offset(sfw), soc_fw_get_hdr_offset(sfw),
-			hdr->type, hdr->vendor_type);
-	return ret;
 }
 
 /* pass new dynamic widget to component driver. mainly for external widgets */
@@ -769,95 +728,6 @@ static inline void soc_fw_denum_free_data(struct soc_enum *se)
 	}
 }
 
-static void soc_fw_denum_codec_remove(struct soc_fw *sfw, const char *name)
-{
-	struct snd_soc_codec *codec = sfw->codec;
-	struct soc_enum *se, *next_se;
-	struct snd_card *card = codec->card->snd_card;
-
-	list_for_each_entry_safe(se, next_se, &codec->denums, list) {
-
-		/* if name is not NULL then remove matching kcontrols */
-		if (name && strcmp(name, se->dcontrol->id.name))
-			continue;
-
-		snd_ctl_remove(card, se->dcontrol);
-		list_del(&se->list);
-		soc_fw_denum_free_data(se);
-		kfree(se);
-	}
-}
-
-static void soc_fw_denum_platform_remove(struct soc_fw *sfw, const char *name)
-{
-	struct snd_soc_platform *platform = sfw->platform;
-	struct soc_enum *se, *next_se;
-	struct snd_card *card = platform->card->snd_card;
-
-	list_for_each_entry_safe(se, next_se, &platform->denums, list) {
-
-		/* if name is not NULL then remove matching kcontrols */
-		if (name && strcmp(name, se->dcontrol->id.name))
-			continue;
-
-		snd_ctl_remove(card, se->dcontrol);
-		list_del(&se->list);
-		soc_fw_denum_free_data(se);
-		kfree(se);
-	}
-}
-
-static void soc_fw_denum_card_remove(struct soc_fw *sfw, const char *name)
-{
-	struct snd_soc_card *soc_card = sfw->card;
-	struct soc_enum *se, *next_se;
-	struct snd_card *card = soc_card->snd_card;
-
-	list_for_each_entry_safe(se, next_se, &soc_card->denums, list) {
-
-		/* if name is not NULL then remove matching kcontrols */
-		if (name && strcmp(name, se->dcontrol->id.name))
-			continue;
-
-		snd_ctl_remove(card, se->dcontrol);
-		list_del(&se->list);
-		soc_fw_denum_free_data(se);
-		kfree(se);
-	}
-}
-
-static void soc_fw_denum_component_remove(struct soc_fw *sfw, const char *name)
-{
-	if (sfw->codec)
-		soc_fw_denum_codec_remove(sfw, name);
-	else if (sfw->platform)
-		soc_fw_denum_platform_remove(sfw, name);
-	else if (sfw->card)
-		soc_fw_denum_card_remove(sfw, name);
-}
-
-static int soc_fw_denum_remove(struct soc_fw *sfw, unsigned int count,
-	size_t size)
-{
-	struct snd_soc_fw_enum_control *ec;
-	int i;
-
-	if (soc_fw_check_control_count(sfw,
-		sizeof(struct snd_soc_fw_enum_control), count, size)) {
-		dev_err(sfw->dev, "invalid count %d for enum controls\n", count);
-		return -EINVAL;
-	}
-
-	for (i = 0; i < count; i++) {
-		ec = (struct snd_soc_fw_enum_control*)sfw->pos;
-		sfw->pos += sizeof(struct snd_soc_fw_enum_control);
-
-		soc_fw_denum_component_remove(sfw, ec->hdr.name);
-	}
-
-	return 0;
-}
-
 static int soc_fw_denum_create_texts(struct soc_enum *se,
 	struct snd_soc_fw_enum_control *ec)
 {
@@ -1018,22 +888,6 @@ static int soc_fw_denum_create(struct soc_fw *sfw, unsigned int count,
 	}
 
 	return 0;
-#if 0
-err:
-	/* free texts */
-	if (se->dvalues)
-		kfree(se->dvalues);
-	else {
-		for (i = 0; i < ec->max; i++)
-			kfree(se->dtexts[i]);
-	}
-	kfree(se);
-
-	/* remove other enum controls */
-	sfw->pos -= sizeof(struct snd_soc_fw_enum_control) * (i + 1);
-	soc_fw_denum_remove(sfw, count, size);
-	return ret;
-#endif
 }
 
 static int soc_fw_kcontrol_load(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
@@ -1086,49 +940,7 @@ static int soc_fw_kcontrol_load(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
 	}
 	return 0;
 }
-#if 0
-static int soc_fw_kcontrol_unload(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
-{
-	struct snd_soc_fw_kcontrol *sfwk =
-		(struct snd_soc_fw_kcontrol*)sfw->pos;
-	struct snd_soc_fw_control_hdr *control_hdr;
-	int i;
 
-	if (sfw->pass != SOC_FW_PASS_MIXER) {
-		sfw->pos += sizeof(struct snd_soc_fw_kcontrol) + hdr->size;
-		return 0;
-	}
-
-	sfw->pos += sizeof(struct snd_soc_fw_kcontrol);
-	control_hdr = (struct snd_soc_fw_control_hdr*)sfw->pos;
-
-	for (i = 0; i < sfwk->count; i++) {
-		switch (SOC_CONTROL_GET_ID_INFO(control_hdr->index)) {
-		case SOC_CONTROL_TYPE_VOLSW:
-		case SOC_CONTROL_TYPE_STROBE:
-		case SOC_CONTROL_TYPE_VOLSW_SX:
-		case SOC_CONTROL_TYPE_VOLSW_S8:
-		case SOC_CONTROL_TYPE_VOLSW_XR_SX:
-		case SOC_CONTROL_TYPE_BYTES:
-		case SOC_CONTROL_TYPE_BOOL_EXT:
-		case SOC_CONTROL_TYPE_RANGE:
-			return soc_fw_dmixer_remove(sfw, 1, hdr->size);
-		case SOC_CONTROL_TYPE_ENUM:
-		case SOC_CONTROL_TYPE_ENUM_EXT:
-		case SOC_CONTROL_TYPE_ENUM_VALUE:
-			return soc_fw_denum_remove(sfw, 1, hdr->size);
-		default:
-			dev_err(sfw->dev, "invalid control type %d:%d:%d count %d\n",
-				SOC_CONTROL_GET_ID_GET(control_hdr->index),
-				SOC_CONTROL_GET_ID_PUT(control_hdr->index),
-				SOC_CONTROL_GET_ID_INFO(control_hdr->index),
-				sfwk->count);
-			return -EINVAL;
-		}
-	}
-	return 0;
-}
-#endif
 static int soc_fw_dapm_graph_load(struct soc_fw *sfw,
 	struct snd_soc_fw_hdr *hdr)
 {
@@ -1151,9 +963,6 @@ static int soc_fw_dapm_graph_load(struct soc_fw *sfw,
 		dev_err(sfw->dev, "invalid count %d for DAPM routes\n", count);
 		return -EINVAL;
 	}
-
-	/* tear down exsiting widgets and graph for this context */
-	//soc_dapm_free_widgets(dapm); // lrg - to move
 
 	dev_dbg(sfw->dev, "adding %d DAPM routes\n", count);
 
@@ -1363,7 +1172,7 @@ static struct snd_kcontrol_new *soc_fw_dapm_widget_denum_create(struct soc_fw *s
 
 err_se:
 	kfree(kc);
-//err:
+
 	/* free texts */
 	if (se->dvalues)
 		kfree(se->dvalues);
@@ -1372,6 +1181,7 @@ err_se:
 			kfree(se->dtexts[i]);
 	}
 	kfree(se);
+
 	return NULL;
 }
 
@@ -1474,10 +1284,9 @@ widget:
 	}
 
 hdr_err:
-	//kfree(widget.sname);
+	kfree(widget.sname);
 err:
-	//kfree(widget.name);
-	// lrg - free at some point kfree(widget.kcontrol_news);
+	kfree(widget.name);
 	return ret;
 }
 
@@ -1524,12 +1333,7 @@ static int soc_fw_dapm_complete(struct soc_fw *sfw)
 	return ret;
 }
 
-/*
- * Coefficients with mixer header.
- *
- * Input:
- *  [hdr].<coeff control enum>.<vendor coeff data>
- */
+/* Coefficients with mixer header */
 static int soc_fw_coeff_load(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
 {
 	struct snd_soc_fw_kcontrol *sfwk =
@@ -1587,21 +1391,7 @@ static int soc_fw_dapm_pin_load(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
 	return 0;
 }
 
-static int soc_fw_dapm_unload(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
-{
-	struct snd_soc_dapm_context *dapm = soc_fw_dapm_get(sfw);
-
-	soc_dapm_free_widgets(dapm);
-	return 0;
-}
-
 static int soc_fw_dai_link_load(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
-{
-	/* TODO: add DAI links based on FW routing between components */
-	return 0;
-}
-
-static int soc_fw_dai_link_unload(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
 {
 	/* TODO: add DAI links based on FW routing between components */
 	return 0;
@@ -1670,10 +1460,9 @@ static int soc_fw_process_headers(struct soc_fw *sfw)
 		while (!soc_fw_is_eof(sfw)) {
 
 			ret = soc_valid_header(sfw, hdr);
-			if (ret < 0) {
-				sfw_dump(sfw);
+			if (ret < 0)
 				return ret;
-			} else if (ret == 0)
+			else if (ret == 0)
 				break;
 
 			ret = soc_fw_load_header(sfw, hdr);
@@ -1743,6 +1532,7 @@ int snd_soc_fw_init_codec(struct snd_soc_codec *codec)
 found:
 	return soc_fw_process(sfw);
 }
+EXPORT_SYMBOL_GPL(snd_soc_fw_init_codec);
 
 int snd_soc_fw_load_codec(struct snd_soc_codec *codec,
 	struct snd_soc_fw_codec_ops *ops, const char *file)
@@ -1792,6 +1582,7 @@ int snd_soc_fw_init_platform(struct snd_soc_platform *platform)
 found:
 	return soc_fw_process(sfw);
 }
+EXPORT_SYMBOL_GPL(snd_soc_fw_init_platform);
 
 int snd_soc_fw_load_platform(struct snd_soc_platform *platform,
 	struct snd_soc_fw_platform_ops *ops, const char *file)
@@ -1841,6 +1632,7 @@ int snd_soc_fw_init_card(struct snd_soc_card *card)
 found:
 	return soc_fw_process(sfw);
 }
+EXPORT_SYMBOL_GPL(snd_soc_fw_init_card);
 
 int snd_soc_fw_load_card(struct snd_soc_card *card,
 	struct snd_soc_fw_card_ops *ops, const char *file)
