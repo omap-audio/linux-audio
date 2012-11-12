@@ -1,0 +1,34 @@
+LED connected to PWM
+
+Required properties:
+- compatible : should be "pwm-leds".
+- pwms : PWM property, please refer to: 
+  Documentation/devicetree/bindings/pwm/pwm.txt
+- pwm-names : (optional) Name to be used by the PWM subsystem for the PWM device
+- label : (optional) The label for this LED.  If omitted, the label is
+  taken from the node name (excluding the unit address).
+- max-brightness : Maximum brightness possible for the LED
+- linux,default-trigger :  (optional) This parameter, if present, is a
+  string defining the trigger assigned to the LED.  Current triggers are:
+    "backlight" - LED will act as a back-light, controlled by the framebuffer
+		  system
+    "default-on" - LED will turn on, but see "default-state" below
+    "heartbeat" - LED "double" flashes at a load average based rate
+    "ide-disk" - LED indicates disk activity
+    "timer" - LED flashes at a fixed, configurable rate
+
+Example:
+
+twl_pwm: pwm {
+	compatible = "ti,twl6030-pwm";
+	#pwm-cells = <2>;
+};
+
+pwmled_keypad {
+	compatible = "pwm-leds";
+	pwms = <&twl_pwm 0 7812500>;
+	pwm-names = "Keypad LED";
+
+	label = "omap4::keypad";
+	max-brightness = <127>;
+};
