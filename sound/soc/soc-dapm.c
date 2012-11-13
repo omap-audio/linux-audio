@@ -41,6 +41,7 @@
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
+#include <sound/soc-fw.h>
 #include <sound/initval.h>
 
 #include <trace/events/asoc.h>
@@ -2093,6 +2094,11 @@ static void dapm_free_widgets(struct snd_soc_dapm_context *dapm)
 			kfree(p->long_name);
 			kfree(p);
 		}
+
+		/* check and free and dynamic widget kcontrols */
+		if (w->denum || w->dmixer)
+			snd_soc_fw_dcontrols_remove_widget(w);
+
 		kfree(w->kcontrols);
 		kfree(w->name);
 		kfree(w);
