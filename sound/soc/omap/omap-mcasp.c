@@ -587,17 +587,14 @@ static struct snd_soc_dai_ops omap_mcasp_dai_ops = {
 			 SNDRV_PCM_RATE_96000 | \
 			 SNDRV_PCM_RATE_192000)
 
-static struct snd_soc_dai_driver omap_mcasp_dai[] = {
-	{
-		.name		= "mcasp-legacy",
-		.playback	= {
-			.channels_min	= 1,
-			.channels_max	= 384,
-			.formats	= SNDRV_PCM_FMTBIT_S16_LE,
-			.rates		= MCASP_RATES,
-		},
-		.ops		= &omap_mcasp_dai_ops,
+static struct snd_soc_dai_driver omap_mcasp_dai = {
+	.playback = {
+		.channels_min = 1,
+		.channels_max = 384,
+		.formats = SNDRV_PCM_FMTBIT_S16_LE,
+		.rates = MCASP_RATES,
 	},
+	.ops = &omap_mcasp_dai_ops,
 };
 
 static __devinit int omap_mcasp_probe(struct platform_device *pdev)
@@ -640,8 +637,9 @@ static __devinit int omap_mcasp_probe(struct platform_device *pdev)
 		return ret;
 	}
 
-	mcasp->fclk = clk_get(&pdev->dev, "mcasp_fck");
+	mcasp->fclk = clk_get(&pdev->dev, "fck");
 	if (!mcasp->fclk) {
+		dev_err(mcasp->dev, "cant get fck\n");
 		ret = -ENODEV;
 		goto err_clk;
 	}
@@ -654,8 +652,7 @@ static __devinit int omap_mcasp_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, mcasp);
 	mcasp->dev = &pdev->dev;
 
-	ret = snd_soc_register_dais(&pdev->dev, omap_mcasp_dai,
-			ARRAY_SIZE(omap_mcasp_dai));
+	ret = snd_soc_register_dai(&pdev->dev, &omap_mcasp_dai);
 	if (ret < 0)
 		goto err_dai;
 
@@ -683,12 +680,19 @@ static __devexit int omap_mcasp_remove(struct platform_device *pdev)
 	return 0;
 }
 
+static const struct of_device_id omap_mcasp_of_match[] = {
+	{ .compatible = "ti,omap4-mcasp", },
+	{ }
+};
+MODULE_DEVICE_TABLE(of, omap_mcasp_of_match);
+
 static struct platform_driver omap_mcasp_driver = {
 	.probe		= omap_mcasp_probe,
 	.remove		= omap_mcasp_remove,
 	.driver		= {
 		.name	= "omap-mcasp",
 		.owner	= THIS_MODULE,
+		.of_match_table = omap_mcasp_of_match,
 	},
 };
 
