@@ -55,12 +55,13 @@
   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
-
+#define DEBUG
 #include <linux/module.h>
 #include <linux/moduleparam.h>
 #include <linux/init.h>
 #include <linux/err.h>
 #include <linux/slab.h>
+#include <linux/device.h>
 
 #include "abe.h"
 #include "abe_aess.h"
@@ -140,50 +141,90 @@ void omap_aess_reset_all_ports(struct omap_aess *abe)
  * Memory map of ABE memory space for PMEM/DMEM/SMEM/DMEM
  */
 
-int omap_aess_init_mem(struct omap_aess *abe, void __iomem **_io_base, u32 *fw_header)
+int omap_aess_init_mem(struct omap_aess *abe, struct device *dev,
+	void __iomem **_io_base, u32 *fw_header)
 {
-	int i, offset;
+	int i, offset = 0;
+	u32 count;
+
+	abe->dev = dev;
 
 	for (i = 0; i < 5; i++)
 		abe->io_base[i] = _io_base[i];
 
-	/* To be fill by data comming for firmware file */
+	dev_dbg(abe->dev, "DMEM bank at 0x%p\n", abe->io_base[OMAP_ABE_DMEM]);
+	dev_dbg(abe->dev, "CMEM bank at 0x%p\n", abe->io_base[OMAP_ABE_CMEM]);
+	dev_dbg(abe->dev, "SMEM bank at 0x%p\n", abe->io_base[OMAP_ABE_SMEM]);
+	dev_dbg(abe->dev, "PMEM bank at 0x%p\n", abe->io_base[OMAP_ABE_PMEM]);
+	dev_dbg(abe->dev, "AESS bank at 0x%p\n", abe->io_base[OMAP_ABE_AESS]);
+
 	abe->fw_info = kzalloc(sizeof(struct omap_aess_mapping), GFP_KERNEL);
 	if (abe->fw_info == NULL)
-		pr_err("Cannot allocate fw_info");
+		return -ENOMEM;
+
 	abe->fw_info->init_table = kzalloc(sizeof(struct omap_aess_init_task), GFP_KERNEL);
-	if (abe->fw_info->init_table == NULL)
-		pr_err("Cannot allocate init_table");
+	if (abe->fw_info->init_table == NULL) {
+		kfree(abe->fw_info);
+		return -ENOMEM;
+	}
 
-	offset = 1;
-	abe->fw_info->map = (struct omap_aess_addr *) &fw_header[1];
-	offset += sizeof(struct omap_aess_addr)/4 *fw_header[0];
+	/* get mapping */
+	count = fw_header[offset];
+	dev_dbg(abe->dev, "Map %d items of size 0x%x at offset 0x%x\n", count,
+		sizeof(struct omap_aess_addr), offset << 2);
+	abe->fw_info->map = (struct omap_aess_addr *) &fw_header[++offset];
+	offset += (sizeof(struct omap_aess_addr) * count) / 4;
 
-	abe->fw_info->label_id = &fw_header[offset + 1];
-	offset += (sizeof(int)/4 *fw_header[offset]) + 1;
+	/* get label IDs */
+	count = fw_header[offset];
+	dev_dbg(abe->dev, "Labels %d at offset 0x%x\n", count, offset << 2);
+	abe->fw_info->label_id = &fw_header[++offset];
+	offset += count;
 
-	abe->fw_info->fct_id = &fw_header[offset + 1];
-	offset += (sizeof(int)/4 *fw_header[offset]) + 1;
+	/* get function IDs */
+	count = fw_header[offset];
+	dev_dbg(abe->dev, "Functions %d at offset 0x%x\n", count,
+		offset << 2);
+	abe->fw_info->fct_id = &fw_header[++offset];
+	offset += count;
 
-	abe->fw_info->init_table->nb_task = fw_header[offset];
-	abe->fw_info->init_table->task = (struct omap_aess_task *) &fw_header[offset + 1];
-	offset += (sizeof(struct omap_aess_task)/4 * abe->fw_info->init_table->nb_task) + 1;
+	/* get tasks */
+	count = fw_header[offset];
+	dev_dbg(abe->dev, "Tasks %d of size 0x%x at offset 0x%x\n", count,
+		sizeof(struct omap_aess_task), offset << 2);
+	abe->fw_info->init_table->nb_task = count;
+	abe->fw_info->init_table->task = (struct omap_aess_task *) &fw_header[++offset];
+	offset += (sizeof(struct omap_aess_task) * count) / 4;
 
-	abe->fw_info->port = (struct omap_aess_port *) &fw_header[offset];
-	offset += sizeof(struct omap_aess_port)/4 * LAST_PORT_ID;
+	/* get ports */
+	count = fw_header[offset];
+	dev_dbg(abe->dev, "Ports %d of size 0x%x at offset 0x%x\n", count,
+		sizeof(struct omap_aess_port), offset << 2);
+	abe->fw_info->port = (struct omap_aess_port*) &fw_header[++offset];
+	offset += (sizeof(struct omap_aess_port) * count) / 4;
 
-	abe->fw_info->ping_pong = (struct omap_aess_port *) &fw_header[offset];
-	offset += sizeof(struct omap_aess_port)/4;
+	/* get ping pong port */
+	dev_dbg(abe->dev, "Ping pong port at offset 0x%x\n", offset << 2);
+	abe->fw_info->ping_pong = (struct omap_aess_port*) &fw_header[offset];
+	offset += sizeof(struct omap_aess_port) / 4;
 
+	/* get DL1 mono mixer */
+	dev_dbg(abe->dev,"DL1 mono mixer at offset 0x%x\n", offset << 2);
 	abe->fw_info->dl1_mono_mixer = (struct omap_aess_task *) &fw_header[offset];
-	offset += sizeof(struct omap_aess_task)/4*2;
+	offset += sizeof(struct omap_aess_task) / 4;
 
+	/* get DL2 mono mixer */
+	dev_dbg(abe->dev, "DL2 mono mixer at offset 0x%x\n", offset << 2);
 	abe->fw_info->dl2_mono_mixer = (struct omap_aess_task *) &fw_header[offset];
-	offset += sizeof(struct omap_aess_task)/4*2;
+	offset += sizeof(struct omap_aess_task) / 4;
 
+	/* get AUDUL mono mixer */
+	dev_dbg(abe->dev, "AUDUL mixer at offset 0x%x\n", offset << 2);
 	abe->fw_info->audul_mono_mixer = (struct omap_aess_task *) &fw_header[offset];
-	offset += sizeof(struct omap_aess_task)/4*2;
+	offset += sizeof(struct omap_aess_task) / 4;
 
+	/* ASRC */
+	dev_dbg(abe->dev, "ASRC at offset 0x%x\n", offset << 2);
 	abe->fw_info->asrc = &fw_header[offset];
 
 	mutex_init(&abe->mutex);
