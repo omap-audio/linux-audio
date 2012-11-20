@@ -73,8 +73,8 @@ static int twl4030_pwmled_config(struct pwm_chip *chip, struct pwm_device *pwm,
 	 * 0 -> off cycle = 2,
 	 * 1 -> off cycle = 2,
 	 * 2 -> off cycle = 3,
-	 * 125 - > off cycle 127,
-	 * 126 - > off cycle 1
+	 * 126 - > off cycle 127,
+	 * 127 - > off cycle 1
 	 * When on cycle == off cycle the PWM will be always on
 	 */
 	duty_cycle += 1;
