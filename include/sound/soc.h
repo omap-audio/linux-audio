@@ -80,7 +80,7 @@
 	.info = snd_soc_info_volsw, \
 	.get = snd_soc_get_volsw_sx,\
 	.put = snd_soc_put_volsw_sx, \
-	.index = SOC_CONTROL_IO_VOLSW_SX \
+	.index = SOC_CONTROL_IO_VOLSW_SX, \
 	.private_value = (unsigned long)&(struct soc_mixer_control) \
 		{.reg = xreg, .rreg = xreg, \
 		.shift = xshift, .rshift = xshift, \
@@ -150,7 +150,7 @@
 	.info = snd_soc_info_volsw, \
 	.get = snd_soc_get_volsw_sx, \
 	.put = snd_soc_put_volsw_sx, \
-	.index = SOC_CONTROL_IO_SX, \
+	.index = SOC_CONTROL_IO_VOLSW, \
 	.private_value = (unsigned long)&(struct soc_mixer_control) \
 		{.reg = xreg, .rreg = xrreg, \
 		.shift = xshift, .rshift = xshift, \
@@ -254,8 +254,8 @@
 #define SND_SOC_BYTES_MASK(xname, xbase, xregs, xmask)	      \
 {	.iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = xname,   \
 	.info = snd_soc_bytes_info, .get = snd_soc_bytes_get, \
-	.put = snd_soc_bytes_put, .private_value =	      \
 	.index = SOC_CONTROL_IO_BYTES, \
+	.put = snd_soc_bytes_put, .private_value =	      \
 		((unsigned long)&(struct soc_bytes)           \
 		{.base = xbase, .num_regs = xregs,	      \
 		 .mask = xmask }) }
