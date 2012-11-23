@@ -428,8 +428,8 @@ struct omap_aess_dma_offset {
  */
 
 struct omap_aess_task {
-	u32 frame;
-	u32 slot;
+	u8 frame;
+	u8 slot;
 	u16 task;
 };
 
