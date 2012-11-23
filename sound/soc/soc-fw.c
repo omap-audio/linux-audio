@@ -1159,6 +1159,15 @@ static int soc_valid_header(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
 	if (soc_fw_get_hdr_offset(sfw) >= sfw->fw->size)
 		return 0;
 
+	/* big endian firmware objects not supported atm */
+	if (hdr->magic == cpu_to_be32(SND_SOC_FW_MAGIC)) {
+		dev_err(sfw->dev, "ASoC: %s at pass %d big endian not supported"
+			" header got %x at offset 0x%x size 0x%x.\n",
+			sfw->file, sfw->pass, hdr->magic,
+			soc_fw_get_hdr_offset(sfw), sfw->fw->size);
+		return -EINVAL;
+	}
+
 	if (hdr->magic != SND_SOC_FW_MAGIC) {
 		dev_err(sfw->dev, "ASoC: %s at pass %d does not have a valid"
 			" header got %x at offset 0x%x size 0x%x.\n",
