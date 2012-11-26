@@ -747,10 +747,9 @@ enum snd_soc_dapm_type {
  */
 #define SND_SOC_FW_MIXER		1
 #define SND_SOC_FW_DAPM_GRAPH		2
-#define SND_SOC_FW_DAPM_PINS		3
-#define SND_SOC_FW_DAPM_WIDGET		4
-#define SND_SOC_FW_DAI_LINK		5
-#define SND_SOC_FW_COEFF		6
+#define SND_SOC_FW_DAPM_WIDGET		3
+#define SND_SOC_FW_DAI_LINK		4
+#define SND_SOC_FW_COEFF		5
 
 #define SND_SOC_FW_VENDOR_FW		1000
 #define SND_SOC_FW_VENDOR_CONFIG	1001
@@ -834,15 +833,6 @@ struct snd_soc_fw_dapm_graph_elem {
 	char source[SND_SOC_FW_TEXT_SIZE];
 } __attribute__((packed));
 
-/*
- * DAPM Pin Element.
- */
-struct snd_soc_fw_dapm_pin_elem {
-	char name[SND_SOC_FW_TEXT_SIZE];
-	u32 disconnect:1;
-	u32 ignore_suspend:1;
-} __attribute__((packed));
-
 
 /*
  * DAPM Widget.
@@ -855,8 +845,9 @@ struct snd_soc_fw_dapm_widget {
 	s32 reg;		/* negative reg = no direct dapm */
 	u32 shift;		/* bits to shift */
 	u32 mask;		/* non-shifted mask */
-	u32 invert:1;		/* invert the power bit */
-	u32 ignore_suspend:1;	/* kept enabled over suspend */
+	u8 invert;		/* invert the power bit */
+	u8 ignore_suspend;	/* kept enabled over suspend */
+	u8 padding[2];
 
 	/* kcontrols that relate to this widget */
 	struct snd_soc_fw_kcontrol kcontrol;

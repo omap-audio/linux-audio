@@ -1140,13 +1140,6 @@ static int soc_fw_coeff_load(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
 	return 0;
 }
 
-static int soc_fw_dapm_pin_load(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
-{
-	/* TODO: add static enabled/disabled pins */
-	dev_err(sfw->dev, "ASoC: Firmware pins not supported\n");
-	return 0;
-}
-
 static int soc_fw_dai_link_load(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
 {
 	/* TODO: add DAI links based on FW routing between components */
@@ -1199,8 +1192,6 @@ static int soc_fw_load_header(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
 		return soc_fw_kcontrol_load(sfw, hdr);
 	case SND_SOC_FW_DAPM_GRAPH:
 		return soc_fw_dapm_graph_load(sfw, hdr);
-	case SND_SOC_FW_DAPM_PINS:
-		return soc_fw_dapm_pin_load(sfw, hdr);
 	case SND_SOC_FW_DAPM_WIDGET:
 		return soc_fw_dapm_widget_load(sfw, hdr);
 	case SND_SOC_FW_DAI_LINK:
