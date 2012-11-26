@@ -297,7 +297,7 @@ static int abe_probe(struct snd_soc_platform *platform)
 	pm_runtime_get_sync(abe->dev);
 
 	abe->aess = omap_abe_port_mgr_get();
-	omap_aess_init_mem(abe->aess, abe->io_base, abe->fw_header);
+	omap_aess_init_mem(abe->aess, abe->dev, abe->io_base, abe->fw_header);
 
 	omap_aess_reset_hal(abe->aess);
 
