@@ -211,17 +211,17 @@ int omap_aess_init_mem(struct omap_aess *abe, struct device *dev,
 	/* get DL1 mono mixer */
 	dev_dbg(abe->dev,"DL1 mono mixer at offset 0x%x\n", offset << 2);
 	abe->fw_info->dl1_mono_mixer = (struct omap_aess_task *) &fw_header[offset];
-	offset += sizeof(struct omap_aess_task) / 4;
+	offset += (sizeof(struct omap_aess_task) / 4) * 2;
 
 	/* get DL2 mono mixer */
 	dev_dbg(abe->dev, "DL2 mono mixer at offset 0x%x\n", offset << 2);
 	abe->fw_info->dl2_mono_mixer = (struct omap_aess_task *) &fw_header[offset];
-	offset += sizeof(struct omap_aess_task) / 4;
+	offset += (sizeof(struct omap_aess_task) / 4) * 2;
 
 	/* get AUDUL mono mixer */
 	dev_dbg(abe->dev, "AUDUL mixer at offset 0x%x\n", offset << 2);
 	abe->fw_info->audul_mono_mixer = (struct omap_aess_task *) &fw_header[offset];
-	offset += sizeof(struct omap_aess_task) / 4;
+	offset += (sizeof(struct omap_aess_task) / 4) * 2;
 
 	/* ASRC */
 	dev_dbg(abe->dev, "ASRC at offset 0x%x\n", offset << 2);
