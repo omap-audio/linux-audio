@@ -16,6 +16,8 @@
 
 #include <uapi/sound/asoc.h>
 
+struct firmware;
+
 /*
  * Kcontrol operations - used to map handlers onto firmware based controls.
  */

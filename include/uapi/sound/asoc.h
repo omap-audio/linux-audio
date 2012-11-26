@@ -756,8 +756,6 @@ enum snd_soc_dapm_type {
 #define SND_SOC_FW_VENDOR_COEFF	1002
 #define SND_SOC_FW_VENDOR_CODEC	1003
 
-struct firmware;
-
 /*
  * File and Block Header
  */
