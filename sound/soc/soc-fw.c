@@ -991,7 +991,7 @@ static int soc_fw_dapm_widget_create(struct soc_fw *sfw,
 	case SOC_CONTROL_TYPE_BOOL_EXT:
 	case SOC_CONTROL_TYPE_RANGE:
 	case SOC_DAPM_TYPE_VOLSW:
-		widget.num_kcontrols = widget.dmixer = w->kcontrol.count;
+		widget.num_kcontrols = w->kcontrol.count;
 		widget.kcontrol_news = soc_fw_dapm_widget_dmixer_create(sfw,
 			widget.num_kcontrols);
 		if (!widget.kcontrol_news) {
@@ -1009,7 +1009,7 @@ static int soc_fw_dapm_widget_create(struct soc_fw *sfw,
 	case SOC_DAPM_TYPE_ENUM_VIRT:
 	case SOC_DAPM_TYPE_ENUM_VALUE:
 	case SOC_DAPM_TYPE_ENUM_EXT:
-		widget.num_kcontrols = widget.denum = 1;
+		widget.num_kcontrols = -1;
 		widget.kcontrol_news = soc_fw_dapm_widget_denum_create(sfw);
 		if (!widget.kcontrol_news) {
 			ret = -ENOMEM;
@@ -1254,7 +1254,8 @@ static int soc_fw_load(struct soc_fw *sfw)
 }
 
 int snd_soc_fw_load_codec(struct snd_soc_codec *codec,
-	struct snd_soc_fw_codec_ops *ops, const struct firmware *fw)
+	struct snd_soc_fw_codec_ops *ops, const struct firmware *fw,
+	u32 index)
 {
 	struct soc_fw sfw;
 
@@ -1272,7 +1273,8 @@ int snd_soc_fw_load_codec(struct snd_soc_codec *codec,
 EXPORT_SYMBOL_GPL(snd_soc_fw_load_codec);
 
 int snd_soc_fw_load_platform(struct snd_soc_platform *platform,
-	struct snd_soc_fw_platform_ops *ops, const struct firmware *fw)
+	struct snd_soc_fw_platform_ops *ops, const struct firmware *fw,
+	u32 index)
 {
 	struct soc_fw sfw;
 
@@ -1290,7 +1292,8 @@ int snd_soc_fw_load_platform(struct snd_soc_platform *platform,
 EXPORT_SYMBOL_GPL(snd_soc_fw_load_platform);
 
 int snd_soc_fw_load_card(struct snd_soc_card *card,
-	struct snd_soc_fw_card_ops *ops, const struct firmware *fw)
+	struct snd_soc_fw_card_ops *ops, const struct firmware *fw,
+	u32 index)
 {
 	struct soc_fw sfw;
 
@@ -1317,7 +1320,7 @@ void snd_soc_fw_dcontrols_remove_widget(struct snd_soc_dapm_widget *w)
 	 * Dynamic Widgets either have 1 enum kcontrol or 1..N mixers.
 	 * The enumm may either have an array of values or strings.
 	 */
-	if (w->denum) {
+	if (w->num_kcontrols < 0) {
 		struct soc_enum *se =
 			(struct soc_enum *)w->kcontrols[0]->private_value;
 
@@ -1330,7 +1333,8 @@ void snd_soc_fw_dcontrols_remove_widget(struct snd_soc_dapm_widget *w)
 		}
 
 		kfree(se);
-	} else if (w->dmixer) {
+		kfree(w->kcontrol_news);
+	} else if (w->num_kcontrols > 0) {
 		for (i = 0; i < w->num_kcontrols; i++) {
 			struct snd_kcontrol *kcontrol = w->kcontrols[i];
 			struct soc_mixer_control *sm =
@@ -1342,20 +1346,23 @@ void snd_soc_fw_dcontrols_remove_widget(struct snd_soc_dapm_widget *w)
 			snd_ctl_remove(card, w->kcontrols[i]);
 			kfree(sm);
 		}
+		kfree(w->kcontrol_news);
 	}
-	kfree(w->kcontrol_news);
+	
 }
 EXPORT_SYMBOL_GPL(snd_soc_fw_dcontrols_remove_widget);
 
 /* remove all dynamic widgets from this context */
-void snd_soc_fw_dcontrols_remove_widgets(struct snd_soc_dapm_context *dapm)
+void snd_soc_fw_dcontrols_remove_widgets(struct snd_soc_dapm_context *dapm,
+	u32 index)
 {
 	struct snd_soc_dapm_widget *w, *next_w;
 	struct snd_soc_dapm_path *p, *next_p;
 
 	list_for_each_entry_safe(w, next_w, &dapm->card->widgets, list) {
-		if (!w->dmixer && !w->denum && w->dapm != dapm)
+		if (w->index != index || w->dapm != dapm)
 			continue;
+
 		list_del(&w->list);
 		/*
 		 * remove source and sink paths associated to this widget.
@@ -1386,7 +1393,8 @@ void snd_soc_fw_dcontrols_remove_widgets(struct snd_soc_dapm_context *dapm)
 EXPORT_SYMBOL_GPL(snd_soc_fw_dcontrols_remove_widgets);
 
 /* remove dynamic controls from the codec driver only */
-void snd_soc_fw_dcontrols_remove_codec(struct snd_soc_codec *codec)
+void snd_soc_fw_dcontrols_remove_codec(struct snd_soc_codec *codec,
+	u32 index)
 {
 	struct soc_mixer_control *sm, *next_sm;
 	struct soc_enum *se, *next_se;
@@ -1395,6 +1403,9 @@ void snd_soc_fw_dcontrols_remove_codec(struct snd_soc_codec *codec)
 	int i;
 
 	list_for_each_entry_safe(sm, next_sm, &codec->dmixers, list) {
+
+		if (sm->index != index)
+			continue;
 
 		if (sm->dcontrol->tlv.p)
 			p = sm->dcontrol->tlv.p;
@@ -1405,6 +1416,9 @@ void snd_soc_fw_dcontrols_remove_codec(struct snd_soc_codec *codec)
 	}
 
 	list_for_each_entry_safe(se, next_se, &codec->denums, list) {
+
+		if (sm->index != index)
+			continue;
 
 		snd_ctl_remove(card, se->dcontrol);
 		list_del(&se->list);
@@ -1420,7 +1434,8 @@ void snd_soc_fw_dcontrols_remove_codec(struct snd_soc_codec *codec)
 EXPORT_SYMBOL_GPL(snd_soc_fw_dcontrols_remove_codec);
 
 /* remove dynamic controls from the platform driver only */
-void snd_soc_fw_dcontrols_remove_platform(struct snd_soc_platform *platform)
+void snd_soc_fw_dcontrols_remove_platform(struct snd_soc_platform *platform,
+	u32 index)
 {
 	struct soc_mixer_control *sm, *next_sm;
 	struct soc_enum *se, *next_se;
@@ -1429,6 +1444,9 @@ void snd_soc_fw_dcontrols_remove_platform(struct snd_soc_platform *platform)
 	int i;
 
 	list_for_each_entry_safe(sm, next_sm, &platform->dmixers, list) {
+
+		if (sm->index != index)
+			continue;
 
 		if (sm->dcontrol->tlv.p)
 			p = sm->dcontrol->tlv.p;
@@ -1439,6 +1457,9 @@ void snd_soc_fw_dcontrols_remove_platform(struct snd_soc_platform *platform)
 	}
 
 	list_for_each_entry_safe(se, next_se, &platform->denums, list) {
+
+		if (sm->index != index)
+			continue;
 
 		snd_ctl_remove(card, se->dcontrol);
 		list_del(&se->list);
@@ -1454,7 +1475,8 @@ void snd_soc_fw_dcontrols_remove_platform(struct snd_soc_platform *platform)
 EXPORT_SYMBOL_GPL(snd_soc_fw_dcontrols_remove_platform);
 
 /* remove dynamic controls from the card driver only */
-void snd_soc_fw_dcontrols_remove_card(struct snd_soc_card *soc_card)
+void snd_soc_fw_dcontrols_remove_card(struct snd_soc_card *soc_card,
+	u32 index)
 {
 	struct soc_mixer_control *sm, *next_sm;
 	struct soc_enum *se, *next_se;
@@ -1463,6 +1485,9 @@ void snd_soc_fw_dcontrols_remove_card(struct snd_soc_card *soc_card)
 	int i;
 
 	list_for_each_entry_safe(sm, next_sm, &soc_card->dmixers, list) {
+
+		if (sm->index != index)
+			continue;
 
 		if (sm->dcontrol->tlv.p)
 			p = sm->dcontrol->tlv.p;
@@ -1473,6 +1498,9 @@ void snd_soc_fw_dcontrols_remove_card(struct snd_soc_card *soc_card)
 	}
 
 	list_for_each_entry_safe(se, next_se, &soc_card->denums, list) {
+
+		if (sm->index != index)
+			continue;
 
 		snd_ctl_remove(card, se->dcontrol);
 		list_del(&se->list);
@@ -1488,18 +1516,18 @@ void snd_soc_fw_dcontrols_remove_card(struct snd_soc_card *soc_card)
 EXPORT_SYMBOL_GPL(snd_soc_fw_dcontrols_remove_card);
 
 /* remove all dynamic controls from sound card and components */
-int snd_soc_fw_dcontrols_remove_all(struct snd_soc_card *card)
+int snd_soc_fw_dcontrols_remove_all(struct snd_soc_card *card, u32 index)
 {
 	struct snd_soc_codec *codec;
 	struct snd_soc_platform *platform;
 
 	list_for_each_entry(codec, &card->codec_dev_list, card_list)
-		snd_soc_fw_dcontrols_remove_codec(codec);
+		snd_soc_fw_dcontrols_remove_codec(codec, index);
 
 	list_for_each_entry(platform, &card->platform_dev_list, card_list)
-		snd_soc_fw_dcontrols_remove_platform(platform);
+		snd_soc_fw_dcontrols_remove_platform(platform, index);
 
-	snd_soc_fw_dcontrols_remove_card(card);
+	snd_soc_fw_dcontrols_remove_card(card, index);
 	return 0;
 }
 EXPORT_SYMBOL_GPL(snd_soc_fw_dcontrols_remove_all);

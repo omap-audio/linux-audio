@@ -827,6 +827,7 @@ struct soc_mixer_control {
 	/* dynamic controls */
 	struct list_head list;
 	struct snd_kcontrol *dcontrol;
+	int index;
 };
 
 struct soc_bytes {
@@ -851,11 +852,14 @@ struct soc_enum {
 	unsigned int mask;
 	const char * const *texts;
 	const unsigned int *values;
+
 	 /* dynamic enum controls */
 	char **dtexts;
 	unsigned int *dvalues;
 	struct list_head list;
 	struct snd_kcontrol *dcontrol;
+	int index;
+
 	void *dapm;
 };
 

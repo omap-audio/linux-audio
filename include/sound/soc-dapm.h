@@ -159,6 +159,8 @@ struct snd_soc_dapm_path {
 	struct list_head list_source;
 	struct list_head list_sink;
 	struct list_head list;
+
+	u32 index;
 };
 
 /* dapm widget */
@@ -204,8 +206,7 @@ struct snd_soc_dapm_widget {
 	int num_kcontrols;
 	const struct snd_kcontrol_new *kcontrol_news;
 	struct snd_kcontrol **kcontrols;
-	int denum;
-	int dmixer;
+	u32 index;
 
 	/* widget input and outputs */
 	struct list_head sources;

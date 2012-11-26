@@ -105,20 +105,26 @@ static inline const void *snd_soc_fw_get_data(struct snd_soc_fw_hdr *hdr)
 
 /* Firmware loading for component drivers */
 int snd_soc_fw_load_card(struct snd_soc_card *card,
-	struct snd_soc_fw_card_ops *ops, const struct firmware *fw);
+	struct snd_soc_fw_card_ops *ops, const struct firmware *fw,
+	u32 index);
 int snd_soc_fw_load_platform(struct snd_soc_platform *platform,
-	struct snd_soc_fw_platform_ops *ops, const struct firmware *fw);
+	struct snd_soc_fw_platform_ops *ops, const struct firmware *fw,
+	u32 index);
 int snd_soc_fw_load_codec(struct snd_soc_codec *codec,
-	struct snd_soc_fw_codec_ops *ops, const struct firmware *fw);
+	struct snd_soc_fw_codec_ops *ops, const struct firmware *fw,
+	u32 index);
+
+#define SND_SOC_FW_INDEX_ALL	0	/* index that matches all FW objects */
 
 /* Firmware based dynamic widget and assoc kcontrol removal */
-void snd_soc_fw_dcontrols_remove_widgets(struct snd_soc_dapm_context *dapm);
+void snd_soc_fw_dcontrols_remove_widgets(struct snd_soc_dapm_context *dapm,
+	u32 index);
 void snd_soc_fw_dcontrols_remove_widget(struct snd_soc_dapm_widget *w);
 
 /* Firmware based dynamic kcontrol removal for components */
-void snd_soc_fw_dcontrols_remove_codec(struct snd_soc_codec *codec);
-void snd_soc_fw_dcontrols_remove_platform(struct snd_soc_platform *platform);
-void snd_soc_fw_dcontrols_remove_card(struct snd_soc_card *soc_card);
-int snd_soc_fw_dcontrols_remove_all(struct snd_soc_card *soc_card);
+void snd_soc_fw_dcontrols_remove_codec(struct snd_soc_codec *codec, u32 index);
+void snd_soc_fw_dcontrols_remove_platform(struct snd_soc_platform *platform, u32 index);
+void snd_soc_fw_dcontrols_remove_card(struct snd_soc_card *soc_card, u32 index);
+int snd_soc_fw_dcontrols_remove_all(struct snd_soc_card *soc_card, u32 index);
 
 #endif

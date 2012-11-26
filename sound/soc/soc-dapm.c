@@ -2096,7 +2096,7 @@ static void dapm_free_widgets(struct snd_soc_dapm_context *dapm)
 		}
 
 		/* check and free and dynamic widget kcontrols */
-		if (w->denum || w->dmixer)
+		if (w->index)
 			snd_soc_fw_dcontrols_remove_widget(w);
 
 		kfree(w->kcontrols);

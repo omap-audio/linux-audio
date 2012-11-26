@@ -1883,7 +1883,7 @@ static int soc_cleanup_card_resources(struct snd_soc_card *card)
 	soc_remove_dai_links(card);
 
 	/* remove any dynamic kcontrols */
-	snd_soc_fw_dcontrols_remove_all(card);
+	snd_soc_fw_dcontrols_remove_all(card, SND_SOC_FW_INDEX_ALL);
 
 	soc_cleanup_card_debugfs(card);
 
