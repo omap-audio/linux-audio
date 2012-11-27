@@ -161,6 +161,7 @@
 
 struct coeff_config {
 	char name[OMAP_ABE_COEFF_NAME_SIZE];
+	u32 id;
 	u32 count;
 	u32 coeff;
 	char texts[OMAP_ABE_COEFF_NUM_TEXTS][OMAP_ABE_COEFF_TEXT_SIZE];
