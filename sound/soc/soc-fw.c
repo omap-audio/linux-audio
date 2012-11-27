@@ -117,6 +117,7 @@ static inline void soc_fw_list_add_enum(struct soc_fw *sfw, struct soc_enum *se)
 		list_add(&se->list, &sfw->platform->denums);
 	else if (sfw->card)
 		list_add(&se->list, &sfw->card->denums);
+	BUG();
 }
 
 static inline void soc_fw_list_add_mixer(struct soc_fw *sfw,
@@ -128,6 +129,7 @@ static inline void soc_fw_list_add_mixer(struct soc_fw *sfw,
 		list_add(&mc->list, &sfw->platform->dmixers);
 	else if (sfw->card)
 		list_add(&mc->list, &sfw->card->dmixers);
+	BUG();
 }
 
 static inline struct snd_soc_dapm_context *soc_fw_dapm_get(struct soc_fw *sfw)
@@ -166,8 +168,9 @@ static int soc_fw_check_control_count(struct soc_fw *sfw, size_t elem_size,
 	/* check there is enough room in chunk for control.
 	   extra bytes at the end of control are for vendor data here  */
 	if (elem_size * count > bytes) {
-		dev_err(sfw->dev, "ASoC: controls count %d of elem size %d "
-			"are bigger than chunk %d\n", count, elem_size, bytes);
+		dev_err(sfw->dev,
+			"ASoC: controls count %d of elem size %d are bigger than chunk %d\n",
+			count, elem_size, bytes);
 		return -EINVAL;
 	}
 
@@ -208,9 +211,9 @@ static int soc_fw_vendor_load_(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
 		ret = sfw->card_ops->vendor_load(sfw->card, hdr);
 
 	if (ret < 0)
-		dev_err(sfw->dev, "ASoC: vendor load failed at hdr offset"
-			" %d/0x%x for type %d:%d\n", soc_fw_get_hdr_offset(sfw),
-			soc_fw_get_hdr_offset(sfw), hdr->type, hdr->vendor_type);
+		dev_err(sfw->dev, "ASoC: vendor load failed at hdr offset %d/0x%x for type %d:%d\n",
+			soc_fw_get_hdr_offset(sfw), soc_fw_get_hdr_offset(sfw),
+			hdr->type, hdr->vendor_type);
 	return ret;
 }
 
@@ -223,7 +226,8 @@ static int soc_fw_vendor_load(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
 	return soc_fw_vendor_load_(sfw, hdr);
 }
 
-/* pass new dynamic widget to component driver. mainly for external widgets */
+/* optionally pass new dynamic widget to component driver. mainly for external
+ widgets where we can assign private data/ops */
 static int soc_fw_widget_load(struct soc_fw *sfw, struct snd_soc_dapm_widget *w)
 {
 	if (sfw->codec && sfw->codec_ops && sfw->codec_ops->widget_load)
@@ -235,7 +239,7 @@ static int soc_fw_widget_load(struct soc_fw *sfw, struct snd_soc_dapm_widget *w)
 	if (sfw->card && sfw->card_ops && sfw->card_ops->widget_load)
 		return sfw->card_ops->widget_load(sfw->card, w);
 
-	dev_info(sfw->dev, "ASoC: no handler specified for ext widget %s\n",
+	dev_dbg(sfw->dev, "ASoC: no handler specified for ext widget %s\n",
 		w->name);
 	return 0;
 }
@@ -296,8 +300,8 @@ static int soc_fw_add_kcontrol(struct soc_fw *sfw, struct snd_kcontrol_new *k,
 		return soc_fw_add_dcontrol(card->snd_card, card->dev,
 				k, NULL, card, kcontrol);
 	} else
-		dev_info(sfw->dev, "ASoC: no handler specified for kcontrol %s\n",
-			k->name);
+		dev_dbg(sfw->dev,
+			"ASoC: no handler specified for kcontrol %s\n", k->name);
 	return 0;
 }
 
@@ -339,7 +343,7 @@ static int soc_fw_init_kcontrol(struct soc_fw *sfw, struct snd_kcontrol_new *k)
 	if (sfw->card && sfw->card_ops && sfw->card_ops->control_load)
 		return sfw->card_ops->control_load(sfw->card, k);
 
-	dev_info(sfw->dev, "ASoC: no handler specified for kcontrol %s\n",
+	dev_dbg(sfw->dev, "ASoC: no handler specified for kcontrol %s\n",
 		k->name);
 	return 0;
 }
@@ -373,7 +377,7 @@ static int soc_fw_create_tlv(struct soc_fw *sfw, struct snd_kcontrol_new *kc,
 static inline void soc_fw_free_tlv(struct soc_fw *sfw,
 	struct snd_kcontrol_new *kc)
 {
-	kfree (kc->tlv.p);
+	kfree(kc->tlv.p);
 }
 
 static int soc_fw_dmixer_create(struct soc_fw *sfw, unsigned int count,
@@ -386,7 +390,8 @@ static int soc_fw_dmixer_create(struct soc_fw *sfw, unsigned int count,
 
 	if (soc_fw_check_control_count(sfw,
 		sizeof(struct snd_soc_fw_mixer_control), count, size)) {
-		dev_err(sfw->dev, "ASoC: invalid count %d for controls\n", count);
+		dev_err(sfw->dev, "ASoC: invalid count %d for controls\n",
+			count);
 		return -EINVAL;
 	}
 
@@ -403,8 +408,9 @@ static int soc_fw_dmixer_create(struct soc_fw *sfw, unsigned int count,
 		if (!sm)
 			return -ENOMEM;
 
-		dev_dbg(sfw->dev, "ASoC: adding mixer kcontrol %s with access"
-			" 0x%x\n", mc->hdr.name, mc->hdr.access);
+		dev_dbg(sfw->dev,
+			"ASoC: adding mixer kcontrol %s with access 0x%x\n",
+			mc->hdr.name, mc->hdr.access);
 
 		memset(&kc, 0, sizeof(kc));
 		kc.name = mc->hdr.name;
@@ -430,8 +436,8 @@ static int soc_fw_dmixer_create(struct soc_fw *sfw, unsigned int count,
 			ext = soc_fw_kcontrol_bind_io(mc->hdr.index, &kc,
 				sfw->io_ops, sfw->io_ops_count);
 			if (ext) {
-				dev_err(sfw->dev, "ASoC: no complete mixer IO"
-					"handler for %s type (g,p,i) %d:%d:%d\n",
+				dev_err(sfw->dev,
+					"ASoC: no complete mixer IO handler for %s type (g,p,i) %d:%d:%d\n",
 					mc->hdr.name,
 					SOC_CONTROL_GET_ID_GET(mc->hdr.index),
 					SOC_CONTROL_GET_ID_PUT(mc->hdr.index),
@@ -471,9 +477,9 @@ static inline void soc_fw_denum_free_data(struct soc_enum *se)
 {
 	int i;
 
-	if (se->dvalues)
+	if (se->dvalues) {
 		kfree(se->dvalues);
-	else {
+	} else {
 		for (i = 0; i < se->max - 1; i++)
 			kfree(se->dtexts[i]);
 	}
@@ -579,8 +585,9 @@ static int soc_fw_denum_create(struct soc_fw *sfw, unsigned int count,
 		case SOC_DAPM_TYPE_ENUM_VIRT:
 			err = soc_fw_denum_create_texts(se, ec);
 			if (err < 0) {
-				dev_err(sfw->dev, "ASoC: could not create"
-					" texts for %s\n", ec->hdr.name);
+				dev_err(sfw->dev,
+					"ASoC: could not create texts for %s\n",
+					ec->hdr.name);
 				kfree(se);
 				continue;
 			}
@@ -589,15 +596,17 @@ static int soc_fw_denum_create(struct soc_fw *sfw, unsigned int count,
 		case SOC_CONTROL_TYPE_ENUM_VALUE:
 			err = soc_fw_denum_create_values(se, ec);
 			if (err < 0) {
-				dev_err(sfw->dev, "ASoC: could not create"
-					" values for %s\n", ec->hdr.name);
+				dev_err(sfw->dev,
+					"ASoC: could not create values for %s\n",
+					ec->hdr.name);
 				kfree(se);
 				continue;
 			}
 			break;
 		default:
-			dev_err(sfw->dev, "ASoC: invalid enum control type %d"
-				" for %s\n", ec->hdr.index, ec->hdr.name);
+			dev_err(sfw->dev,
+				"ASoC: invalid enum control type %d for %s\n",
+				ec->hdr.index, ec->hdr.name);
 			kfree(se);
 			continue;
 		}
@@ -610,8 +619,7 @@ static int soc_fw_denum_create(struct soc_fw *sfw, unsigned int count,
 			ext = soc_fw_kcontrol_bind_io(ec->hdr.index, &kc,
 				sfw->io_ops, sfw->io_ops_count);
 			if (ext) {
-				dev_err(sfw->dev, "ASoC: no complete enum IO handler"
-					" for %s type (g,p,i) %d:%d:%d\n",
+				dev_err(sfw->dev, "ASoC: no complete enum IO handler for %s type (g,p,i) %d:%d:%d\n",
 					ec->hdr.name,
 					SOC_CONTROL_GET_ID_GET(ec->hdr.index),
 					SOC_CONTROL_GET_ID_PUT(ec->hdr.index),
@@ -692,6 +700,7 @@ static int soc_fw_kcontrol_load(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
 				sfwk->count);
 		}
 	}
+
 	return 0;
 }
 
@@ -801,8 +810,8 @@ static struct snd_kcontrol_new *soc_fw_dapm_widget_dmixer_create(struct soc_fw *
 			ext = soc_fw_kcontrol_bind_io(mc->hdr.index, &kc[i],
 				sfw->io_ops, sfw->io_ops_count);
 			if (ext) {
-				dev_err(sfw->dev, "ASoC: no complete widget mixer IO handler"
-					" for %s type (g,p,i) %d:%d:%d\n",
+				dev_err(sfw->dev,
+					"ASoC: no complete widget mixer IO handler for %s type (g,p,i) %d:%d:%d\n",
 					mc->hdr.name,
 					SOC_CONTROL_GET_ID_GET(mc->hdr.index),
 					SOC_CONTROL_GET_ID_PUT(mc->hdr.index),
@@ -904,8 +913,8 @@ static struct snd_kcontrol_new *soc_fw_dapm_widget_denum_create(struct soc_fw *s
 		ext = soc_fw_kcontrol_bind_io(ec->hdr.index, kc,
 			sfw->io_ops, sfw->io_ops_count);
 		if (ext) {
-			dev_err(sfw->dev, "ASoC: no complete widget enum IO handler"
-				" for %s type (g,p,i) %d:%d:%d\n",
+			dev_err(sfw->dev,
+				"ASoC: no complete widget enum IO handler for %s type (g,p,i) %d:%d:%d\n",
 				ec->hdr.name,
 				SOC_CONTROL_GET_ID_GET(ec->hdr.index),
 				SOC_CONTROL_GET_ID_PUT(ec->hdr.index),
@@ -926,9 +935,9 @@ err_se:
 	kfree(kc);
 
 	/* free texts */
-	if (se->dvalues)
+	if (se->dvalues) {
 		kfree(se->dvalues);
-	else {
+	} else {
 		for (i = 0; i < ec->max; i++)
 			kfree(se->dtexts[i]);
 	}
@@ -1422,9 +1431,9 @@ void snd_soc_fw_dcontrols_remove_codec(struct snd_soc_codec *codec,
 
 		snd_ctl_remove(card, se->dcontrol);
 		list_del(&se->list);
-		if (se->dvalues)
+		if (se->dvalues) {
 			kfree(se->dvalues);
-		else {
+		} else {
 			for (i = 0; i < se->max; i++)
 				kfree(se->dtexts[i]);
 		}
