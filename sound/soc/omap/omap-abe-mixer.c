@@ -478,7 +478,7 @@ int abe_mixer_set_equ_profile(struct omap_abe *abe,
 	abe->equ.profile[id] = profile;
 
 	pm_runtime_get_sync(abe->dev);
-	omap_aess_write_equalizer(abe->aess, id + 1, (struct omap_aess_equ *)&equ_params);
+	omap_aess_write_equalizer(abe->aess, abe->equ.texts[id].id, (struct omap_aess_equ *)&equ_params);
 	pm_runtime_put_sync(abe->dev);
 
 	return 0;
