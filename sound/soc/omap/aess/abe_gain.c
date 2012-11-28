@@ -1,60 +1,60 @@
 /*
-
-  This file is provided under a dual BSD/GPLv2 license.  When using or
-  redistributing this file, you may do so under either license.
-
-  GPL LICENSE SUMMARY
-
-  Copyright(c) 2010-2011 Texas Instruments Incorporated,
-  All rights reserved.
-
-  This program is free software; you can redistribute it and/or modify
-  it under the terms of version 2 of the GNU General Public License as
-  published by the Free Software Foundation.
-
-  This program is distributed in the hope that it will be useful, but
-  WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-  General Public License for more details.
-
-  You should have received a copy of the GNU General Public License
-  along with this program; if not, write to the Free Software
-  Foundation, Inc., 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-  The full GNU General Public License is included in this distribution
-  in the file called LICENSE.GPL.
-
-  BSD LICENSE
-
-  Copyright(c) 2010-2011 Texas Instruments Incorporated,
-  All rights reserved.
-
-  Redistribution and use in source and binary forms, with or without
-  modification, are permitted provided that the following conditions
-  are met:
-
-    * Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright
-      notice, this list of conditions and the following disclaimer in
-      the documentation and/or other materials provided with the
-      distribution.
-    * Neither the name of Texas Instruments Incorporated nor the names of
-      its contributors may be used to endorse or promote products derived
-      from this software without specific prior written permission.
-
-  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
-*/
+ *
+ * This file is provided under a dual BSD/GPLv2 license.  When using or
+ * redistributing this file, you may do so under either license.
+ *
+ * GPL LICENSE SUMMARY
+ *
+ * Copyright(c) 2010-2012 Texas Instruments Incorporated,
+ * All rights reserved.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of version 2 of the GNU General Public License as
+ * published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
+ * The full GNU General Public License is included in this distribution
+ * in the file called LICENSE.GPL.
+ *
+ * BSD LICENSE
+ *
+ * Copyright(c) 2010-2012 Texas Instruments Incorporated,
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in
+ *     the documentation and/or other materials provided with the
+ *     distribution.
+ *   * Neither the name of Texas Instruments Incorporated nor the names of
+ *     its contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ */
 
 #include <linux/module.h>
 #include <linux/moduleparam.h>
@@ -74,7 +74,7 @@
 #define max_mdb (3000)
 #define sizeof_db2lin_table (1 + ((max_mdb - min_mdb)/100))
 
-const u32 abe_db2lin_table[sizeof_db2lin_table] = {
+static const u32 abe_db2lin_table[sizeof_db2lin_table] = {
 	0x00000000,		/* SMEM coding of -120 dB */
 	0x00000000,		/* SMEM coding of -119 dB */
 	0x00000000,		/* SMEM coding of -118 dB */
@@ -228,7 +228,7 @@ const u32 abe_db2lin_table[sizeof_db2lin_table] = {
 	0x007E7DB9,		/* SMEM coding of 30 dB */
 };
 
-const u32 abe_1_alpha_iir[64] = {
+static const u32 abe_1_alpha_iir[64] = {
 	0x040002, 0x040002, 0x040002, 0x040002,	/* 0 */
 	0x50E955, 0x48CA65, 0x40E321, 0x72BE78,	/* 1 [ms] */
 	0x64BA68, 0x57DF14, 0x4C3D60, 0x41D690,	/* 2 */
@@ -247,7 +247,7 @@ const u32 abe_1_alpha_iir[64] = {
 	0x00FFFF, 0x00D743, 0x00B503, 0x009837,
 };
 
-const u32 abe_alpha_iir[64] = {
+static const u32 abe_alpha_iir[64] = {
 	0x000000, 0x000000, 0x000000, 0x000000,	/* 0 */
 	0x5E2D58, 0x6E6B3C, 0x7E39C0, 0x46A0C5,	/* 1 [ms] */
 	0x4DA2CD, 0x541079, 0x59E151, 0x5F14B9,	/* 2 */
@@ -267,33 +267,14 @@ const u32 abe_alpha_iir[64] = {
 };
 
 /**
- * abe_int_2_float
- * returns a mantissa on 16 bits and the exponent
- * 0x4000.0000 leads to M=0x4000 X=15
- * 0x0004.0000 leads to M=0x4000 X=4
- * 0x0000.0001 leads to M=0x4000 X=-14
- *
- */
-void abe_int_2_float16(u32 data, u32 *mantissa, u32 *exp)
-{
-	u32 i;
-	*exp = 0;
-	*mantissa = 0;
-	for (i = 0; i < 32; i++) {
-		if ((1 << i) > data)
-			break;
-	}
-	*exp = i - 15;
-	*mantissa = (*exp > 0) ? data >> (*exp) : data << (*exp);
-}
-
-/**
  * abe_use_compensated_gain
- * @on_off:
+ * @abe: Pointer on aess handle
+ * @on_off: Enable dynamic gain compensation.
  *
  * Selects the automatic Mixer's gain management
  * on_off = 1 allows the "abe_write_gain" to adjust the overall
  * gains of the mixer to be tuned not to create saturation
+ *
  */
 int omap_aess_use_compensated_gain(struct omap_aess *abe, int on_off)
 {
@@ -304,9 +285,9 @@ EXPORT_SYMBOL(omap_aess_use_compensated_gain);
 
 /**
  * oamp_abe_write_equalizer
- * @abe: Pointer on abe handle
+ * @abe: Pointer on aess handle
  * @id: name of the equalizer
- * @param : equalizer coefficients
+ * @param: equalizer coefficients
  *
  * Load the coefficients in CMEM.
  */
@@ -318,37 +299,44 @@ int omap_aess_write_equalizer(struct omap_aess *abe,
 
 	switch (id) {
 	case OMAP_AESS_CMEM_DL1_COEFS_ID:
-		memcpy(&equ_addr, &abe->fw_info->map[OMAP_AESS_SMEM_DL1_M_EQ_DATA_ID],
-			sizeof(struct omap_aess_addr));
+		memcpy(&equ_addr,
+		       &abe->fw_info->map[OMAP_AESS_SMEM_DL1_M_EQ_DATA_ID],
+		       sizeof(struct omap_aess_addr));
 		break;
 	case OMAP_AESS_CMEM_DL2_L_COEFS_ID:
-		memcpy(&equ_addr, &abe->fw_info->map[OMAP_AESS_SMEM_DL2_M_LR_EQ_DATA_ID],
-			sizeof(struct omap_aess_addr));
+		memcpy(&equ_addr,
+		       &abe->fw_info->map[OMAP_AESS_SMEM_DL2_M_LR_EQ_DATA_ID],
+		       sizeof(struct omap_aess_addr));
 		break;
 	case OMAP_AESS_CMEM_DL2_R_COEFS_ID:
-		memcpy(&equ_addr, &abe->fw_info->map[OMAP_AESS_SMEM_DL2_M_LR_EQ_DATA_ID],
-			sizeof(struct omap_aess_addr));
+		memcpy(&equ_addr,
+		       &abe->fw_info->map[OMAP_AESS_SMEM_DL2_M_LR_EQ_DATA_ID],
+		       sizeof(struct omap_aess_addr));
 		break;
 	case OMAP_AESS_CMEM_SDT_COEFS_ID:
-		memcpy(&equ_addr, &abe->fw_info->map[OMAP_AESS_SMEM_SDT_F_DATA_ID],
-			sizeof(struct omap_aess_addr));
+		memcpy(&equ_addr,
+		       &abe->fw_info->map[OMAP_AESS_SMEM_SDT_F_DATA_ID],
+		       sizeof(struct omap_aess_addr));
 		break;
 	case OMAP_AESS_CMEM_96_48_AMIC_COEFS_ID:
-		memcpy(&equ_addr, &abe->fw_info->map[OMAP_AESS_SMEM_AMIC_96_48_DATA_ID],
-			sizeof(struct omap_aess_addr));
+		memcpy(&equ_addr,
+		       &abe->fw_info->map[OMAP_AESS_SMEM_AMIC_96_48_DATA_ID],
+		       sizeof(struct omap_aess_addr));
 		break;
 	case OMAP_AESS_CMEM_96_48_DMIC_COEFS_ID:
-		memcpy(&equ_addr, &abe->fw_info->map[OMAP_AESS_SMEM_DMIC0_96_48_DATA_ID],
-			sizeof(struct omap_aess_addr));
+		memcpy(&equ_addr,
+		       &abe->fw_info->map[OMAP_AESS_SMEM_DMIC0_96_48_DATA_ID],
+		       sizeof(struct omap_aess_addr));
 		/* three DMIC are clear at the same time DMIC0 DMIC1 DMIC2 */
 		equ_addr.bytes *= 3;
+		break;
 	}
 
 	/* reset SMEM buffers before the coefficients are loaded */
 	omap_aess_reset_mem(abe, equ_addr);
 
 	length = param->equ_length;
-	src = (u32 *) ((param->coef).type1);
+	src = (u32 *)((param->coef).type1);
 	omap_aess_mem_write(abe, abe->fw_info->map[id], src);
 
 	/* reset SMEM buffers after the coefficients are loaded */
@@ -360,20 +348,17 @@ EXPORT_SYMBOL(omap_aess_write_equalizer);
 
 /**
  * omap_aess_disable_gain
- * @abe: Pointer on abe handle
- * Parameters:
- *	mixer id
- *	sub-port id
+ * @abe: Pointer on aess handle
+ * @id: name of the gain
  *
+ * Set gain to silence if not already mute or disable.
  */
 int omap_aess_disable_gain(struct omap_aess *abe, u32 id)
 {
-	u32 f_g, ramp;
-	/* save the input parameters for mute/unmute */
-	ramp = abe->desired_ramp_delay_ms[id];
+	u32 f_g;
+
 	f_g = GAIN_MUTE;
-	if (!(abe->muted_gains_indicator[id] &
-	      OMAP_ABE_GAIN_DISABLED)) {
+	if (!(abe->muted_gains_indicator[id] & OMAP_ABE_GAIN_DISABLED)) {
 		/* Check if we are in mute */
 		if (!(abe->muted_gains_indicator[id] &
 		      OMAP_ABE_GAIN_MUTED)) {
@@ -382,8 +367,7 @@ int omap_aess_disable_gain(struct omap_aess *abe, u32 id)
 			/* mute the gain */
 			omap_aess_write_gain(abe, id, f_g);
 		}
-		abe->muted_gains_indicator[id] |=
-			OMAP_ABE_GAIN_DISABLED;
+		abe->muted_gains_indicator[id] |= OMAP_ABE_GAIN_DISABLED;
 	}
 	return 0;
 }
@@ -391,19 +375,18 @@ EXPORT_SYMBOL(omap_aess_disable_gain);
 
 /**
  * omap_aess_enable_gain
- * Parameters:
- *	mixer id
- *	sub-port id
+ * @abe: Pointer on aess handle
+ * @id: name of the gain
  *
+ * Restore gain if we are in disable mode.
  */
 int omap_aess_enable_gain(struct omap_aess *abe, u32 id)
 {
-	u32 f_g, ramp;
-	if ((abe->muted_gains_indicator[id] &
-	     OMAP_ABE_GAIN_DISABLED)) {
+	u32 f_g;
+
+	if ((abe->muted_gains_indicator[id] & OMAP_ABE_GAIN_DISABLED)) {
 		/* restore the input parameters for mute/unmute */
 		f_g = abe->muted_gains_decibel[id];
-		ramp = abe->desired_ramp_delay_ms[id];
 		abe->muted_gains_indicator[id] &=
 			~OMAP_ABE_GAIN_DISABLED;
 		/* unmute the gain */
@@ -415,15 +398,15 @@ EXPORT_SYMBOL(omap_aess_enable_gain);
 
 /**
  * omap_aess_mute_gain
- * Parameters:
- *	id
+ * @abe: Pointer on aess handle
+ * @id: name of the gain
  *
+ * Set gain to silence if not already mute.
  */
 int omap_aess_mute_gain(struct omap_aess *abe, u32 id)
 {
-	u32 f_g, ramp;
-	/* save the input parameters for mute/unmute */
-	ramp = abe->desired_ramp_delay_ms[id];
+	u32 f_g;
+
 	f_g = GAIN_MUTE;
 	if (!abe->muted_gains_indicator[id]) {
 		abe->muted_gains_decibel[id] =
@@ -437,19 +420,17 @@ int omap_aess_mute_gain(struct omap_aess *abe, u32 id)
 EXPORT_SYMBOL(omap_aess_mute_gain);
 /**
  * omap_aess_unmute_gain
- * Parameters:
- *	mixer id
- *	sub-port id
+ * @abe: Pointer on aess handle
+ * @id: name of the gain
  *
+ * Restore gain after mute.
  */
 int omap_aess_unmute_gain(struct omap_aess *abe, u32 id)
 {
-	u32 f_g, ramp;
-	if ((abe->muted_gains_indicator[id] &
-	    OMAP_ABE_GAIN_MUTED)) {
+	u32 f_g;
+	if ((abe->muted_gains_indicator[id] & OMAP_ABE_GAIN_MUTED)) {
 		/* restore the input parameters for mute/unmute */
 		f_g = abe->muted_gains_decibel[id];
-		ramp = abe->desired_ramp_delay_ms[id];
 		abe->muted_gains_indicator[id] &=
 			~OMAP_ABE_GAIN_MUTED;
 		/* unmute the gain */
@@ -461,10 +442,9 @@ EXPORT_SYMBOL(omap_aess_unmute_gain);
 
 /**
  * omap_aess_write_gain
+ * @abe: Pointer on aess handle
  * @id: gain name or mixer name
- * @f_g: list of input gains of the mixer
- * @ramp: gain ramp speed factor
- * @p: list of ports corresponding to the above gains
+ * @f_g: input gain for the mixer
  *
  * Loads the gain coefficients to FW memory. This API can be called when
  * the corresponding MIXER is not activated. After reloading the firmware
@@ -477,9 +457,6 @@ int omap_aess_write_gain(struct omap_aess *abe,
 {
 	u32 lin_g, mixer_target;
 	s32 gain_index;
-	u32 alpha, beta;
-	u32 ramp_index;
-	u32 ramp = RAMP_2MS;
 
 	gain_index = ((f_g - min_mdb) / 100);
 	gain_index = maximum(gain_index, 0);
@@ -488,7 +465,7 @@ int omap_aess_write_gain(struct omap_aess *abe,
 	/* save the input parameters for mute/unmute */
 	abe->desired_gains_linear[id] = lin_g;
 	abe->desired_gains_decibel[id] = f_g;
-	abe->desired_ramp_delay_ms[id] = ramp;
+
 	/* SMEM address in bytes */
 	mixer_target = abe->fw_info->map[OMAP_AESS_SMEM_GTARGET1_ID].offset;
 	mixer_target += (id<<2);
@@ -497,12 +474,35 @@ int omap_aess_write_gain(struct omap_aess *abe,
 		if (!abe->muted_gains_indicator[id])
 			/* load the S_G_Target SMEM table */
 			omap_abe_mem_write(abe, OMAP_ABE_SMEM,
-				       mixer_target, (u32 *) &lin_g,
-				       sizeof(lin_g));
+					   mixer_target, (u32 *)&lin_g,
+					   sizeof(lin_g));
 		else
 			/* update muted gain with new value */
 			abe->muted_gains_decibel[id] = f_g;
 	}
+	return 0;
+}
+EXPORT_SYMBOL(omap_aess_write_gain);
+
+/**
+ * omap_aess_write_gain_ramp
+ * @abe: Pointer on aess handle
+ * @id: gain name or mixer name
+ * @ramp: Gaim ramp time
+ *
+ * Loads the gain ramp for the associated gain.
+ */
+int omap_aess_write_gain_ramp(struct omap_aess *abe, u32 id, u32 ramp)
+{
+	u32 mixer_target;
+	u32 alpha, beta;
+	u32 ramp_index;
+
+	abe->desired_ramp_delay_ms[id] = ramp;
+
+	/* SMEM address in bytes */
+	mixer_target = abe->fw_info->map[OMAP_AESS_SMEM_GTARGET1_ID].offset;
+	mixer_target += (id<<2);
 
 	ramp = maximum(minimum(RAMP_MAXLENGTH, ramp), RAMP_MINLENGTH);
 	/* ramp data should be interpolated in the table instead */
@@ -523,22 +523,22 @@ int omap_aess_write_gain(struct omap_aess *abe,
 	mixer_target += ((id) >> 1) << 2;
 	/* load the ramp delay data */
 	omap_abe_mem_write(abe, OMAP_ABE_CMEM, mixer_target,
-		       (u32 *) &alpha, sizeof(alpha));
+			   (u32 *)&alpha, sizeof(alpha));
 	/* CMEM bytes address */
 	mixer_target = abe->fw_info->map[OMAP_AESS_CMEM_ALPHA_ID].offset;
 	/* a pair of gains is updated once in the firmware */
 	mixer_target += ((id) >> 1) << 2;
 	omap_abe_mem_write(abe, OMAP_ABE_CMEM, mixer_target,
-		       (u32 *) &beta, sizeof(beta));
+			   (u32 *)&beta, sizeof(beta));
 	return 0;
 }
-EXPORT_SYMBOL(omap_aess_write_gain);
+EXPORT_SYMBOL(omap_aess_write_gain_ramp);
 
 /**
  * omap_aess_write_mixer
+ * @abe: Pointer on aess handle
  * @id: name of the mixer
- * @param: input gains and delay ramp of the mixer
- * @p: port corresponding to the above gains
+ * @f_g: input gain for the mixer
  *
  * Load the gain coefficients in FW memory. This API can be called when
  * the corresponding MIXER is not activated. After reloading the firmware
@@ -546,8 +546,7 @@ EXPORT_SYMBOL(omap_aess_write_gain);
  * gain in mute state". A mixer is disabled with a network reconfiguration
  * corresponding to an OPP value.
  */
-int omap_aess_write_mixer(struct omap_aess *abe,
-				u32 id, s32 f_g)
+int omap_aess_write_mixer(struct omap_aess *abe, u32 id, s32 f_g)
 {
 
 	omap_aess_write_gain(abe, id, f_g);
@@ -555,6 +554,18 @@ int omap_aess_write_mixer(struct omap_aess *abe,
 }
 EXPORT_SYMBOL(omap_aess_write_mixer);
 
+/**
+ * omap_aess_read_gain
+ * @abe: Pointer on aess handle
+ * @id: name of the mixer
+ * @f_g: pointer on the gain for the mixer
+ *
+ * Read the gain coefficients in FW memory. This API can be called when
+ * the corresponding MIXER is not activated. After reloading the firmware
+ * the default coefficients corresponds to "all input and output mixer's
+ * gain in mute state". A mixer is disabled with a network reconfiguration
+ * corresponding to an OPP value.
+ */
 int omap_aess_read_gain(struct omap_aess *abe, u32 id, u32 *f_g)
 {
 	u32 mixer_target, i;
@@ -565,7 +576,7 @@ int omap_aess_read_gain(struct omap_aess *abe, u32 id, u32 *f_g)
 	if (!abe->muted_gains_indicator[id]) {
 		/* load the S_G_Target SMEM table */
 		omap_abe_mem_read(abe, OMAP_ABE_SMEM, mixer_target,
-			       (u32 *) f_g, sizeof(*f_g));
+				  (u32 *)f_g, sizeof(*f_g));
 		for (i = 0; i < sizeof_db2lin_table; i++) {
 				if (abe_db2lin_table[i] == *f_g)
 					goto found;
@@ -584,11 +595,11 @@ EXPORT_SYMBOL(omap_aess_read_gain);
 
 /**
  * abe_read_mixer
+ * @abe: Pointer on aess handle
  * @id: name of the mixer
- * @param: gains of the mixer
- * @p: port corresponding to the above gains
+ * @f_g: pointer on the gain for the mixer
  *
- * Load the gain coefficients in FW memory. This API can be called when
+ * Read the gain coefficients in FW memory. This API can be called when
  * the corresponding MIXER is not activated. After reloading the firmware
  * the default coefficients corresponds to "all input and output mixer's
  * gain in mute state". A mixer is disabled with a network reconfiguration
@@ -603,19 +614,20 @@ EXPORT_SYMBOL(omap_aess_read_mixer);
 
 /**
  * abe_reset_gain_mixer
+ * @abe: Pointer on aess handle
  * @id: name of the mixer
- * @p: list of port corresponding to the above gains
  *
  * restart the working gain value of the mixers when a port is enabled
  */
 void omap_aess_reset_gain_mixer(struct omap_aess *abe, u32 id)
 {
 	u32 lin_g, mixer_target;
+
 	/* SMEM bytes address for the CURRENT gain values */
 	mixer_target = abe->fw_info->map[OMAP_AESS_SMEM_GCURRENT_ID].offset;
 	mixer_target += (id<<2);
 	lin_g = 0;
 	/* load the S_G_Target SMEM table */
 	omap_abe_mem_write(abe, OMAP_ABE_SMEM, mixer_target,
-		       (u32 *) &lin_g, sizeof(lin_g));
+			   (u32 *)&lin_g, sizeof(lin_g));
 }
