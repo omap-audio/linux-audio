@@ -316,7 +316,7 @@ static int ul_mux_put_route(struct snd_kcontrol *kcontrol,
 	}
 
 	/* 2nd arg here is unused */
-	omap_aess_set_router_configuration(abe->aess, UPROUTE, 0, (u32 *)abe->mixer.route_ul);
+	omap_aess_set_router_configuration(abe->aess, (u32 *)abe->mixer.route_ul);
 
 	if (router[mux] != OMAP_AESS_BUFFER_ZERO_ID)
 		abe->opp.widget[e->reg] = e->shift_l;
