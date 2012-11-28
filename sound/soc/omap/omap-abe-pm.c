@@ -131,7 +131,7 @@ int abe_pm_restore_context(struct omap_abe *abe)
 	omap_aess_unmute_gain(abe->aess, OMAP_AESS_MIXVXREC_VX_UL);
 	omap_aess_unmute_gain(abe->aess, OMAP_AESS_MIXECHO_DL1);
 	omap_aess_unmute_gain(abe->aess, OMAP_AESS_MIXECHO_DL2);
-	omap_aess_set_router_configuration(abe->aess, UPROUTE, 0, (u32 *)abe->mixer.route_ul);
+	omap_aess_set_router_configuration(abe->aess, (u32 *)abe->mixer.route_ul);
 
 	/* DC offset cancellation setting */
 	if (abe->dc_offset.power_mode)
@@ -262,7 +262,7 @@ int abe_pm_resume(struct snd_soc_dai *dai)
 		goto out;
 	}
 
-	omap_aess_set_router_configuration(abe->aess, UPROUTE, 0, (u32 *)abe->mixer.route_ul);
+	omap_aess_set_router_configuration(abe->aess, (u32 *)abe->mixer.route_ul);
 
 	if (abe->dc_offset.power_mode)
 		omap_aess_write_pdmdl_offset(abe->aess, 1, abe->dc_offset.hsl * 2, abe->dc_offset.hsr * 2);
