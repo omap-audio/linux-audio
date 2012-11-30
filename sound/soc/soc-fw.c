@@ -1163,17 +1163,25 @@ static int soc_valid_header(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
 
 	/* big endian firmware objects not supported atm */
 	if (hdr->magic == cpu_to_be32(SND_SOC_FW_MAGIC)) {
-		dev_err(sfw->dev, "ASoC: %s at pass %d big endian not supported"
-			" header got %x at offset 0x%x size 0x%x.\n",
+		dev_err(sfw->dev,
+			"ASoC: %s at pass %d big endian not supported header got %x at offset 0x%x size 0x%x.\n",
 			sfw->file, sfw->pass, hdr->magic,
 			soc_fw_get_hdr_offset(sfw), sfw->fw->size);
 		return -EINVAL;
 	}
 
 	if (hdr->magic != SND_SOC_FW_MAGIC) {
-		dev_err(sfw->dev, "ASoC: %s at pass %d does not have a valid"
-			" header got %x at offset 0x%x size 0x%x.\n",
+		dev_err(sfw->dev,
+			"ASoC: %s at pass %d does not have a valid header got %x at offset 0x%x size 0x%x.\n",
 			sfw->file, sfw->pass, hdr->magic,
+			soc_fw_get_hdr_offset(sfw), sfw->fw->size);
+		return -EINVAL;
+	}
+
+	if (hdr->abi != SND_SOC_FW_ABI_VERSION) {
+		dev_err(sfw->dev,
+			"ASoC: %s at pass %d invalid ABI version got 0x%x need 0x%x at offset 0x%x size 0x%x.\n",
+			sfw->file, sfw->pass, hdr->abi, SND_SOC_FW_ABI_VERSION,
 			soc_fw_get_hdr_offset(sfw), sfw->fw->size);
 		return -EINVAL;
 	}
@@ -1185,9 +1193,10 @@ static int soc_valid_header(struct soc_fw *sfw, struct snd_soc_fw_hdr *hdr)
 	}
 
 	if (sfw->pass == hdr->type)
-		dev_dbg(sfw->dev, "ASoC: Got 0x%x bytes of type %d version %d"
-			" vendor %d at pass %d\n", hdr->size, hdr->type,
-			hdr->version, hdr->vendor_type, sfw->pass);
+		dev_dbg(sfw->dev,
+			"ASoC: Got 0x%x bytes of type %d version %d vendor %d at pass %d\n",
+			hdr->size, hdr->type, hdr->version, hdr->vendor_type,
+			sfw->pass);
 
 	return 1;
 }

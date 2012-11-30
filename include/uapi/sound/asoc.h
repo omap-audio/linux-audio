@@ -739,7 +739,7 @@ enum snd_soc_dapm_type {
 #define SND_SOC_FW_NUM_TEXTS	16
 
 /* ABI version */
-#define SND_SOC_FW_ABI_VERSION		1
+#define SND_SOC_FW_ABI_VERSION		0x1
 
 /*
  * File andBlock header data types.
@@ -763,6 +763,7 @@ enum snd_soc_dapm_type {
  */
 struct snd_soc_fw_hdr {
 	__le32 magic;
+	__le32 abi;	/* ABI version */
 	__le32 type;
 	__le32 vendor_type; /* optional vendor specific type info */
 	__le32 version; /* optional vendor specific version details */
