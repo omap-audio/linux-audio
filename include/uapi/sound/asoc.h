@@ -15,6 +15,8 @@
 #ifndef __LINUX_UAPI_SND_ASOC_H
 #define __LINUX_UAPI_SND_ASOC_H
 
+#include <linux/types.h>
+
 /*
  * Convenience kcontrol builders
  */
@@ -249,7 +251,7 @@
 {	.iface = SNDRV_CTL_ELEM_IFACE_MIXER, .name = (xname), \
 	.info = snd_soc_info_xr_sx, .get = snd_soc_get_xr_sx, \
 	.put = snd_soc_put_xr_sx, \
-	.index = SOC_CONTROL_IO_XR_SX, \
+	.index = SOC_CONTROL_IO_VOLSW_XR_SX, \
 	.private_value = (unsigned long)&(struct soc_mreg_control) \
 		{.regbase = xregbase, .regcount = xregcount, .nbits = xnbits, \
 		.invert = xinvert, .min = xmin, .max = xmax} }
@@ -760,26 +762,26 @@ enum snd_soc_dapm_type {
  * File and Block Header
  */
 struct snd_soc_fw_hdr {
-	u32 magic;
-	u32 type;
-	u32 vendor_type; /* optional vendor specific type info */
-	u32 version; /* optional vendor specific version details */
-	u32 size; /* data bytes, excluding this header */
+	__le32 magic;
+	__le32 type;
+	__le32 vendor_type; /* optional vendor specific type info */
+	__le32 version; /* optional vendor specific version details */
+	__le32 size; /* data bytes, excluding this header */
 	/* file data contents start here */
 } __attribute__((packed));
 
 
 struct snd_soc_fw_ctl_tlv {
-	u32 numid;	/* control element numeric identification */
-	u32 length;	/* in bytes aligned to 4 */
+	__le32 numid;	/* control element numeric identification */
+	__le32 length;	/* in bytes aligned to 4 */
 	/* tlv data starts here */
 } __attribute__((packed));
 
 struct snd_soc_fw_control_hdr {
 	char name[SND_SOC_FW_TEXT_SIZE];
-	u32 index;
-	u32 access;
-	u32 tlv_size;
+	__le32 index;
+	__le32 access;
+	__le32 tlv_size;
 } __attribute__((packed));
 
 /*
@@ -787,14 +789,14 @@ struct snd_soc_fw_control_hdr {
  */
 struct snd_soc_fw_mixer_control {
 	struct snd_soc_fw_control_hdr hdr;
-	s32 min;
-	s32 max;
-	s32 platform_max;
-	u32 reg;
-	u32 rreg;
-	u32 shift;
-	u32 rshift;
-	u32 invert;
+	__s32 min;
+	__s32 max;
+	__s32 platform_max;
+	__le32 reg;
+	__le32 rreg;
+	__le32 shift;
+	__le32 rshift;
+	__le32 invert;
 } __attribute__((packed));
 
 /*
@@ -802,15 +804,15 @@ struct snd_soc_fw_mixer_control {
  */
 struct snd_soc_fw_enum_control {
 	struct snd_soc_fw_control_hdr hdr;
-	u32 reg;
-	u32 reg2;
-	u32 shift_l;
-	u32 shift_r;
-	u32 max;
-	u32 mask;
+	__le32 reg;
+	__le32 reg2;
+	__le32 shift_l;
+	__le32 shift_r;
+	__le32 max;
+	__le32 mask;
 	union {	/* both texts and values are the same size */
 		char texts[SND_SOC_FW_NUM_TEXTS][SND_SOC_FW_TEXT_SIZE];
-		u32 values[SND_SOC_FW_NUM_TEXTS * SND_SOC_FW_TEXT_SIZE / 4];
+		__le32 values[SND_SOC_FW_NUM_TEXTS * SND_SOC_FW_TEXT_SIZE / 4];
 	};
 } __attribute__((packed));
 
@@ -818,7 +820,7 @@ struct snd_soc_fw_enum_control {
  * Kcontrol Header
  */
 struct snd_soc_fw_kcontrol {
-	u32 count; /* in kcontrols (based on type) */
+	__le32 count; /* in kcontrols (based on type) */
 	/* kcontrols here */
 } __attribute__((packed));
 
@@ -836,16 +838,16 @@ struct snd_soc_fw_dapm_graph_elem {
  * DAPM Widget.
  */
 struct snd_soc_fw_dapm_widget {
-	u32 id;		/* snd_soc_dapm_type */
+	__le32 id;		/* snd_soc_dapm_type */
 	char name[SND_SOC_FW_TEXT_SIZE];
 	char sname[SND_SOC_FW_TEXT_SIZE];
 
-	s32 reg;		/* negative reg = no direct dapm */
-	u32 shift;		/* bits to shift */
-	u32 mask;		/* non-shifted mask */
-	u8 invert;		/* invert the power bit */
-	u8 ignore_suspend;	/* kept enabled over suspend */
-	u8 padding[2];
+	__s32 reg;		/* negative reg = no direct dapm */
+	__le32 shift;		/* bits to shift */
+	__le32 mask;		/* non-shifted mask */
+	__u8 invert;		/* invert the power bit */
+	__u8 ignore_suspend;	/* kept enabled over suspend */
+	__u8 padding[2];
 
 	/* kcontrols that relate to this widget */
 	struct snd_soc_fw_kcontrol kcontrol;
@@ -856,7 +858,7 @@ struct snd_soc_fw_dapm_widget {
  * DAPM Graph and Pins.
  */
 struct snd_soc_fw_dapm_elems {
-	u32 count; /* in elements */
+	__le32 count; /* in elements */
 	/* elements here */
 } __attribute__((packed));
 
@@ -864,9 +866,9 @@ struct snd_soc_fw_dapm_elems {
  * Coeffcient File Data.
  */
 struct snd_soc_file_coeff_data {
-	u32 count; /* in elems */
-	u32 size;	/* total data size */
-	u32 id; /* associated mixer ID */
+	__le32 count; /* in elems */
+	__le32 size;	/* total data size */
+	__le32 id; /* associated mixer ID */
 	/* data here */
 } __attribute__((packed));
 
