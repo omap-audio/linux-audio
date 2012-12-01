@@ -152,14 +152,14 @@ int omap_abe_port_enable(struct omap_aess *abe, struct omap_abe_port *port)
 
 	/* only enable the physical port iff it is disabled */
 	pr_debug("port %s increment count %d\n",
-			lport_name[port->logical_id], port->users);
+		 lport_name[port->logical_id], port->users);
 
 	spin_lock_irqsave(&abe->lock, flags);
 	if (port->users == 0 && port_get_num_users(abe, port) == 0) {
 
 		/* enable the physical port */
 		pr_debug("port %s phy port %d enabled\n",
-			lport_name[port->logical_id], port->physical_id);
+			 lport_name[port->logical_id], port->physical_id);
 		omap_aess_enable_data_transfer(abe, port->physical_id);
 	}
 
@@ -183,14 +183,14 @@ int omap_abe_port_disable(struct omap_aess *abe, struct omap_abe_port *port)
 
 	/* only disable the port iff no other users are using it */
 	pr_debug("port %s decrement count %d\n",
-			lport_name[port->logical_id], port->users);
+		 lport_name[port->logical_id], port->users);
 
 	spin_lock_irqsave(&abe->lock, flags);
 
 	if (port->users == 1 && port_get_num_users(abe, port) == 1) {
 		/* disable the physical port */
 		pr_debug("port %s phy port %d disabled\n",
-			lport_name[port->logical_id], port->physical_id);
+			 lport_name[port->logical_id], port->physical_id);
 
 		omap_aess_disable_data_transfer(abe, port->physical_id);
 	}
@@ -294,9 +294,8 @@ static struct omap_aess *omap_abe_port_mgr_init(void)
 
 #ifdef CONFIG_DEBUG_FS
 	abe->debugfs_root = debugfs_create_dir("abe_port", NULL);
-	if (!abe->debugfs_root) {
-		pr_debug( "Failed to create port manager debugfs directory\n");
-	}
+	if (!abe->debugfs_root)
+		pr_debug("Failed to create port manager debugfs directory\n");
 #endif
 	return abe;
 }
@@ -312,7 +311,7 @@ static void omap_abe_port_mgr_free(struct omap_aess *abe)
 
 struct omap_aess *omap_abe_port_mgr_get(void)
 {
-	struct omap_aess * abe;
+	struct omap_aess *abe;
 
 	mutex_lock(&port_mgr_mutex);
 
