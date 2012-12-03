@@ -742,7 +742,7 @@ enum snd_soc_dapm_type {
 #define SND_SOC_FW_ABI_VERSION		0x1
 
 /*
- * File andBlock header data types.
+ * File and Block header data types.
  * Add new generic and vendor types to end of list.
  * Generic types are handled by the core whilst vendors types are passed
  * to the component drivers for handling.
@@ -786,7 +786,7 @@ struct snd_soc_fw_control_hdr {
 } __attribute__((packed));
 
 /*
- * Mixer KControl.
+ * Mixer kcontrol.
  */
 struct snd_soc_fw_mixer_control {
 	struct snd_soc_fw_control_hdr hdr;
@@ -801,7 +801,7 @@ struct snd_soc_fw_mixer_control {
 } __attribute__((packed));
 
 /*
- * Enumerated KControl
+ * Enumerated kcontrol
  */
 struct snd_soc_fw_enum_control {
 	struct snd_soc_fw_control_hdr hdr;
@@ -818,7 +818,7 @@ struct snd_soc_fw_enum_control {
 } __attribute__((packed));
 
 /*
- * Kcontrol Header
+ * kcontrol Header
  */
 struct snd_soc_fw_kcontrol {
 	__le32 count; /* in kcontrols (based on type) */
