@@ -477,12 +477,10 @@ static inline void soc_fw_denum_free_data(struct soc_enum *se)
 {
 	int i;
 
-	if (se->dvalues) {
+	if (se->dvalues)
 		kfree(se->dvalues);
-	} else {
-		for (i = 0; i < se->max - 1; i++)
-			kfree(se->dtexts[i]);
-	}
+	for (i = 0; i < se->max - 1; i++)
+		kfree(se->dtexts[i]);
 }
 
 static int soc_fw_denum_create_texts(struct soc_enum *se,
@@ -578,6 +576,17 @@ static int soc_fw_denum_create(struct soc_fw *sfw, unsigned int count,
 		INIT_LIST_HEAD(&se->list);
 
 		switch (SOC_CONTROL_GET_ID_INFO(ec->hdr.index)) {
+		case SOC_DAPM_TYPE_ENUM_VALUE:
+		case SOC_CONTROL_TYPE_ENUM_VALUE:
+			err = soc_fw_denum_create_values(se, ec);
+			if (err < 0) {
+				dev_err(sfw->dev,
+					"ASoC: could not create values for %s\n",
+					ec->hdr.name);
+				kfree(se);
+				continue;
+			}
+			/* fall through and create texts */
 		case SOC_CONTROL_TYPE_ENUM:
 		case SOC_CONTROL_TYPE_ENUM_EXT:
 		case SOC_DAPM_TYPE_ENUM_EXT:
@@ -587,17 +596,6 @@ static int soc_fw_denum_create(struct soc_fw *sfw, unsigned int count,
 			if (err < 0) {
 				dev_err(sfw->dev,
 					"ASoC: could not create texts for %s\n",
-					ec->hdr.name);
-				kfree(se);
-				continue;
-			}
-			break;
-		case SOC_DAPM_TYPE_ENUM_VALUE:
-		case SOC_CONTROL_TYPE_ENUM_VALUE:
-			err = soc_fw_denum_create_values(se, ec);
-			if (err < 0) {
-				dev_err(sfw->dev,
-					"ASoC: could not create values for %s\n",
 					ec->hdr.name);
 				kfree(se);
 				continue;
@@ -878,6 +876,15 @@ static struct snd_kcontrol_new *soc_fw_dapm_widget_denum_create(struct soc_fw *s
 	se->mask = ec->mask;
 
 	switch (SOC_CONTROL_GET_ID_INFO(ec->hdr.index)) {
+	case SOC_CONTROL_TYPE_ENUM_VALUE:
+	case SOC_DAPM_TYPE_ENUM_VALUE:
+		err = soc_fw_denum_create_values(se, ec);
+		if (err < 0) {
+			dev_err(sfw->dev, "ASoC: could not create"
+				" values for %s\n", ec->hdr.name);
+			goto err_se;
+		}
+		/* fall through to create texts */
 	case SOC_CONTROL_TYPE_ENUM:
 	case SOC_CONTROL_TYPE_ENUM_EXT:
 	case SOC_DAPM_TYPE_ENUM_EXT:
@@ -887,15 +894,6 @@ static struct snd_kcontrol_new *soc_fw_dapm_widget_denum_create(struct soc_fw *s
 		if (err < 0) {
 			dev_err(sfw->dev, "ASoC: could not create"
 				" texts for %s\n", ec->hdr.name);
-			goto err_se;
-		}
-		break;
-	case SOC_CONTROL_TYPE_ENUM_VALUE:
-	case SOC_DAPM_TYPE_ENUM_VALUE:
-		err = soc_fw_denum_create_values(se, ec);
-		if (err < 0) {
-			dev_err(sfw->dev, "ASoC: could not create"
-				" values for %s\n", ec->hdr.name);
 			goto err_se;
 		}
 		break;
@@ -934,13 +932,12 @@ static struct snd_kcontrol_new *soc_fw_dapm_widget_denum_create(struct soc_fw *s
 err_se:
 	kfree(kc);
 
-	/* free texts */
-	if (se->dvalues) {
+	/* free values and texts */
+	if (se->dvalues)
 		kfree(se->dvalues);
-	} else {
-		for (i = 0; i < ec->max; i++)
-			kfree(se->dtexts[i]);
-	}
+	for (i = 0; i < ec->max; i++)
+		kfree(se->dtexts[i]);
+
 	kfree(se);
 
 	return NULL;
@@ -1343,12 +1340,11 @@ void snd_soc_fw_dcontrols_remove_widget(struct snd_soc_dapm_widget *w)
 			(struct soc_enum *)w->kcontrols[0]->private_value;
 
 		snd_ctl_remove(card, w->kcontrols[0]);
+
 		if (se->dvalues)
 			kfree(se->dvalues);
-		else {
-			for (i = 0; i < se->max; i++)
-				kfree(se->dtexts[i]);
-		}
+		for (i = 0; i < se->max; i++)
+			kfree(se->dtexts[i]);
 
 		kfree(se);
 		kfree(w->kcontrol_news);
@@ -1440,12 +1436,11 @@ void snd_soc_fw_dcontrols_remove_codec(struct snd_soc_codec *codec,
 
 		snd_ctl_remove(card, se->dcontrol);
 		list_del(&se->list);
-		if (se->dvalues) {
+
+		if (se->dvalues)
 			kfree(se->dvalues);
-		} else {
-			for (i = 0; i < se->max; i++)
-				kfree(se->dtexts[i]);
-		}
+		for (i = 0; i < se->max; i++)
+			kfree(se->dtexts[i]);
 		kfree(se);
 	}
 }
@@ -1481,12 +1476,11 @@ void snd_soc_fw_dcontrols_remove_platform(struct snd_soc_platform *platform,
 
 		snd_ctl_remove(card, se->dcontrol);
 		list_del(&se->list);
+
 		if (se->dvalues)
 			kfree(se->dvalues);
-		else {
-			for (i = 0; i < se->max; i++)
-				kfree(se->dtexts[i]);
-		}
+		for (i = 0; i < se->max; i++)
+			kfree(se->dtexts[i]);
 		kfree(se);
 	}
 }
@@ -1522,12 +1516,11 @@ void snd_soc_fw_dcontrols_remove_card(struct snd_soc_card *soc_card,
 
 		snd_ctl_remove(card, se->dcontrol);
 		list_del(&se->list);
+
 		if (se->dvalues)
 			kfree(se->dvalues);
-		else {
-			for (i = 0; i < se->max; i++)
-				kfree(se->dtexts[i]);
-		}
+		for (i = 0; i < se->max; i++)
+			kfree(se->dtexts[i]);
 		kfree(se);
 	}
 }

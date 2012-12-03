@@ -811,10 +811,9 @@ struct snd_soc_fw_enum_control {
 	__le32 shift_r;
 	__le32 max;
 	__le32 mask;
-	union {	/* both texts and values are the same size */
-		char texts[SND_SOC_FW_NUM_TEXTS][SND_SOC_FW_TEXT_SIZE];
-		__le32 values[SND_SOC_FW_NUM_TEXTS * SND_SOC_FW_TEXT_SIZE / 4];
-	};
+	__le32 count;
+	char texts[SND_SOC_FW_NUM_TEXTS][SND_SOC_FW_TEXT_SIZE];
+	__le32 values[SND_SOC_FW_NUM_TEXTS * SND_SOC_FW_TEXT_SIZE / 4];
 } __attribute__((packed));
 
 /*
