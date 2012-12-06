@@ -292,7 +292,7 @@ static int abe_probe(struct snd_soc_platform *platform)
 	pm_runtime_enable(abe->dev);
 	pm_runtime_irq_safe(abe->dev);
 
-	ret = snd_soc_fw_load_platform(platform, &soc_fw_ops, abe->fw);
+	ret = snd_soc_fw_load_platform(platform, &soc_fw_ops, abe->fw, 0);
 	if (ret < 0) {
 		dev_err(platform->dev, "request for ABE FW failed %d\n", ret);
 		goto err_fw;
