@@ -37,7 +37,7 @@
 
 #include "omap-hdmi.h"
 
-#define DRV_NAME "omap-hdmi-audio-dai"
+#define DRV_NAME "omap-hdmi-audio"
 
 struct hdmi_priv {
 	struct snd_dmaengine_dai_dma_data dma_data;
