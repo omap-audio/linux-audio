@@ -411,7 +411,7 @@ static inline void omap_init_dmic(void) {}
 		defined(CONFIG_SND_OMAP_SOC_OMAP_HDMI_MODULE)
 
 static struct platform_device omap_hdmi_audio = {
-	.name	= "omap-hdmi-audio",
+	.name	= "omap-hdmi-audio-card",
 	.id	= -1,
 };
 
