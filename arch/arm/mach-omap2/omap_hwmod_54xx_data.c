@@ -444,15 +444,6 @@ static struct omap_hwmod_class omap54xx_ctrl_module_hwmod_class = {
 	.sysc	= &omap54xx_ctrl_module_sysc,
 };
 
-static struct omap_hwmod_class_sysconfig omap54xx_ctrl_module_sysc = {
-	.rev_offs	= 0x0000,
-};
-
-static struct omap_hwmod_class omap54xx_ctrl_module_hwmod_class = {
-	.name	= "ctrl_module",
-	.sysc	= &omap54xx_ctrl_module_sysc,
-};
-
 /* ctrl_module_core */
 static struct omap_hwmod_irq_info omap54xx_ctrl_module_core_irqs[] = {
 	{ .name = "sec_evts", .irq = 8 + OMAP54XX_IRQ_GIC_START },
@@ -752,6 +743,8 @@ static struct omap_hwmod omap54xx_dss_dispc_hwmod = {
 	.main_clk	= "dss_dss_clk",
 	.prcm = {
 		.omap4 = {
+			.clkctrl_offs = OMAP54XX_CM_DSS_DSS_CLKCTRL_OFFSET,
+			.context_offs = OMAP54XX_RM_DSS_DSS_CONTEXT_OFFSET,
 			.flags = HWMOD_OMAP4_NO_CONTEXT_LOSS_BIT,
 		},
 	},
@@ -805,6 +798,8 @@ static struct omap_hwmod omap54xx_dss_dsi1_a_hwmod = {
 	.main_clk	= "dss_dss_clk",
 	.prcm = {
 		.omap4 = {
+			.clkctrl_offs = OMAP54XX_CM_DSS_DSS_CLKCTRL_OFFSET,
+			.context_offs = OMAP54XX_RM_DSS_DSS_CONTEXT_OFFSET,
 			.flags = HWMOD_OMAP4_NO_CONTEXT_LOSS_BIT,
 		},
 	},
@@ -820,6 +815,8 @@ static struct omap_hwmod omap54xx_dss_dsi1_b_hwmod = {
 	.main_clk	= "dss_dss_clk",
 	.prcm = {
 		.omap4 = {
+			.clkctrl_offs = OMAP54XX_CM_DSS_DSS_CLKCTRL_OFFSET,
+			.context_offs = OMAP54XX_RM_DSS_DSS_CONTEXT_OFFSET,
 			.flags = HWMOD_OMAP4_NO_CONTEXT_LOSS_BIT,
 		},
 	},
@@ -849,6 +846,8 @@ static struct omap_hwmod omap54xx_dss_dsi1_c_hwmod = {
 	.main_clk	= "dss_dss_clk",
 	.prcm = {
 		.omap4 = {
+			.clkctrl_offs = OMAP54XX_CM_DSS_DSS_CLKCTRL_OFFSET,
+			.context_offs = OMAP54XX_RM_DSS_DSS_CONTEXT_OFFSET,
 			.flags = HWMOD_OMAP4_NO_CONTEXT_LOSS_BIT,
 		},
 	},
@@ -900,6 +899,8 @@ static struct omap_hwmod omap54xx_dss_hdmi_hwmod = {
 	.main_clk	= "dss_48mhz_clk",
 	.prcm = {
 		.omap4 = {
+			.clkctrl_offs = OMAP54XX_CM_DSS_DSS_CLKCTRL_OFFSET,
+			.context_offs = OMAP54XX_RM_DSS_DSS_CONTEXT_OFFSET,
 			.flags = HWMOD_OMAP4_NO_CONTEXT_LOSS_BIT,
 		},
 	},
@@ -944,6 +945,8 @@ static struct omap_hwmod omap54xx_dss_rfbi_hwmod = {
 	.sdma_reqs	= omap54xx_dss_rfbi_sdma_reqs,
 	.prcm = {
 		.omap4 = {
+			.clkctrl_offs = OMAP54XX_CM_DSS_DSS_CLKCTRL_OFFSET,
+			.context_offs = OMAP54XX_RM_DSS_DSS_CONTEXT_OFFSET,
 			.flags = HWMOD_OMAP4_NO_CONTEXT_LOSS_BIT,
 		},
 	},
@@ -1801,10 +1804,11 @@ static struct omap_hwmod omap54xx_intc_ipu_c1_hwmod = {
  * 'mmu' class
  * ipu unicache and mmu controllers
  */
-
+#if 0
 static struct omap_hwmod_class omap54xx_mmu_hwmod_class = {
 	.name	= "mmu",
 };
+#endif
 
 /* mmu_ipu */
 static struct omap_hwmod omap54xx_mmu_ipu_hwmod = {
@@ -2455,7 +2459,7 @@ static struct omap_hwmod_dma_info omap54xx_mmc1_sdma_reqs[] = {
 };
 
 static struct omap_hwmod_opt_clk mmc1_opt_clks[] = {
-	{ .role = "32khz_clk", .clk = "mmc1_32khz_clk" },
+	{ .role = "32khz_clk", .clk = "mmc1_32k_gfclk" },
 };
 
 /* mmc1 dev_attr */
@@ -5980,7 +5984,7 @@ static struct omap_hwmod_ocp_if *omap54xx_hwmod_ocp_ifs[] __initdata = {
 	&omap54xx_l4_abe__dmic,
 	&omap54xx_l4_abe__dmic_dma,
 	&omap54xx_l4_cfg__dsp,
-	&omap54xx_l4_cfg__mmu_dsp,
+	//&omap54xx_l4_cfg__mmu_dsp,
 	&omap54xx_l3_main_2__dss,
 	&omap54xx_l3_main_2__dss_dispc,
 	&omap54xx_l3_main_2__dss_dsi1_a,
@@ -6041,7 +6045,7 @@ static struct omap_hwmod_ocp_if *omap54xx_hwmod_ocp_ifs[] __initdata = {
 	&omap54xx_l4_cfg__mpu,
 	&omap54xx_l3_main_2__ocmc_ram,
 	&omap54xx_l4_cfg__ocp2scp1,
-	&omap54xx_l4_cfg__sata,
+	//&omap54xx_l4_cfg__sata,
 	&omap54xx_l4_wkup__scrm,
 	&omap54xx_l4_abe__slimbus1,
 	&omap54xx_l4_abe__slimbus1_dma,
