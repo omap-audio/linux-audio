@@ -20,6 +20,10 @@
 #include "ctrl_module_wkup_44xx.h"
 #include "ctrl_module_pad_core_44xx.h"
 #include "ctrl_module_pad_wkup_44xx.h"
+#include "ctrl_module_core_54xx.h"
+#include "ctrl_module_wkup_54xx.h"
+#include "ctrl_module_core_pad_54xx.h"
+#include "ctrl_module_wkup_pad_54xx.h"
 
 #include "am33xx.h"
 
