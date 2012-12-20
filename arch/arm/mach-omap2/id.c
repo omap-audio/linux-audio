@@ -530,16 +530,29 @@ void __init omap5xxx_check_revision(void)
 	case 0xb942:
 		switch (rev) {
 		case 0:
-		default:
 			omap_revision = OMAP5430_REV_ES1_0;
+			/* Fix ES2.0 wrongly efused samples ID detection */
+			if (read_cpuid_id() == 0x412FC0F2)
+				omap_revision = OMAP5430_REV_ES2_0;
+			break;
+		case 1:
+			omap_revision = OMAP5430_REV_ES2_0;
+			break;
+		default:
+			omap_revision = OMAP5430_REV_ES2_0;
 		}
 		break;
 
 	case 0xb998:
 		switch (rev) {
 		case 0:
-		default:
 			omap_revision = OMAP5432_REV_ES1_0;
+			break;
+		case 1:
+			omap_revision = OMAP5432_REV_ES2_0;
+			break;
+		default:
+			omap_revision = OMAP5432_REV_ES2_0;
 		}
 		break;
 
