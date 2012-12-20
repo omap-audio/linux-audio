@@ -67,10 +67,11 @@ dtb-$(CONFIG_ARCH_OMAP2PLUS) += omap2420-h4.dtb \
 	omap3-evm.dtb \
 	omap3-tobi.dtb \
 	omap4-panda.dtb \
-	omap4-pandaES.dtb \
-	omap4-var_som.dtb \
+	omap4-panda-es.dtb \
+	omap4-var-som.dtb \
 	omap4-sdp.dtb \
 	omap5-evm.dtb \
+	omap5-panda.dtb \
 	am335x-evm.dtb \
 	am335x-bone.dtb
 dtb-$(CONFIG_ARCH_PRIMA2) += prima2-evb.dtb
