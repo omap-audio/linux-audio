@@ -31,9 +31,8 @@
 #include <sound/initval.h>
 #include <sound/soc.h>
 
-#include <plat/omap_hwmod.h>
-#include <plat/clock.h>
-#include <plat/dma-44xx.h>
+#define OMAP44XX_DMA_MCASP1_AXEVT		8
+#define OMAP44XX_DMA_MCASP1_AREVT		11
 
 #include "omap-pcm.h"
 #include "omap-mcasp.h"
