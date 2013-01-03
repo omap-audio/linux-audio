@@ -1,7 +1,7 @@
 /*
  * OMAP5 Voltage Management Routines
  *
- * Based on voltagedomains44xx_data.c
+ * Based on voltagedomains54xx_data.c
  *
  * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com
  *
@@ -90,9 +90,9 @@ void __init omap54xx_voltagedomains_init(void)
 	 * for the currently-running IC
 	 */
 #ifdef CONFIG_PM_OPP
-	omap5_voltdm_mpu.volt_data = omap44xx_vdd_mpu_volt_data;
-	omap5_voltdm_mm.volt_data = omap44xx_vdd_iva_volt_data;
-	omap5_voltdm_core.volt_data = omap44xx_vdd_core_volt_data;
+	omap5_voltdm_mpu.volt_data = omap446x_vdd_mpu_volt_data;
+	omap5_voltdm_mm.volt_data = omap446x_vdd_iva_volt_data;
+	omap5_voltdm_core.volt_data = omap446x_vdd_core_volt_data;
 #endif
 
 	for (i = 0; voltdm = voltagedomains_omap5[i], voltdm; i++)
