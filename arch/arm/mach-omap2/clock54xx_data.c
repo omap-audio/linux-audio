@@ -27,8 +27,6 @@
 #include <linux/clk.h>
 #include <linux/io.h>
 
-#include <plat/clkdev_omap.h>
-
 #include "soc.h"
 #include "iomap.h"
 #include "clock.h"
