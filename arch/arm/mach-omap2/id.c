@@ -30,6 +30,7 @@
 
 #define OMAP4_SILICON_TYPE_STANDARD		0x01
 #define OMAP4_SILICON_TYPE_PERFORMANCE		0x02
+#define CPU_CORTEXA15_R2P2			0x412FC0F2
 
 static unsigned int omap_revision;
 static const char *cpu_rev;
@@ -520,6 +521,9 @@ void __init omap5xxx_check_revision(void)
 		switch (rev) {
 		case 0:
 			omap_revision = OMAP5430_REV_ES1_0;
+			/* Fix wrongly fused ES2.0 samples */
+			 if (read_cpuid_id() == CPU_CORTEXA15_R2P2)
+				omap_revision = OMAP5430_REV_ES2_0;
 			break;
 		case 1:
 			omap_revision = OMAP5430_REV_ES2_0;
@@ -533,6 +537,9 @@ void __init omap5xxx_check_revision(void)
 		switch (rev) {
 		case 0:
 			omap_revision = OMAP5432_REV_ES1_0;
+			/* Fix wrongly fused ES2.0 samples */
+			 if (read_cpuid_id() == CPU_CORTEXA15_R2P2)
+				omap_revision = OMAP5432_REV_ES2_0;
 			break;
 		case 1:
 			omap_revision = OMAP5432_REV_ES2_0;
