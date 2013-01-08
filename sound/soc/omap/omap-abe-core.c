@@ -287,9 +287,10 @@ static int abe_probe(struct snd_soc_platform *platform)
 	}
 
 	/* No OPP definition for OMAP5 inside the tree */
-	ret = abe_opp_init_initial_opp(abe);
-	if (ret < 0)
-		dev_warn(platform->dev, "No OPP scaling\n");
+	if (ret < 0) {
+		dev_info(platform->dev, "No OPP definition\n");
+		ret = 0;
+	}
 
 	/* aess_clk has to be enabled to access hal register.
 	 * Disable the clk after it has been used.
@@ -351,6 +352,8 @@ static struct snd_soc_platform_driver omap_aess_platform = {
 	.stream_event = abe_opp_stream_event,
 };
 
+void driver_deferred_probe_trigger(void);
+
 static void abe_fw_load(const struct firmware *fw, void *context)
 {
 	struct omap_abe *abe = (struct omap_abe *)context;
@@ -370,6 +373,8 @@ static void abe_fw_load(const struct firmware *fw, void *context)
 		dev_err(abe->dev, "failed to register ABE DAIs %d\n", err);
 		snd_soc_unregister_platform(abe->dev);
 	}
+	driver_deferred_probe_trigger();
+
 }
 
 static int abe_engine_probe(struct platform_device *pdev)
