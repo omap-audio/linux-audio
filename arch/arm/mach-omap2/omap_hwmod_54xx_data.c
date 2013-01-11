@@ -19,24 +19,25 @@
 
 #include <linux/io.h>
 #include <linux/platform_data/gpio-omap.h>
+#include <linux/power/smartreflex.h>
+#include <linux/platform_data/omap_ocp2scp.h>
+#include <linux/i2c-omap.h>
 
-#include <plat/omap_hwmod.h>
-#include <plat/cpu.h>
-#include <plat/i2c.h>
-#include <plat/dma.h>
+#include <linux/omap-dma.h>
+
 #include <linux/platform_data/spi-omap2-mcspi.h>
 #include <linux/platform_data/asoc-ti-mcbsp.h>
-#include <plat/mmc.h>
+#include <linux/platform_data/iommu-omap.h>
 #include <plat/dmtimer.h>
-#include <plat/common.h>
-#include <linux/power/smartreflex.h>
 
+#include "omap_hwmod.h"
 #include "omap_hwmod_common_data.h"
-
 #include "cm1_54xx.h"
 #include "cm2_54xx.h"
 #include "prm54xx.h"
 #include "prm-regbits-54xx.h"
+#include "i2c.h"
+#include "mmc.h"
 #include "wd_timer.h"
 
 /* Base offset for all OMAP5 interrupts external to MPUSS */
@@ -5766,12 +5767,12 @@ static struct omap_hwmod_ocp_if *omap54xx_hwmod_ocp_ifs[] __initdata = {
 	&omap54xx_mmc1__l3_main_1,
 	&omap54xx_mmc2__l3_main_1,
 	&omap54xx_mpu__l3_main_1,
-	&omap54xx_bb2d__l3_main_2,
+//	&omap54xx_bb2d__l3_main_2,
 	&omap54xx_debugss__l3_main_2,
 	&omap54xx_dma_system__l3_main_2,
-	&omap54xx_fdif__l3_main_2,
+//	&omap54xx_fdif__l3_main_2,
 	&omap54xx_gpu__l3_main_2,
-	&omap54xx_hsi__l3_main_2,
+//	&omap54xx_hsi__l3_main_2,
 	&omap54xx_ipu__l3_main_2,
 	//&omap54xx_iss__l3_main_2,
 	&omap54xx_iva__l3_main_2,
@@ -5779,7 +5780,7 @@ static struct omap_hwmod_ocp_if *omap54xx_hwmod_ocp_ifs[] __initdata = {
 	&omap54xx_l4_cfg__l3_main_2,
 	&omap54xx_sata__l3_main_2,
 	&omap54xx_usb_host_hs__l3_main_2,
-	&omap54xx_usb_otg_ss__l3_main_2,
+//	&omap54xx_usb_otg_ss__l3_main_2,
 	&omap54xx_l3_main_1__l3_main_3,
 	&omap54xx_l3_main_2__l3_main_3,
 	&omap54xx_l4_cfg__l3_main_3,
@@ -5816,7 +5817,7 @@ static struct omap_hwmod_ocp_if *omap54xx_hwmod_ocp_ifs[] __initdata = {
 	&omap54xx_mpu__emif1,
 	&omap54xx_emif_ocp_fw__emif2,
 	&omap54xx_mpu__emif2,
-	&omap54xx_l4_cfg__fdif,
+//	&omap54xx_l4_cfg__fdif,
 	&omap54xx_l4_wkup__gpio1,
 	&omap54xx_l4_per__gpio2,
 	&omap54xx_l4_per__gpio3,
@@ -5827,7 +5828,7 @@ static struct omap_hwmod_ocp_if *omap54xx_hwmod_ocp_ifs[] __initdata = {
 	&omap54xx_l4_per__gpio8,
 	&omap54xx_l3_main_2__gpmc,
 	&omap54xx_l3_main_2__gpu,
-	&omap54xx_l4_cfg__hsi,
+//	&omap54xx_l4_cfg__hsi,
 	&omap54xx_l4_per__i2c1,
 	&omap54xx_l4_per__i2c2,
 	&omap54xx_l4_per__i2c3,
@@ -5844,10 +5845,10 @@ static struct omap_hwmod_ocp_if *omap54xx_hwmod_ocp_ifs[] __initdata = {
 	&omap54xx_l4_abe__mcbsp2,
 	&omap54xx_l4_abe__mcbsp3,
 	&omap54xx_l4_abe__mcpdm,
-	&omap54xx_l4_per__mcspi1,
-	&omap54xx_l4_per__mcspi2,
-	&omap54xx_l4_per__mcspi3,
-	&omap54xx_l4_per__mcspi4,
+//	&omap54xx_l4_per__mcspi1,
+//	&omap54xx_l4_per__mcspi2,
+//	&omap54xx_l4_per__mcspi3,
+//	&omap54xx_l4_per__mcspi4,
 	&omap54xx_l4_per__mmc1,
 	&omap54xx_l4_per__mmc2,
 	&omap54xx_l4_per__mmc3,
@@ -5859,8 +5860,8 @@ static struct omap_hwmod_ocp_if *omap54xx_hwmod_ocp_ifs[] __initdata = {
 	&omap54xx_l4_cfg__sata,
 	&omap54xx_l4_wkup__scrm,
 	&omap54xx_l3_main_2__sl2if,
-	&omap54xx_l4_abe__slimbus1,
-	&omap54xx_l4_per__slimbus2,
+//	&omap54xx_l4_abe__slimbus1,
+//	&omap54xx_l4_per__slimbus2,
 	&omap54xx_l4_cfg__smartreflex_core,
 	&omap54xx_l4_cfg__smartreflex_mm,
 	&omap54xx_l4_cfg__smartreflex_mpu,
@@ -5883,8 +5884,8 @@ static struct omap_hwmod_ocp_if *omap54xx_hwmod_ocp_ifs[] __initdata = {
 	&omap54xx_l4_per__uart5,
 	&omap54xx_l4_per__uart6,
 	&omap54xx_l4_cfg__usb_host_hs,
-	&omap54xx_l4_cfg__usb_otg_ss,
-	&omap54xx_l4_cfg__usb_tll_hs,
+//	&omap54xx_l4_cfg__usb_otg_ss,
+//	&omap54xx_l4_cfg__usb_tll_hs,
 	&omap54xx_l4_wkup__wd_timer2,
 	&omap54xx_l4_abe__wd_timer3,
 	NULL,
