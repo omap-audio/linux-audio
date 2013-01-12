@@ -310,11 +310,6 @@ static struct omap_hwmod_class omap54xx_aess_hwmod_class = {
 };
 
 /* aess */
-static struct omap_hwmod_irq_info omap54xx_aess_irqs[] = {
-	{ .irq = 99 + OMAP54XX_IRQ_GIC_START },
-	{ .irq = -1 }
-};
-
 static struct omap_hwmod_dma_info omap54xx_aess_sdma_reqs[] = {
 	{ .name = "fifo0", .dma_req = 100 + OMAP54XX_DMA_REQ_START },
 	{ .name = "fifo1", .dma_req = 101 + OMAP54XX_DMA_REQ_START },
@@ -331,7 +326,6 @@ static struct omap_hwmod omap54xx_aess_hwmod = {
 	.name		= "aess",
 	.class		= &omap54xx_aess_hwmod_class,
 	.clkdm_name	= "abe_clkdm",
-	.mpu_irqs	= omap54xx_aess_irqs,
 	.sdma_reqs	= omap54xx_aess_sdma_reqs,
 	.main_clk	= "aess_fclk",
 	.prcm = {
@@ -611,11 +605,6 @@ static struct omap_hwmod_class omap54xx_dmic_hwmod_class = {
 };
 
 /* dmic */
-static struct omap_hwmod_irq_info omap54xx_dmic_irqs[] = {
-	{ .irq = 114 + OMAP54XX_IRQ_GIC_START },
-	{ .irq = -1 }
-};
-
 static struct omap_hwmod_dma_info omap54xx_dmic_sdma_reqs[] = {
 	{ .dma_req = 66 + OMAP54XX_DMA_REQ_START },
 	{ .dma_req = -1 }
@@ -625,7 +614,6 @@ static struct omap_hwmod omap54xx_dmic_hwmod = {
 	.name		= "dmic",
 	.class		= &omap54xx_dmic_hwmod_class,
 	.clkdm_name	= "abe_clkdm",
-	.mpu_irqs	= omap54xx_dmic_irqs,
 	.sdma_reqs	= omap54xx_dmic_sdma_reqs,
 	.main_clk	= "dmic_gfclk",
 	.prcm = {
@@ -1959,12 +1947,6 @@ static struct omap_hwmod_class omap54xx_mcasp_hwmod_class = {
 };
 
 /* mcasp */
-static struct omap_hwmod_irq_info omap54xx_mcasp_irqs[] = {
-	{ .name = "arevt", .irq = 108 + OMAP54XX_IRQ_GIC_START },
-	{ .name = "axevt", .irq = 109 + OMAP54XX_IRQ_GIC_START },
-	{ .irq = -1 }
-};
-
 static struct omap_hwmod_dma_info omap54xx_mcasp_sdma_reqs[] = {
 	{ .name = "axevt", .dma_req = 7 + OMAP54XX_DMA_REQ_START },
 	{ .name = "arevt", .dma_req = 10 + OMAP54XX_DMA_REQ_START },
@@ -1975,7 +1957,6 @@ static struct omap_hwmod omap54xx_mcasp_hwmod = {
 	.name		= "mcasp",
 	.class		= &omap54xx_mcasp_hwmod_class,
 	.clkdm_name	= "abe_clkdm",
-	.mpu_irqs	= omap54xx_mcasp_irqs,
 	.sdma_reqs	= omap54xx_mcasp_sdma_reqs,
 	.main_clk	= "mcasp_gfclk",
 	.prcm = {
@@ -2007,11 +1988,6 @@ static struct omap_hwmod_class omap54xx_mcbsp_hwmod_class = {
 };
 
 /* mcbsp1 */
-static struct omap_hwmod_irq_info omap54xx_mcbsp1_irqs[] = {
-	{ .irq = 17 + OMAP54XX_IRQ_GIC_START },
-	{ .irq = -1 }
-};
-
 static struct omap_hwmod_dma_info omap54xx_mcbsp1_sdma_reqs[] = {
 	{ .name = "tx", .dma_req = 32 + OMAP54XX_DMA_REQ_START },
 	{ .name = "rx", .dma_req = 33 + OMAP54XX_DMA_REQ_START },
@@ -2027,7 +2003,6 @@ static struct omap_hwmod omap54xx_mcbsp1_hwmod = {
 	.name		= "mcbsp1",
 	.class		= &omap54xx_mcbsp_hwmod_class,
 	.clkdm_name	= "abe_clkdm",
-	.mpu_irqs	= omap54xx_mcbsp1_irqs,
 	.sdma_reqs	= omap54xx_mcbsp1_sdma_reqs,
 	.main_clk	= "mcbsp1_gfclk",
 	.prcm = {
@@ -2042,11 +2017,6 @@ static struct omap_hwmod omap54xx_mcbsp1_hwmod = {
 };
 
 /* mcbsp2 */
-static struct omap_hwmod_irq_info omap54xx_mcbsp2_irqs[] = {
-	{ .irq = 22 + OMAP54XX_IRQ_GIC_START },
-	{ .irq = -1 }
-};
-
 static struct omap_hwmod_dma_info omap54xx_mcbsp2_sdma_reqs[] = {
 	{ .name = "tx", .dma_req = 16 + OMAP54XX_DMA_REQ_START },
 	{ .name = "rx", .dma_req = 17 + OMAP54XX_DMA_REQ_START },
@@ -2062,7 +2032,6 @@ static struct omap_hwmod omap54xx_mcbsp2_hwmod = {
 	.name		= "mcbsp2",
 	.class		= &omap54xx_mcbsp_hwmod_class,
 	.clkdm_name	= "abe_clkdm",
-	.mpu_irqs	= omap54xx_mcbsp2_irqs,
 	.sdma_reqs	= omap54xx_mcbsp2_sdma_reqs,
 	.main_clk	= "mcbsp2_gfclk",
 	.prcm = {
@@ -2077,11 +2046,6 @@ static struct omap_hwmod omap54xx_mcbsp2_hwmod = {
 };
 
 /* mcbsp3 */
-static struct omap_hwmod_irq_info omap54xx_mcbsp3_irqs[] = {
-	{ .irq = 23 + OMAP54XX_IRQ_GIC_START },
-	{ .irq = -1 }
-};
-
 static struct omap_hwmod_dma_info omap54xx_mcbsp3_sdma_reqs[] = {
 	{ .name = "tx", .dma_req = 18 + OMAP54XX_DMA_REQ_START },
 	{ .name = "rx", .dma_req = 19 + OMAP54XX_DMA_REQ_START },
@@ -2097,7 +2061,6 @@ static struct omap_hwmod omap54xx_mcbsp3_hwmod = {
 	.name		= "mcbsp3",
 	.class		= &omap54xx_mcbsp_hwmod_class,
 	.clkdm_name	= "abe_clkdm",
-	.mpu_irqs	= omap54xx_mcbsp3_irqs,
 	.sdma_reqs	= omap54xx_mcbsp3_sdma_reqs,
 	.main_clk	= "mcbsp3_gfclk",
 	.prcm = {
@@ -2133,11 +2096,6 @@ static struct omap_hwmod_class omap54xx_mcpdm_hwmod_class = {
 };
 
 /* mcpdm */
-static struct omap_hwmod_irq_info omap54xx_mcpdm_irqs[] = {
-	{ .irq = 112 + OMAP54XX_IRQ_GIC_START },
-	{ .irq = -1 }
-};
-
 static struct omap_hwmod_dma_info omap54xx_mcpdm_sdma_reqs[] = {
 	{ .name = "up_link", .dma_req = 64 + OMAP54XX_DMA_REQ_START },
 	{ .name = "dn_link", .dma_req = 65 + OMAP54XX_DMA_REQ_START },
@@ -2148,7 +2106,6 @@ static struct omap_hwmod omap54xx_mcpdm_hwmod = {
 	.name		= "mcpdm",
 	.class		= &omap54xx_mcpdm_hwmod_class,
 	.clkdm_name	= "abe_clkdm",
-	.mpu_irqs	= omap54xx_mcpdm_irqs,
 	.sdma_reqs	= omap54xx_mcpdm_sdma_reqs,
 	.main_clk	= "pad_clks",
 	.prcm = {
@@ -2680,11 +2637,6 @@ static struct omap_hwmod_class omap54xx_slimbus_hwmod_class = {
 };
 
 /* slimbus1 */
-static struct omap_hwmod_irq_info omap54xx_slimbus1_irqs[] = {
-	{ .irq = 97 + OMAP54XX_IRQ_GIC_START },
-	{ .irq = -1 }
-};
-
 static struct omap_hwmod_dma_info omap54xx_slimbus1_sdma_reqs[] = {
 	{ .name = "tx0", .dma_req = 84 + OMAP54XX_DMA_REQ_START },
 	{ .name = "tx1", .dma_req = 85 + OMAP54XX_DMA_REQ_START },
@@ -2705,7 +2657,6 @@ static struct omap_hwmod omap54xx_slimbus1_hwmod = {
 	.name		= "slimbus1",
 	.class		= &omap54xx_slimbus_hwmod_class,
 	.clkdm_name	= "abe_clkdm",
-	.mpu_irqs	= omap54xx_slimbus1_irqs,
 	.sdma_reqs	= omap54xx_slimbus1_sdma_reqs,
 	.main_clk	= "abe_iclk",
 	.prcm = {
@@ -2720,11 +2671,6 @@ static struct omap_hwmod omap54xx_slimbus1_hwmod = {
 };
 
 /* slimbus2 */
-static struct omap_hwmod_irq_info omap54xx_slimbus2_irqs[] = {
-	{ .irq = 98 + OMAP54XX_IRQ_GIC_START },
-	{ .irq = -1 }
-};
-
 static struct omap_hwmod_dma_info omap54xx_slimbus2_sdma_reqs[] = {
 	{ .name = "tx0", .dma_req = 92 + OMAP54XX_DMA_REQ_START },
 	{ .name = "tx1", .dma_req = 93 + OMAP54XX_DMA_REQ_START },
@@ -2745,7 +2691,6 @@ static struct omap_hwmod omap54xx_slimbus2_hwmod = {
 	.name		= "slimbus2",
 	.class		= &omap54xx_slimbus_hwmod_class,
 	.clkdm_name	= "l4per_clkdm",
-	.mpu_irqs	= omap54xx_slimbus2_irqs,
 	.sdma_reqs	= omap54xx_slimbus2_sdma_reqs,
 	.main_clk	= "l4_div_ck",
 	.prcm = {
