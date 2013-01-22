@@ -111,10 +111,17 @@ static int pwm_backlight_parse_dt(struct device *dev,
 
 	/* determine the number of brightness levels */
 	prop = of_find_property(node, "brightness-levels", &num_levels);
-	if (!prop)
-		return -EINVAL;
+	if (!prop) {
+		/* Levels not provided, look for the maximum property */
+		ret = of_property_read_u32(node, "max-brightness-level",
+					   &value);
+		if (ret < 0)
+			return ret;
 
-	num_levels /= sizeof(u32);
+		data->max_brightness = value;
+	} else {
+		num_levels /= sizeof(u32);
+	}
 
 	/* read brightness levels from DT property */
 	if (num_levels > 0) {
@@ -130,14 +137,13 @@ static int pwm_backlight_parse_dt(struct device *dev,
 			return ret;
 
 		data->max_brightness = num_levels;
-
-		ret = of_property_read_u32(node, "default-brightness-level",
-					   &value);
-		if (ret < 0)
-			return ret;
-
-		data->dft_brightness = value;
 	}
+
+	ret = of_property_read_u32(node, "default-brightness-level", &value);
+	if (ret < 0)
+		return ret;
+
+	data->dft_brightness = value;
 
 	/*
 	 * TODO: Most users of this driver use a number of GPIOs to control
