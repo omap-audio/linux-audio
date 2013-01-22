@@ -135,12 +135,6 @@ static int pwm_backlight_parse_dt(struct device *dev,
 		if (ret < 0)
 			return ret;
 
-		if (value >= data->max_brightness) {
-			dev_warn(dev, "invalid default brightness level: %u, using %u\n",
-				 value, data->max_brightness - 1);
-			value = data->max_brightness - 1;
-		}
-
 		data->dft_brightness = value;
 	}
 
@@ -249,6 +243,12 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 		goto err_alloc;
 	}
 
+	if (data->dft_brightness > data->max_brightness) {
+		dev_warn(&pdev->dev,
+			 "invalid default brightness level: %u, using %u\n",
+			 data->dft_brightness, data->max_brightness);
+		data->dft_brightness = data->max_brightness;
+	}
 	bl->props.brightness = data->dft_brightness;
 	backlight_update_status(bl);
 
