@@ -135,7 +135,6 @@ static int pwm_backlight_parse_dt(struct device *dev,
 			return ret;
 
 		data->dft_brightness = value;
-		data->max_brightness--;
 	}
 
 	/*
@@ -195,6 +194,7 @@ static int pwm_backlight_probe(struct platform_device *pdev)
 	}
 
 	if (data->levels) {
+		data->max_brightness--;
 		max = data->levels[data->max_brightness];
 		pb->levels = data->levels;
 	} else
