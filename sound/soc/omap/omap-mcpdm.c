@@ -445,6 +445,26 @@ static int omap_mcpdm_probe(struct snd_soc_dai *dai)
 	struct omap_mcpdm *mcpdm = snd_soc_dai_get_drvdata(dai);
 	int ret;
 
+#if defined(CONFIG_SND_OMAP_SOC_ABE) ||\
+	defined(CONFIG_SND_OMAP_SOC_ABE_MODULE)
+	mcpdm->abe = omap_abe_port_mgr_get();
+
+	mcpdm->dl_port = omap_abe_port_open(mcpdm->abe,
+					    OMAP_ABE_BE_PORT_PDM_DL1);
+	if (mcpdm->dl_port == NULL) {
+		omap_abe_port_mgr_put(mcpdm->abe);
+		return -EINVAL;
+	}
+
+	mcpdm->ul_port = omap_abe_port_open(mcpdm->abe,
+					    OMAP_ABE_BE_PORT_PDM_UL1);
+	if (mcpdm->ul_port == NULL) {
+		omap_abe_port_close(mcpdm->abe, mcpdm->dl_port);
+		omap_abe_port_mgr_put(mcpdm->abe);
+		return -EINVAL;
+	}
+#endif
+
 	pm_runtime_enable(mcpdm->dev);
 
 	/* Disable lines while request is ongoing */
@@ -459,6 +479,13 @@ static int omap_mcpdm_probe(struct snd_soc_dai *dai)
 	if (ret) {
 		dev_err(mcpdm->dev, "Request for IRQ failed\n");
 		pm_runtime_disable(mcpdm->dev);
+
+#if defined(CONFIG_SND_OMAP_SOC_ABE) ||\
+	defined(CONFIG_SND_OMAP_SOC_ABE_MODULE)
+		omap_abe_port_close(mcpdm->abe, mcpdm->dl_port);
+		omap_abe_port_close(mcpdm->abe, mcpdm->ul_port);
+		omap_abe_port_mgr_put(mcpdm->abe);
+#endif
 	}
 
 	/* Configure McPDM threshold values */
@@ -473,6 +500,13 @@ static int omap_mcpdm_remove(struct snd_soc_dai *dai)
 
 	free_irq(mcpdm->irq, (void *)mcpdm);
 	pm_runtime_disable(mcpdm->dev);
+
+#if defined(CONFIG_SND_OMAP_SOC_ABE) ||\
+	defined(CONFIG_SND_OMAP_SOC_ABE_MODULE)
+	omap_abe_port_close(mcpdm->abe, mcpdm->dl_port);
+	omap_abe_port_close(mcpdm->abe, mcpdm->ul_port);
+	omap_abe_port_mgr_put(mcpdm->abe);
+#endif
 
 	return 0;
 }
@@ -618,52 +652,15 @@ static int asoc_mcpdm_probe(struct platform_device *pdev)
 
 	mcpdm->dev = &pdev->dev;
 
-#if defined(CONFIG_SND_OMAP_SOC_ABE) ||\
-	defined(CONFIG_SND_OMAP_SOC_ABE_MODULE)
-
-	mcpdm->abe = omap_abe_port_mgr_get();
-
-	mcpdm->dl_port = omap_abe_port_open(mcpdm->abe,
-					    OMAP_ABE_BE_PORT_PDM_DL1);
-	if (mcpdm->dl_port == NULL) {
-		omap_abe_port_mgr_put(mcpdm->abe);
-		return -EINVAL;
-	}
-
-	mcpdm->ul_port = omap_abe_port_open(mcpdm->abe,
-					    OMAP_ABE_BE_PORT_PDM_UL1);
-	if (mcpdm->ul_port == NULL) {
-		omap_abe_port_close(mcpdm->abe, mcpdm->dl_port);
-		omap_abe_port_mgr_put(mcpdm->abe);
-		return -EINVAL;
-	}
-#endif
 	ret = snd_soc_register_dais(&pdev->dev, omap_mcpdm_dai,
 				    ARRAY_SIZE(omap_mcpdm_dai));
-	if (!ret)
-		return 0;
 
-#if defined(CONFIG_SND_OMAP_SOC_ABE) ||\
-	defined(CONFIG_SND_OMAP_SOC_ABE_MODULE)
-	omap_abe_port_close(mcpdm->abe, mcpdm->dl_port);
-	omap_abe_port_close(mcpdm->abe, mcpdm->ul_port);
-	omap_abe_port_mgr_put(mcpdm->abe);
-#endif
 	return ret;
 }
 
 static int asoc_mcpdm_remove(struct platform_device *pdev)
 {
-	struct omap_mcpdm *mcpdm = platform_get_drvdata(pdev);
-
 	snd_soc_unregister_dai(&pdev->dev);
-
-#if defined(CONFIG_SND_OMAP_SOC_ABE) ||\
-	defined(CONFIG_SND_OMAP_SOC_ABE_MODULE)
-	omap_abe_port_close(mcpdm->abe, mcpdm->dl_port);
-	omap_abe_port_close(mcpdm->abe, mcpdm->ul_port);
-	omap_abe_port_mgr_put(mcpdm->abe);
-#endif
 
 	return 0;
 }
