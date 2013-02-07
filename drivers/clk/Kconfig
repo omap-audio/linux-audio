@@ -81,6 +81,12 @@ config COMMON_CLK_AXI_CLKGEN
 	  Support for the Analog Devices axi-clkgen pcore clock generator for Xilinx
 	  FPGAs. It is commonly used in Analog Devices' reference designs.
 
+config CLK_PALMAS
+	tristate "Palmas PMIC Clock Support"
+	depends on MFD_PALMAS
+	help
+	   Enable clock support for the two clocks on Palmas PMIC chips
+
 endmenu
 
 source "drivers/clk/mvebu/Kconfig"
