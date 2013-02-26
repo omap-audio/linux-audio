@@ -40,6 +40,7 @@
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
 #include <sound/soc-dpcm.h>
+#include <sound/soc-fw.h>
 #include <sound/initval.h>
 
 #define CREATE_TRACE_POINTS
@@ -1887,6 +1888,9 @@ static int soc_cleanup_card_resources(struct snd_soc_card *card)
 	/* remove and free each DAI */
 	soc_remove_dai_links(card);
 
+	/* remove any dynamic kcontrols */
+	snd_soc_fw_dcontrols_remove_all(card, SND_SOC_FW_INDEX_ALL);
+
 	soc_cleanup_card_debugfs(card);
 
 	/* remove the card */
@@ -2228,6 +2232,9 @@ int snd_soc_set_runtime_hwparams(struct snd_pcm_substream *substream,
 	const struct snd_pcm_hardware *hw)
 {
 	struct snd_pcm_runtime *runtime = substream->runtime;
+	/* TODO: hostless mode - remove from new_pcm() ?*/
+	if (!runtime)
+		return 0;
 	runtime->hw.info = hw->info;
 	runtime->hw.formats = hw->formats;
 	runtime->hw.period_bytes_min = hw->period_bytes_min;
@@ -2410,7 +2417,8 @@ int snd_soc_info_enum_double(struct snd_kcontrol *kcontrol,
 	if (uinfo->value.enumerated.item > e->max - 1)
 		uinfo->value.enumerated.item = e->max - 1;
 	strcpy(uinfo->value.enumerated.name,
-		e->texts[uinfo->value.enumerated.item]);
+		snd_soc_get_enum_text(e, uinfo->value.enumerated.item));
+
 	return 0;
 }
 EXPORT_SYMBOL_GPL(snd_soc_info_enum_double);
@@ -2570,7 +2578,7 @@ int snd_soc_info_enum_ext(struct snd_kcontrol *kcontrol,
 	if (uinfo->value.enumerated.item > e->max - 1)
 		uinfo->value.enumerated.item = e->max - 1;
 	strcpy(uinfo->value.enumerated.name,
-		e->texts[uinfo->value.enumerated.item]);
+		snd_soc_get_enum_text(e, uinfo->value.enumerated.item));
 	return 0;
 }
 EXPORT_SYMBOL_GPL(snd_soc_info_enum_ext);
@@ -3639,6 +3647,7 @@ int snd_soc_register_card(struct snd_soc_card *card)
 	if (card->rtd == NULL)
 		return -ENOMEM;
 	card->num_rtd = 0;
+
 	card->rtd_aux = &card->rtd[card->num_links];
 
 	for (i = 0; i < card->num_links; i++)
@@ -3646,6 +3655,8 @@ int snd_soc_register_card(struct snd_soc_card *card)
 
 	INIT_LIST_HEAD(&card->list);
 	INIT_LIST_HEAD(&card->dapm_dirty);
+	INIT_LIST_HEAD(&card->denums);
+	INIT_LIST_HEAD(&card->dmixers);
 	card->instantiated = 0;
 	mutex_init(&card->mutex);
 	mutex_init(&card->dapm_mutex);
@@ -3929,6 +3940,8 @@ int snd_soc_register_platform(struct device *dev,
 	platform->dapm.platform = platform;
 	platform->dapm.stream_event = platform_drv->stream_event;
 	mutex_init(&platform->mutex);
+	INIT_LIST_HEAD(&platform->denums);
+	INIT_LIST_HEAD(&platform->dmixers);
 
 	mutex_lock(&client_mutex);
 	list_add(&platform->list, &platform_list);
@@ -4046,6 +4059,8 @@ int snd_soc_register_codec(struct device *dev,
 	codec->driver = codec_drv;
 	codec->num_dai = num_dai;
 	mutex_init(&codec->mutex);
+	INIT_LIST_HEAD(&codec->denums);
+	INIT_LIST_HEAD(&codec->dmixers);
 
 	/* allocate CODEC register cache */
 	if (codec_drv->reg_cache_size && codec_drv->reg_word_size) {
@@ -4136,6 +4151,38 @@ found:
 	kfree(codec);
 }
 EXPORT_SYMBOL_GPL(snd_soc_unregister_codec);
+
+int snd_soc_card_new_dai_links(struct snd_soc_card *card,
+	struct snd_soc_dai_link *new, int count)
+{
+	struct snd_soc_dai_link *links;
+	size_t bytes;
+
+	bytes = (count + card->num_links) * sizeof(struct snd_soc_dai_link);
+	links = devm_kzalloc(card->dev, bytes, GFP_KERNEL);
+	if (!links)
+		return -ENOMEM;
+
+	if (card->dai_link) {
+		memcpy(links, card->dai_link,
+			card->num_links * sizeof(struct snd_soc_dai_link));
+		devm_kfree(card->dev, card->dai_link);
+	}
+	memcpy(links + card->num_links, new,
+		count * sizeof(struct snd_soc_dai_link));
+	card->dai_link = links;
+	card->num_links += count;
+
+	return 0;
+}
+EXPORT_SYMBOL_GPL(snd_soc_card_new_dai_links);
+
+void snd_soc_card_reset_dai_links(struct snd_soc_card *card)
+{
+	card->dai_link = NULL;
+	card->num_links = 0;
+}
+EXPORT_SYMBOL_GPL(snd_soc_card_reset_dai_links);
 
 /* Retrieve a card's name from device tree */
 int snd_soc_of_parse_card_name(struct snd_soc_card *card,
