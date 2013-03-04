@@ -43,6 +43,9 @@
 #include "omap-pcm.h"
 #include "omap-dmic.h"
 
+#define OMAP_DMIC_LEGACY_DAI	0
+#define OMAP_DMIC_ABE_DAI	1
+
 struct omap_dmic {
 	struct device *dev;
 	void __iomem *io_base;
@@ -53,7 +56,9 @@ struct omap_dmic {
 	int sysclk;
 	int threshold;
 	u32 ch_enabled;
-	bool active;
+	int active;
+	bool active_dai;
+	int running;
 	struct mutex mutex;
 };
 
@@ -94,7 +99,6 @@ static inline void omap_dmic_stop(struct omap_dmic *dmic)
 	/* Disable DMA request generation */
 	omap_dmic_write(dmic, OMAP_DMIC_DMAENABLE_CLR_REG,
 			OMAP_DMIC_DMA_ENABLE);
-
 }
 
 static inline int dmic_is_enabled(struct omap_dmic *dmic)
@@ -111,10 +115,20 @@ static int omap_dmic_dai_startup(struct snd_pcm_substream *substream,
 
 	mutex_lock(&dmic->mutex);
 
-	if (!dai->active)
-		dmic->active = 1;
-	else
-		ret = -EBUSY;
+	if (!dmic->active++) {
+		dmic->active_dai = dai->id;
+		/* DMIC FIFO configuration */
+		if (dai->id == OMAP_DMIC_LEGACY_DAI)
+			dmic->threshold = OMAP_DMIC_THRES_MAX - 3;
+		else
+			dmic->threshold = 2;
+	} else if (dmic->active_dai != dai->id) {
+		dev_err(dmic->dev, "Trying %s, while DMIC is in %s.\n",
+			dai->id ? "ABE mode" : "Legacy mode",
+			dmic->active_dai ? "ABE mode" : "Legacy mode");
+		dmic->active--;
+		ret = -EINVAL;
+	}
 
 	mutex_unlock(&dmic->mutex);
 
@@ -129,8 +143,7 @@ static void omap_dmic_dai_shutdown(struct snd_pcm_substream *substream,
 
 	mutex_lock(&dmic->mutex);
 
-	if (!dai->active)
-		dmic->active = 0;
+	dmic->active--;
 
 	mutex_unlock(&dmic->mutex);
 }
@@ -204,7 +217,7 @@ static int omap_dmic_dai_hw_params(struct snd_pcm_substream *substream,
 {
 	struct omap_dmic *dmic = snd_soc_dai_get_drvdata(dai);
 	struct omap_pcm_dma_data *dma_data;
-	int channels;
+	int channels, select_channels;
 
 	dmic->clk_div = omap_dmic_select_divider(dmic, params_rate(params));
 	if (dmic->clk_div < 0) {
@@ -215,7 +228,12 @@ static int omap_dmic_dai_hw_params(struct snd_pcm_substream *substream,
 
 	dmic->ch_enabled = 0;
 	channels = params_channels(params);
-	switch (channels) {
+	if (dai->id == OMAP_DMIC_LEGACY_DAI)
+		select_channels = channels;
+	else
+		select_channels = 6;
+
+	switch (select_channels) {
 	case 6:
 		dmic->ch_enabled |= OMAP_DMIC_UP3_ENABLE;
 	case 4:
@@ -240,6 +258,10 @@ static int omap_dmic_dai_prepare(struct snd_pcm_substream *substream,
 {
 	struct omap_dmic *dmic = snd_soc_dai_get_drvdata(dai);
 	u32 ctrl;
+
+	/* Do not alter the configuration runtime */
+	if (dmic_is_enabled(dmic))
+		return 0;
 
 	/* Configure uplink threshold */
 	omap_dmic_write(dmic, OMAP_DMIC_FIFO_CTRL_REG, dmic->threshold);
@@ -271,10 +293,12 @@ static int omap_dmic_dai_trigger(struct snd_pcm_substream *substream,
 
 	switch (cmd) {
 	case SNDRV_PCM_TRIGGER_START:
-		omap_dmic_start(dmic);
+		if (!dmic->running++)
+			omap_dmic_start(dmic);
 		break;
 	case SNDRV_PCM_TRIGGER_STOP:
-		omap_dmic_stop(dmic);
+		if (!--dmic->running)
+			omap_dmic_stop(dmic);
 		break;
 	default:
 		break;
@@ -420,8 +444,6 @@ static int omap_dmic_probe(struct snd_soc_dai *dai)
 	omap_dmic_write(dmic, OMAP_DMIC_CTRL_REG, 0x00);
 	pm_runtime_put_sync(dmic->dev);
 
-	/* Configure DMIC threshold value */
-	dmic->threshold = OMAP_DMIC_THRES_MAX - 3;
 	return 0;
 }
 
@@ -434,8 +456,10 @@ static int omap_dmic_remove(struct snd_soc_dai *dai)
 	return 0;
 }
 
-static struct snd_soc_dai_driver omap_dmic_dai = {
+static struct snd_soc_dai_driver omap_dmic_dai[] = {
+{
 	.name = "omap-dmic",
+	.id	= OMAP_DMIC_LEGACY_DAI,
 	.probe = omap_dmic_probe,
 	.remove = omap_dmic_remove,
 	.capture = {
@@ -446,13 +470,26 @@ static struct snd_soc_dai_driver omap_dmic_dai = {
 		.sig_bits = 24,
 	},
 	.ops = &omap_dmic_dai_ops,
+},
+{
+	.name = "omap-dmic-abe-dai",
+	.id	= OMAP_DMIC_ABE_DAI,
+	.capture = {
+		.stream_name = "omap-dmic-abe Capture",
+		.channels_min = 2,
+		.channels_max = 2,
+		.rates = SNDRV_PCM_RATE_96000 | SNDRV_PCM_RATE_192000,
+		.formats = SNDRV_PCM_FMTBIT_S32_LE,
+	},
+	.ops = &omap_dmic_dai_ops,
+},
 };
 
 static int asoc_dmic_probe(struct platform_device *pdev)
 {
 	struct omap_dmic *dmic;
 	struct resource *res;
-	int ret;
+	int ret, nr_dai;
 
 	dmic = devm_kzalloc(&pdev->dev, sizeof(struct omap_dmic), GFP_KERNEL);
 	if (!dmic)
@@ -500,7 +537,13 @@ static int asoc_dmic_probe(struct platform_device *pdev)
 		goto err_put_clk;
 	}
 
-	ret = snd_soc_register_dai(&pdev->dev, &omap_dmic_dai);
+#if defined(CONFIG_SND_OMAP_SOC_ABE) ||\
+	defined(CONFIG_SND_OMAP_SOC_ABE_MODULE)
+	nr_dai = ARRAY_SIZE(omap_dmic_dai);
+#else
+	nr_dai = 1;
+#endif
+	ret = snd_soc_register_dais(&pdev->dev, omap_dmic_dai, nr_dai);
 	if (ret)
 		goto err_put_clk;
 
@@ -515,7 +558,7 @@ static int asoc_dmic_remove(struct platform_device *pdev)
 {
 	struct omap_dmic *dmic = platform_get_drvdata(pdev);
 
-	snd_soc_unregister_dai(&pdev->dev);
+	snd_soc_unregister_dais(&pdev->dev, ARRAY_SIZE(omap_dmic_dai));
 	clk_put(dmic->fclk);
 
 	return 0;
