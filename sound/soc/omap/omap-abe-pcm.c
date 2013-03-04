@@ -1080,6 +1080,7 @@ static int omap_abe_dai_resume(struct snd_soc_dai *dai)
 static int omap_abe_dai_probe(struct snd_soc_dai *dai)
 {
 	struct omap_abe *abe = snd_soc_dai_get_drvdata(dai);
+	int ret = 0;
 	int i;
 
 	abe->aess = omap_abe_port_mgr_get();
@@ -1089,8 +1090,10 @@ static int omap_abe_dai_probe(struct snd_soc_dai *dai)
 	for (i = 0; i <= OMAP_ABE_MAX_PORT_ID; i++) {
 
 		abe->dai.port[i] = omap_abe_port_open(abe->aess, i);
-		if (abe->dai.port[i] == NULL)
+		if (IS_ERR(abe->dai.port[i])) {
+			ret = PTR_ERR(abe->dai.port[i]);
 			goto err_port;
+		}
 	}
 
 	return 0;
@@ -1100,7 +1103,7 @@ err_port:
 		omap_abe_port_close(abe->aess, abe->dai.port[i]);
 	omap_abe_port_mgr_put(abe->aess);
 err:
-	return -ENODEV;
+	return ret;
 }
 
 static int omap_abe_dai_remove(struct snd_soc_dai *dai)

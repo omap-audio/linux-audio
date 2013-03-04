@@ -446,17 +446,17 @@ static int omap_mcpdm_probe(struct snd_soc_dai *dai)
 
 	mcpdm->dl_port = omap_abe_port_open(mcpdm->aess,
 					    OMAP_ABE_BE_PORT_PDM_DL1);
-	if (mcpdm->dl_port == NULL) {
+	if (IS_ERR(mcpdm->dl_port)) {
 		omap_abe_port_mgr_put(mcpdm->aess);
-		return -EINVAL;
+		return PTR_ERR(mcpdm->dl_port);
 	}
 
 	mcpdm->ul_port = omap_abe_port_open(mcpdm->aess,
 					    OMAP_ABE_BE_PORT_PDM_UL1);
-	if (mcpdm->ul_port == NULL) {
+	if (IS_ERR(mcpdm->ul_port)) {
 		omap_abe_port_close(mcpdm->aess, mcpdm->dl_port);
 		omap_abe_port_mgr_put(mcpdm->aess);
-		return -EINVAL;
+		return PTR_ERR(mcpdm->ul_port);
 	}
 
 	pm_runtime_enable(mcpdm->dev);

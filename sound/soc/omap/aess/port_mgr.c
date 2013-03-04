@@ -219,17 +219,17 @@ struct omap_abe_port *omap_abe_port_open(struct omap_aess *abe, int logical_id)
 
 	if (logical_id < 0 || logical_id > OMAP_ABE_MAX_PORT_ID) {
 		pr_err("invalid logical port %d\n", logical_id);
-		return NULL;
+		return ERR_PTR(-EINVAL);
 	}
 
 	if (port_is_open(abe, logical_id)) {
 		pr_err("logical port %d already open\n", logical_id);
-		return NULL;
+		return ERR_PTR(-EBUSY);
 	}
 
 	port = kzalloc(sizeof(struct omap_abe_port), GFP_KERNEL);
 	if (port == NULL)
-		return NULL;
+		return ERR_PTR(-ENOMEM);
 
 	port->logical_id = logical_id;
 	port->physical_id = get_physical_id(logical_id);
