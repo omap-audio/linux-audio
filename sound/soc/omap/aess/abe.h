@@ -133,39 +133,6 @@ struct omap_aess_mapping {
 	int *asrc;
 };
 
-/* structure used for client port info */
-struct omap_abe_port {
-
-	/* logical and physical port IDs that correspond this port */
-	int logical_id;
-	int physical_id;
-	int physical_users;
-
-	/* enabled or disabled */
-	enum port_state state;
-
-	/* logical port ref count */
-	int users;
-
-	struct list_head list;
-	struct omap_aess *abe;
-	struct snd_pcm_substream *substream;
-
-#ifdef CONFIG_DEBUG_FS
-	struct dentry *debugfs_lstate;
-	struct dentry *debugfs_lphy;
-	struct dentry *debugfs_lusers;
-#endif
-};
-
-struct omap_abe_port *omap_abe_port_open(struct omap_aess *aess, int logical_id);
-void omap_abe_port_close(struct omap_aess *aess, struct omap_abe_port *port);
-int omap_abe_port_enable(struct omap_aess *aess, struct omap_abe_port *port);
-int omap_abe_port_disable(struct omap_aess *aess, struct omap_abe_port *port);
-int omap_abe_port_is_enabled(struct omap_aess *aess, struct omap_abe_port *port);
-struct omap_aess *omap_abe_port_mgr_get(void);
-void omap_abe_port_mgr_put(struct omap_aess *aess);
-
 /* main ABE structure */
 struct omap_aess {
 	struct device *dev;
@@ -203,6 +170,39 @@ struct omap_aess {
 	struct dentry *debugfs_root;
 #endif
 };
+
+/* structure used for client port info */
+struct omap_abe_port {
+
+	/* logical and physical port IDs that correspond this port */
+	int logical_id;
+	int physical_id;
+	int physical_users;
+
+	/* enabled or disabled */
+	enum port_state state;
+
+	/* logical port ref count */
+	int users;
+
+	struct list_head list;
+	struct omap_aess *abe;
+	struct snd_pcm_substream *substream;
+
+#ifdef CONFIG_DEBUG_FS
+	struct dentry *debugfs_lstate;
+	struct dentry *debugfs_lphy;
+	struct dentry *debugfs_lusers;
+#endif
+};
+
+struct omap_abe_port *omap_abe_port_open(struct omap_aess *aess, int logical_id);
+void omap_abe_port_close(struct omap_aess *aess, struct omap_abe_port *port);
+int omap_abe_port_enable(struct omap_aess *aess, struct omap_abe_port *port);
+int omap_abe_port_disable(struct omap_aess *aess, struct omap_abe_port *port);
+int omap_abe_port_is_enabled(struct omap_aess *aess, struct omap_abe_port *port);
+struct omap_aess *omap_abe_port_mgr_get(void);
+void omap_abe_port_mgr_put(struct omap_aess *aess);
 
 struct omap_aess_equ {
 	/* type of filter */
