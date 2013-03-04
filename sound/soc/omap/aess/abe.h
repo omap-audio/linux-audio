@@ -196,13 +196,55 @@ struct omap_abe_port {
 #endif
 };
 
-struct omap_abe_port *omap_abe_port_open(struct omap_aess *aess, int logical_id);
+#if IS_ENABLED(CONFIG_SND_OMAP_SOC_ABE)
+struct omap_abe_port *omap_abe_port_open(struct omap_aess *aess,
+					 int logical_id);
 void omap_abe_port_close(struct omap_aess *aess, struct omap_abe_port *port);
 int omap_abe_port_enable(struct omap_aess *aess, struct omap_abe_port *port);
 int omap_abe_port_disable(struct omap_aess *aess, struct omap_abe_port *port);
-int omap_abe_port_is_enabled(struct omap_aess *aess, struct omap_abe_port *port);
+int omap_abe_port_is_enabled(struct omap_aess *aess,
+			     struct omap_abe_port *port);
 struct omap_aess *omap_abe_port_mgr_get(void);
 void omap_abe_port_mgr_put(struct omap_aess *aess);
+#else
+static inline struct omap_abe_port *omap_abe_port_open(struct omap_aess *aess,
+						       int logical_id)
+{
+	return NULL;
+}
+
+static inline void omap_abe_port_close(struct omap_aess *aess,
+				       struct omap_abe_port *port)
+{
+}
+
+static inline int omap_abe_port_enable(struct omap_aess *aess,
+				       struct omap_abe_port *port)
+{
+	return 0;
+}
+
+static inline int omap_abe_port_disable(struct omap_aess *aess,
+					struct omap_abe_port *port)
+{
+	return 0;
+}
+
+static inline int omap_abe_port_is_enabled(struct omap_aess *aess,
+					   struct omap_abe_port *port)
+{
+	return 0;
+}
+
+static inline struct omap_aess *omap_abe_port_mgr_get(void)
+{
+	return NULL;
+}
+
+static inline void omap_abe_port_mgr_put(struct omap_aess *aess)
+{
+}
+#endif /* IS_ENABLED(CONFIG_SND_OMAP_SOC_ABE) */
 
 struct omap_aess_equ {
 	/* type of filter */
