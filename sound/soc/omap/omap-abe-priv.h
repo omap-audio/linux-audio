@@ -354,7 +354,7 @@ struct omap_abe {
 
 	/* firmware */
 	struct fw_header hdr;
-	u32 *fw_config;
+	const void *fw_config;
 	const void *fw_data;
 	const struct firmware *fw;
 	int num_equ;
