@@ -186,7 +186,7 @@ struct omap_abe_port {
 	int users;
 
 	struct list_head list;
-	struct omap_aess *abe;
+	struct omap_aess *aess;
 	struct snd_pcm_substream *substream;
 
 #ifdef CONFIG_DEBUG_FS

@@ -39,7 +39,7 @@ static const char *lport_name[] = {
 };
 
 static DEFINE_MUTEX(port_mgr_mutex);
-static struct omap_aess *the_abe = NULL;
+static struct omap_aess *the_aess = NULL;
 static int users = 0;
 
 /*
@@ -93,23 +93,23 @@ static int get_physical_id(int logical_id)
  * Get the number of enabled users of the physical port shared by this client.
  * Locks held by callers.
  */
-static int port_get_num_users(struct omap_aess *abe, struct omap_abe_port *port)
+static int port_get_num_users(struct omap_aess *aess, struct omap_abe_port *port)
 {
 	struct omap_abe_port *p;
 	int users = 0;
 
-	list_for_each_entry(p, &abe->ports, list) {
+	list_for_each_entry(p, &aess->ports, list) {
 		if (p->physical_id == port->physical_id && p->state == PORT_ENABLED)
 			users++;
 	}
 	return users;
 }
 
-static int port_is_open(struct omap_aess *abe, int phy_port)
+static int port_is_open(struct omap_aess *aess, int phy_port)
 {
 	struct omap_abe_port *p;
 
-	list_for_each_entry(p, &abe->ports, list) {
+	list_for_each_entry(p, &aess->ports, list) {
 		if (p->physical_id == phy_port && p->state == PORT_ENABLED)
 			return 1;
 	}
@@ -120,21 +120,21 @@ static int port_is_open(struct omap_aess *abe, int phy_port)
  * Check whether the physical port is enabled for this PHY port ID.
  * Locks held by callers.
  */
-int omap_abe_port_is_enabled(struct omap_aess *abe, struct omap_abe_port *port)
+int omap_abe_port_is_enabled(struct omap_aess *aess, struct omap_abe_port *port)
 {
 	struct omap_abe_port *p;
 	unsigned long flags;
 
-	spin_lock_irqsave(&abe->lock, flags);
+	spin_lock_irqsave(&aess->lock, flags);
 
-	list_for_each_entry(p, &abe->ports, list) {
+	list_for_each_entry(p, &aess->ports, list) {
 		if (p->physical_id == port->physical_id && p->state == PORT_ENABLED) {
-			spin_unlock_irqrestore(&abe->lock, flags);
+			spin_unlock_irqrestore(&aess->lock, flags);
 			return 1;
 		}
 	}
 
-	spin_unlock_irqrestore(&abe->lock, flags);
+	spin_unlock_irqrestore(&aess->lock, flags);
 	return 0;
 }
 EXPORT_SYMBOL(omap_abe_port_is_enabled);
@@ -142,10 +142,10 @@ EXPORT_SYMBOL(omap_abe_port_is_enabled);
 /*
  * omap_abe_port_enable - enable ABE logical port
  *
- * @abe -  ABE.
+ * aess -  AESS.
  * @port - logical ABE port ID to be enabled.
  */
-int omap_abe_port_enable(struct omap_aess *abe, struct omap_abe_port *port)
+int omap_abe_port_enable(struct omap_aess *aess, struct omap_abe_port *port)
 {
 	int ret = 0;
 	unsigned long flags;
@@ -154,18 +154,18 @@ int omap_abe_port_enable(struct omap_aess *abe, struct omap_abe_port *port)
 	pr_debug("port %s increment count %d\n",
 		 lport_name[port->logical_id], port->users);
 
-	spin_lock_irqsave(&abe->lock, flags);
-	if (port->users == 0 && port_get_num_users(abe, port) == 0) {
+	spin_lock_irqsave(&aess->lock, flags);
+	if (port->users == 0 && port_get_num_users(aess, port) == 0) {
 
 		/* enable the physical port */
 		pr_debug("port %s phy port %d enabled\n",
 			 lport_name[port->logical_id], port->physical_id);
-		omap_aess_enable_data_transfer(abe, port->physical_id);
+		omap_aess_enable_data_transfer(aess, port->physical_id);
 	}
 
 	port->state = PORT_ENABLED;
 	port->users++;
-	spin_unlock_irqrestore(&abe->lock, flags);
+	spin_unlock_irqrestore(&aess->lock, flags);
 	return ret;
 }
 EXPORT_SYMBOL(omap_abe_port_enable);
@@ -173,10 +173,10 @@ EXPORT_SYMBOL(omap_abe_port_enable);
 /*
  * omap_abe_port_disable - disable ABE logical port
  *
- * @abe -  ABE.
+ * aess -  ABE.
  * @port - logical ABE port ID to be disabled.
  */
-int omap_abe_port_disable(struct omap_aess *abe, struct omap_abe_port *port)
+int omap_abe_port_disable(struct omap_aess *aess, struct omap_abe_port *port)
 {
 	int ret = 0;
 	unsigned long flags;
@@ -185,19 +185,19 @@ int omap_abe_port_disable(struct omap_aess *abe, struct omap_abe_port *port)
 	pr_debug("port %s decrement count %d\n",
 		 lport_name[port->logical_id], port->users);
 
-	spin_lock_irqsave(&abe->lock, flags);
+	spin_lock_irqsave(&aess->lock, flags);
 
-	if (port->users == 1 && port_get_num_users(abe, port) == 1) {
+	if (port->users == 1 && port_get_num_users(aess, port) == 1) {
 		/* disable the physical port */
 		pr_debug("port %s phy port %d disabled\n",
 			 lport_name[port->logical_id], port->physical_id);
 
-		omap_aess_disable_data_transfer(abe, port->physical_id);
+		omap_aess_disable_data_transfer(aess, port->physical_id);
 	}
 
 	port->state = PORT_DISABLED;
 	port->users--;
-	spin_unlock_irqrestore(&abe->lock, flags);
+	spin_unlock_irqrestore(&aess->lock, flags);
 	return ret;
 }
 EXPORT_SYMBOL(omap_abe_port_disable);
@@ -208,7 +208,7 @@ EXPORT_SYMBOL(omap_abe_port_disable);
  * @abe -  ABE.
  * @logical_id - logical ABE port ID to be opened.
  */
-struct omap_abe_port *omap_abe_port_open(struct omap_aess *abe, int logical_id)
+struct omap_abe_port *omap_abe_port_open(struct omap_aess *aess, int logical_id)
 {
 	struct omap_abe_port *port;
 	unsigned long flags;
@@ -222,7 +222,7 @@ struct omap_abe_port *omap_abe_port_open(struct omap_aess *abe, int logical_id)
 		return ERR_PTR(-EINVAL);
 	}
 
-	if (port_is_open(abe, logical_id)) {
+	if (port_is_open(aess, logical_id)) {
 		pr_err("logical port %d already open\n", logical_id);
 		return ERR_PTR(-EBUSY);
 	}
@@ -234,23 +234,23 @@ struct omap_abe_port *omap_abe_port_open(struct omap_aess *abe, int logical_id)
 	port->logical_id = logical_id;
 	port->physical_id = get_physical_id(logical_id);
 	port->state = PORT_DISABLED;
-	port->abe = abe;
+	port->aess = aess;
 
-	spin_lock_irqsave(&abe->lock, flags);
-	list_add(&port->list, &abe->ports);
-	spin_unlock_irqrestore(&abe->lock, flags);
-	port->physical_users = port_get_num_users(abe, port);
+	spin_lock_irqsave(&aess->lock, flags);
+	list_add(&port->list, &aess->ports);
+	spin_unlock_irqrestore(&aess->lock, flags);
+	port->physical_users = port_get_num_users(aess, port);
 
 #ifdef CONFIG_DEBUG_FS
 	sprintf(debug_fs_name, "%s_state", lport_name[logical_id]);
 	port->debugfs_lstate = debugfs_create_u32(debug_fs_name, 0644,
-			abe->debugfs_root, &port->state);
+			aess->debugfs_root, &port->state);
 	sprintf(debug_fs_name, "%s_phy", lport_name[logical_id]);
 	port->debugfs_lphy = debugfs_create_u32(debug_fs_name, 0644,
-			abe->debugfs_root, &port->physical_id);
+			aess->debugfs_root, &port->physical_id);
 	sprintf(debug_fs_name, "%s_users", lport_name[logical_id]);
 	port->debugfs_lusers = debugfs_create_u32(debug_fs_name, 0644,
-			abe->debugfs_root, &port->users);
+			aess->debugfs_root, &port->users);
 #endif
 
 	pr_debug("opened port %s\n", lport_name[logical_id]);
@@ -263,16 +263,16 @@ EXPORT_SYMBOL(omap_abe_port_open);
  *
  * @port - logical ABE port to be closed (and disabled).
  */
-void omap_abe_port_close(struct omap_aess *abe, struct omap_abe_port *port)
+void omap_abe_port_close(struct omap_aess *aess, struct omap_abe_port *port)
 {
 	unsigned long flags;
 
 	/* disable the port */
-	omap_abe_port_disable(abe, port);
+	omap_abe_port_disable(aess, port);
 
-	spin_lock_irqsave(&abe->lock, flags);
+	spin_lock_irqsave(&aess->lock, flags);
 	list_del(&port->list);
-	spin_unlock_irqrestore(&abe->lock, flags);
+	spin_unlock_irqrestore(&aess->lock, flags);
 
 	pr_debug("closed port %s\n", lport_name[port->logical_id]);
 	kfree(port);
@@ -281,52 +281,52 @@ EXPORT_SYMBOL(omap_abe_port_close);
 
 static struct omap_aess *omap_abe_port_mgr_init(void)
 {
-	struct omap_aess *abe;
+	struct omap_aess *aess;
 
-	abe = kzalloc(sizeof(struct omap_aess), GFP_KERNEL);
-	if (abe == NULL)
+	aess = kzalloc(sizeof(struct omap_aess), GFP_KERNEL);
+	if (aess == NULL)
 		return NULL;
 
-	spin_lock_init(&abe->lock);
+	spin_lock_init(&aess->lock);
 
-	INIT_LIST_HEAD(&abe->ports);
-	the_abe = abe;
+	INIT_LIST_HEAD(&aess->ports);
+	the_aess = aess;
 
 #ifdef CONFIG_DEBUG_FS
-	abe->debugfs_root = debugfs_create_dir("abe_port", NULL);
-	if (!abe->debugfs_root)
+	aess->debugfs_root = debugfs_create_dir("abe_port", NULL);
+	if (!aess->debugfs_root)
 		pr_debug("Failed to create port manager debugfs directory\n");
 #endif
-	return abe;
+	return aess;
 }
 
-static void omap_abe_port_mgr_free(struct omap_aess *abe)
+static void omap_abe_port_mgr_free(struct omap_aess *aess)
 {
 #ifdef CONFIG_DEBUG_FS
-	debugfs_remove_recursive(abe->debugfs_root);
+	debugfs_remove_recursive(aess->debugfs_root);
 #endif
-	kfree(abe);
-	the_abe = NULL;
+	kfree(aess);
+	the_aess = NULL;
 }
 
 struct omap_aess *omap_abe_port_mgr_get(void)
 {
-	struct omap_aess *abe;
+	struct omap_aess *aess;
 
 	mutex_lock(&port_mgr_mutex);
 
-	if (the_abe)
-		abe = the_abe;
+	if (the_aess)
+		aess = the_aess;
 	else
-		abe = omap_abe_port_mgr_init();
+		aess = omap_abe_port_mgr_init();
 
 	users++;
 	mutex_unlock(&port_mgr_mutex);
-	return abe;
+	return aess;
 }
 EXPORT_SYMBOL(omap_abe_port_mgr_get);
 
-void omap_abe_port_mgr_put(struct omap_aess *abe)
+void omap_abe_port_mgr_put(struct omap_aess *aess)
 {
 	mutex_lock(&port_mgr_mutex);
 
@@ -334,7 +334,7 @@ void omap_abe_port_mgr_put(struct omap_aess *abe)
 		goto out;
 
 	if (--users == 0)
-		omap_abe_port_mgr_free(abe);
+		omap_abe_port_mgr_free(aess);
 
 out:
 	mutex_unlock(&port_mgr_mutex);
