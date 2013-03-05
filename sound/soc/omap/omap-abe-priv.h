@@ -386,8 +386,5 @@ void omap_abe_dc_set_hf_offset(struct snd_soc_platform *platform,
 void omap_abe_set_dl1_gains(struct snd_soc_platform *platform,
 	int left, int right);
 
-
-extern const struct snd_soc_fw_kcontrol_ops abe_ops[];
-
 #endif  /* __kernel__ */
 #endif	/* End of __OMAP_MCPDM_H__ */

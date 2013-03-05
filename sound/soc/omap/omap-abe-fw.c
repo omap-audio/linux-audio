@@ -450,7 +450,7 @@ static int abe_put_equalizer(struct snd_kcontrol *kcontrol,
 	return 1;
 }
 
-const struct snd_soc_fw_kcontrol_ops abe_ops[] = {
+static const struct snd_soc_fw_kcontrol_ops abe_ops[] = {
 	{OMAP_CONTROL_DEFAULT,	abe_get_mixer,	abe_put_mixer, NULL},
 	{OMAP_CONTROL_VOLUME,	volume_get_mixer, volume_put_mixer, NULL},
 	{OMAP_CONTROL_ROUTER,	ul_mux_get_route, ul_mux_put_route, NULL},
@@ -460,3 +460,155 @@ const struct snd_soc_fw_kcontrol_ops abe_ops[] = {
 	{OMAP_CONTROL_SWITCH,	NULL, abe_put_switch, NULL},
 };
 
+static int abe_load_coeffs(struct snd_soc_platform *platform,
+	struct snd_soc_fw_hdr *hdr)
+{
+	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	const struct snd_soc_file_coeff_data *cd = snd_soc_fw_get_data(hdr);
+	const void *coeff_data = cd + 1;
+
+	dev_dbg(platform->dev,"coeff %d size 0x%x with %d elems\n",
+		cd->id, cd->size, cd->count);
+
+	switch (cd->id) {
+	case OMAP_AESS_CMEM_DL1_COEFS_ID:
+		abe->equ.dl1.profile_size = cd->size / cd->count;
+		abe->equ.dl1.num_profiles = cd->count;
+		abe->equ.dl1.coeff_data = kmalloc(cd->size, GFP_KERNEL);
+		if (abe->equ.dl1.coeff_data == NULL)
+			return -ENOMEM;
+		memcpy(abe->equ.dl1.coeff_data, coeff_data, cd->size);
+		break;
+	case OMAP_AESS_CMEM_DL2_L_COEFS_ID:
+		abe->equ.dl2l.profile_size = cd->size / cd->count;
+		abe->equ.dl2l.num_profiles = cd->count;
+		abe->equ.dl2l.coeff_data = kmalloc(cd->size, GFP_KERNEL);
+		if (abe->equ.dl2l.coeff_data == NULL)
+			return -ENOMEM;
+		memcpy(abe->equ.dl2l.coeff_data, coeff_data, cd->size);
+		break;
+	case OMAP_AESS_CMEM_DL2_R_COEFS_ID:
+		abe->equ.dl2r.profile_size = cd->size / cd->count;
+		abe->equ.dl2r.num_profiles = cd->count;
+		abe->equ.dl2r.coeff_data = kmalloc(cd->size, GFP_KERNEL);
+		if (abe->equ.dl2r.coeff_data == NULL)
+			return -ENOMEM;
+		memcpy(abe->equ.dl2r.coeff_data, coeff_data, cd->size);
+		break;
+	case OMAP_AESS_CMEM_SDT_COEFS_ID:
+		abe->equ.sdt.profile_size = cd->size / cd->count;
+		abe->equ.sdt.num_profiles = cd->count;
+		abe->equ.sdt.coeff_data = kmalloc(cd->size, GFP_KERNEL);
+		if (abe->equ.sdt.coeff_data == NULL)
+			return -ENOMEM;
+		memcpy(abe->equ.sdt.coeff_data, coeff_data, cd->size);
+		break;
+	case OMAP_AESS_CMEM_96_48_AMIC_COEFS_ID:
+		abe->equ.amic.profile_size = cd->size / cd->count;
+		abe->equ.amic.num_profiles = cd->count;
+		abe->equ.amic.coeff_data = kmalloc(cd->size, GFP_KERNEL);
+		if (abe->equ.amic.coeff_data == NULL)
+			return -ENOMEM;
+		memcpy(abe->equ.amic.coeff_data, coeff_data, cd->size);
+		break;
+	case OMAP_AESS_CMEM_96_48_DMIC_COEFS_ID:
+		abe->equ.dmic.profile_size = cd->size / cd->count;
+		abe->equ.dmic.num_profiles = cd->count;
+		abe->equ.dmic.coeff_data = kmalloc(cd->size, GFP_KERNEL);
+		if (abe->equ.dmic.coeff_data == NULL)
+			return -ENOMEM;
+		memcpy(abe->equ.dmic.coeff_data, coeff_data, cd->size);
+		break;
+	default:
+		dev_err(platform->dev, "invalid coefficient ID %d\n", cd->id);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int abe_load_fw(struct snd_soc_platform *platform,
+	struct snd_soc_fw_hdr *hdr)
+{
+	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	const void *fw_data = snd_soc_fw_get_data(hdr);
+
+	/* get firmware and coefficients header info */
+	memcpy(&abe->hdr, fw_data, sizeof(struct fw_header));
+	if (hdr->size > OMAP_ABE_MAX_FW_SIZE) {
+		dev_err(abe->dev, "Firmware too large at %d bytes\n",
+			hdr->size);
+		return -ENOMEM;
+	}
+	dev_info(abe->dev, "ABE firmware size %d bytes\n", hdr->size);
+	dev_info(abe->dev, "ABE mem P %d C %d D %d S %d bytes\n",
+		abe->hdr.pmem_size, abe->hdr.cmem_size,
+		abe->hdr.dmem_size, abe->hdr.smem_size);
+
+	dev_info(abe->dev, "ABE Firmware version %x\n", abe->hdr.version);
+#if 0
+	if (omap_abe_get_supported_fw_version() <= abe->hdr.firmware_version) {
+		dev_err(abe->dev, "firmware version too old. Need %x have %x\n",
+			omap_abe_get_supported_fw_version(),
+			abe->hdr.firmware_version);
+		return -EINVAL;
+	}
+#endif
+	/* store ABE firmware for later context restore */
+	abe->fw_data = fw_data;
+
+	return 0;
+}
+
+static int abe_load_config(struct snd_soc_platform *platform,
+	struct snd_soc_fw_hdr *hdr)
+{
+	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	const void *fw_data = snd_soc_fw_get_data(hdr);
+
+	/* store ABE config for later context restore */
+	dev_info(abe->dev, "ABE Config size %d bytes\n", hdr->size);
+
+	abe->fw_config = fw_data;
+
+	return 0;
+}
+
+void abe_free_fw(struct omap_abe *abe)
+{
+	/* This below should be done in HAL  - oposite of init_mem()*/
+	if (!abe->aess)
+		return;
+
+	if (abe->aess->fw_info) {
+		kfree(abe->aess->fw_info);
+	}
+}
+EXPORT_SYMBOL(abe_free_fw);
+
+/* callback to handle vendor data */
+static int abe_vendor_load(struct snd_soc_platform *platform,
+	struct snd_soc_fw_hdr *hdr)
+{
+
+	switch (hdr->type) {
+	case SND_SOC_FW_VENDOR_FW:
+		return abe_load_fw(platform, hdr);
+	case SND_SOC_FW_VENDOR_CONFIG:
+		return abe_load_config(platform, hdr);
+	case SND_SOC_FW_COEFF:
+		return abe_load_coeffs(platform, hdr);
+	case SND_SOC_FW_VENDOR_CODEC:
+	default:
+		dev_err(platform->dev, "vendor type %d:%d not supported\n",
+			hdr->type, hdr->vendor_type);
+		return 0;
+	}
+	return 0;
+}
+
+struct snd_soc_fw_platform_ops soc_fw_ops = {
+	.vendor_load	= abe_vendor_load,
+	.io_ops		= abe_ops,
+	.io_ops_count	= 7,
+};
