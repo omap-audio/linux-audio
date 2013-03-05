@@ -825,6 +825,19 @@ static void playback_trigger(struct snd_pcm_substream *substream,
 	}
 }
 
+static int omap_abe_hwrule_size_step(struct snd_pcm_hw_params *params,
+					struct snd_pcm_hw_rule *rule)
+{
+	unsigned int rate = params_rate(params);
+
+	/* 44.1kHz has the same iteration number as 48kHz */
+	rate = (rate == 44100) ? 48000 : rate;
+
+	/* ABE requires chunks of 250us worth of data */
+	return snd_interval_step(hw_param_interval(params, rule->var), 0,
+				 rate / 4000);
+}
+
 static int omap_abe_dai_startup(struct snd_pcm_substream *substream,
 			struct snd_soc_dai *dai)
 {
@@ -832,7 +845,36 @@ static int omap_abe_dai_startup(struct snd_pcm_substream *substream,
 	struct omap_pcm_dma_data *dma_data;
 
 	dev_dbg(dai->dev, "%s: %s\n", __func__, dai->name);
+
+	mutex_lock(&abe->mutex);
 	abe->dai.num_active++;
+
+	switch (dai->id) {
+	case OMAP_ABE_FRONTEND_DAI_MODEM:
+		break;
+	case OMAP_ABE_FRONTEND_DAI_LP_MEDIA:
+		snd_pcm_hw_constraint_step(substream->runtime, 0,
+					 SNDRV_PCM_HW_PARAM_BUFFER_BYTES, 1024);
+		break;
+	default:
+		/*
+		 * Period and buffer size must be aligned with the Audio Engine
+		 * processing loop which is 250 us long
+		 */
+		snd_pcm_hw_rule_add(substream->runtime, 0,
+					SNDRV_PCM_HW_PARAM_PERIOD_SIZE,
+					omap_abe_hwrule_size_step,
+					NULL,
+					SNDRV_PCM_HW_PARAM_PERIOD_SIZE, -1);
+		snd_pcm_hw_rule_add(substream->runtime, 0,
+					SNDRV_PCM_HW_PARAM_BUFFER_SIZE,
+					omap_abe_hwrule_size_step,
+					NULL,
+					SNDRV_PCM_HW_PARAM_BUFFER_SIZE, -1);
+		break;
+	}
+
+	mutex_unlock(&abe->mutex);
 
 	dma_data = &omap_abe_dai_dma_params[dai->id][substream->stream];
 	snd_soc_dai_set_dma_data(dai, substream, dma_data);
@@ -982,6 +1024,7 @@ static void omap_abe_dai_shutdown(struct snd_pcm_substream *substream,
 
 	dev_dbg(dai->dev, "%s: %s\n", __func__, dai->name);
 
+	mutex_lock(&abe->mutex);
 	/* shutdown the ABE if last user */
 	if (!abe->active && !omap_aess_check_activity(abe->aess)) {
 		omap_aess_set_opp_processing(abe->aess, ABE_OPP25);
@@ -996,6 +1039,7 @@ static void omap_abe_dai_shutdown(struct snd_pcm_substream *substream,
 	}
 
 	abe->dai.num_active--;
+	mutex_unlock(&abe->mutex);
 }
 
 #ifdef CONFIG_PM

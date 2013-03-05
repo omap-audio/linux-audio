@@ -153,62 +153,19 @@ irqreturn_t abe_irq_handler(int irq, void *dev_id)
 	return IRQ_HANDLED;
 }
 
-static int omap_abe_hwrule_size_step(struct snd_pcm_hw_params *params,
-					struct snd_pcm_hw_rule *rule)
-{
-	unsigned int rate = params_rate(params);
-
-	/* 44.1kHz has the same iteration number as 48kHz */
-	rate = (rate == 44100) ? 48000 : rate;
-
-	/* ABE requires chunks of 250us worth of data */
-	return snd_interval_step(hw_param_interval(params, rule->var), 0,
-				 rate / 4000);
-}
-
 static int aess_open(struct snd_pcm_substream *substream)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_platform *platform = rtd->platform;
 	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
 	struct snd_soc_dai *dai = rtd->cpu_dai;
-	int ret = 0;
 
 	mutex_lock(&abe->mutex);
 
 	dev_dbg(dai->dev, "%s: %s\n", __func__, dai->name);
 
-	switch (dai->id) {
-	case OMAP_ABE_FRONTEND_DAI_MODEM:
-		break;
-	case OMAP_ABE_FRONTEND_DAI_LP_MEDIA:
+	if (dai->id == OMAP_ABE_FRONTEND_DAI_LP_MEDIA)
 		snd_soc_set_runtime_hwparams(substream, &omap_abe_hardware);
-		ret = snd_pcm_hw_constraint_step(substream->runtime, 0,
-					 SNDRV_PCM_HW_PARAM_BUFFER_BYTES, 1024);
-		break;
-	default:
-		/*
-		 * Period and buffer size must be aligned with the Audio Engine
-		 * processing loop which is 250 us long
-		 */
-		ret = snd_pcm_hw_rule_add(substream->runtime, 0,
-					SNDRV_PCM_HW_PARAM_PERIOD_SIZE,
-					omap_abe_hwrule_size_step,
-					NULL,
-					SNDRV_PCM_HW_PARAM_PERIOD_SIZE, -1);
-		ret = snd_pcm_hw_rule_add(substream->runtime, 0,
-					SNDRV_PCM_HW_PARAM_BUFFER_SIZE,
-					omap_abe_hwrule_size_step,
-					NULL,
-					SNDRV_PCM_HW_PARAM_BUFFER_SIZE, -1);
-		break;
-	}
-
-	if (ret < 0) {
-		dev_err(abe->dev, "failed to set period constraints for DAI %d\n",
-			dai->id);
-		goto out;
-	}
 
 	pm_runtime_get_sync(abe->dev);
 
@@ -219,9 +176,8 @@ static int aess_open(struct snd_pcm_substream *substream)
 		omap_aess_wakeup(abe->aess);
 	}
 
-out:
 	mutex_unlock(&abe->mutex);
-	return ret;
+	return 0;
 }
 
 static int aess_hw_params(struct snd_pcm_substream *substream,
