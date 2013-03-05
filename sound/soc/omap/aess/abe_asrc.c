@@ -156,8 +156,8 @@ void omap_aess_init_asrc_vx_dl(struct omap_aess *abe, s32 dppm)
 		offset = 48 * 2;
 
 	omap_aess_write_fifo(abe, OMAP_ABE_DMEM,
-			     abe->fw_info->map[OMAP_AESS_DMEM_FWMEMINITDESCR_ID].offset,
-			     &abe->fw_info->asrc[offset], n_fifo_el);
+			     abe->fw_info.map[OMAP_AESS_DMEM_FWMEMINITDESCR_ID].offset,
+			     &abe->fw_info.asrc[offset], n_fifo_el);
 }
 /**
  * abe_init_asrc_vx_ul
@@ -203,6 +203,6 @@ void omap_aess_init_asrc_vx_ul(struct omap_aess *abe, s32 dppm)
 		offset = 0;
 
 	omap_aess_write_fifo(abe, OMAP_ABE_DMEM,
-			     abe->fw_info->map[OMAP_AESS_DMEM_FWMEMINITDESCR_ID].offset,
-			     &abe->fw_info->asrc[offset], n_fifo_el);
+			     abe->fw_info.map[OMAP_AESS_DMEM_FWMEMINITDESCR_ID].offset,
+			     &abe->fw_info.asrc[offset], n_fifo_el);
 }

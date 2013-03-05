@@ -139,7 +139,7 @@ EXPORT_SYMBOL(omap_aess_wakeup);
 int omap_aess_set_router_configuration(struct omap_aess *aess, u32 *param)
 {
 	omap_aess_mem_write(aess,
-			    aess->fw_info->map[OMAP_AESS_DMEM_AUPLINKROUTING_ID],
+			    aess->fw_info.map[OMAP_AESS_DMEM_AUPLINKROUTING_ID],
 			    param);
 	return 0;
 }
@@ -183,7 +183,7 @@ int omap_aess_set_opp_processing(struct omap_aess *aess, u32 opp)
 	}
 	/* Write Multiframe inside DMEM */
 	omap_aess_mem_write(aess,
-			    aess->fw_info->map[OMAP_AESS_DMEM_MAXTASKBYTESINSLOT_ID],
+			    aess->fw_info.map[OMAP_AESS_DMEM_MAXTASKBYTESINSLOT_ID],
 			    &dOppMode32);
 
 	return 0;

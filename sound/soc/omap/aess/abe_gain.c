@@ -286,32 +286,32 @@ int omap_aess_write_equalizer(struct omap_aess *aess,
 	switch (id) {
 	case OMAP_AESS_CMEM_DL1_COEFS_ID:
 		memcpy(&equ_addr,
-		       &aess->fw_info->map[OMAP_AESS_SMEM_DL1_M_EQ_DATA_ID],
+		       &aess->fw_info.map[OMAP_AESS_SMEM_DL1_M_EQ_DATA_ID],
 		       sizeof(struct omap_aess_addr));
 		break;
 	case OMAP_AESS_CMEM_DL2_L_COEFS_ID:
 		memcpy(&equ_addr,
-		       &aess->fw_info->map[OMAP_AESS_SMEM_DL2_M_LR_EQ_DATA_ID],
+		       &aess->fw_info.map[OMAP_AESS_SMEM_DL2_M_LR_EQ_DATA_ID],
 		       sizeof(struct omap_aess_addr));
 		break;
 	case OMAP_AESS_CMEM_DL2_R_COEFS_ID:
 		memcpy(&equ_addr,
-		       &aess->fw_info->map[OMAP_AESS_SMEM_DL2_M_LR_EQ_DATA_ID],
+		       &aess->fw_info.map[OMAP_AESS_SMEM_DL2_M_LR_EQ_DATA_ID],
 		       sizeof(struct omap_aess_addr));
 		break;
 	case OMAP_AESS_CMEM_SDT_COEFS_ID:
 		memcpy(&equ_addr,
-		       &aess->fw_info->map[OMAP_AESS_SMEM_SDT_F_DATA_ID],
+		       &aess->fw_info.map[OMAP_AESS_SMEM_SDT_F_DATA_ID],
 		       sizeof(struct omap_aess_addr));
 		break;
 	case OMAP_AESS_CMEM_96_48_AMIC_COEFS_ID:
 		memcpy(&equ_addr,
-		       &aess->fw_info->map[OMAP_AESS_SMEM_AMIC_96_48_DATA_ID],
+		       &aess->fw_info.map[OMAP_AESS_SMEM_AMIC_96_48_DATA_ID],
 		       sizeof(struct omap_aess_addr));
 		break;
 	case OMAP_AESS_CMEM_96_48_DMIC_COEFS_ID:
 		memcpy(&equ_addr,
-		       &aess->fw_info->map[OMAP_AESS_SMEM_DMIC0_96_48_DATA_ID],
+		       &aess->fw_info.map[OMAP_AESS_SMEM_DMIC0_96_48_DATA_ID],
 		       sizeof(struct omap_aess_addr));
 		/* three DMIC are clear at the same time DMIC0 DMIC1 DMIC2 */
 		equ_addr.bytes *= 3;
@@ -323,7 +323,7 @@ int omap_aess_write_equalizer(struct omap_aess *aess,
 
 	length = param->equ_length;
 	src = (u32 *)((param->coef).type1);
-	omap_aess_mem_write(aess, aess->fw_info->map[id], src);
+	omap_aess_mem_write(aess, aess->fw_info.map[id], src);
 
 	/* reset SMEM buffers after the coefficients are loaded */
 	omap_aess_reset_mem(aess, equ_addr);
@@ -453,7 +453,7 @@ int omap_aess_write_gain(struct omap_aess *aess,
 	aess->desired_gains_decibel[id] = f_g;
 
 	/* SMEM address in bytes */
-	mixer_target = aess->fw_info->map[OMAP_AESS_SMEM_GTARGET1_ID].offset;
+	mixer_target = aess->fw_info.map[OMAP_AESS_SMEM_GTARGET1_ID].offset;
 	mixer_target += (id<<2);
 
 	if (!aess->muted_gains_indicator[id])
@@ -486,7 +486,7 @@ int omap_aess_write_gain_ramp(struct omap_aess *aess, u32 id, u32 ramp)
 	aess->desired_ramp_delay_ms[id] = ramp;
 
 	/* SMEM address in bytes */
-	mixer_target = aess->fw_info->map[OMAP_AESS_SMEM_GTARGET1_ID].offset;
+	mixer_target = aess->fw_info.map[OMAP_AESS_SMEM_GTARGET1_ID].offset;
 	mixer_target += (id<<2);
 
 	ramp = max(min(RAMP_MAXLENGTH, ramp), RAMP_MINLENGTH);
@@ -503,14 +503,14 @@ int omap_aess_write_gain_ramp(struct omap_aess *aess, u32 id, u32 ramp)
 	beta = abe_alpha_iir[ramp_index];
 	alpha = abe_1_alpha_iir[ramp_index];
 	/* CMEM bytes address */
-	mixer_target = aess->fw_info->map[OMAP_AESS_CMEM_1_ALPHA_ID].offset;
+	mixer_target = aess->fw_info.map[OMAP_AESS_CMEM_1_ALPHA_ID].offset;
 	/* a pair of gains is updated once in the firmware */
 	mixer_target += ((id) >> 1) << 2;
 	/* load the ramp delay data */
 	omap_abe_mem_write(aess, OMAP_ABE_CMEM, mixer_target,
 			   (u32 *)&alpha, sizeof(alpha));
 	/* CMEM bytes address */
-	mixer_target = aess->fw_info->map[OMAP_AESS_CMEM_ALPHA_ID].offset;
+	mixer_target = aess->fw_info.map[OMAP_AESS_CMEM_ALPHA_ID].offset;
 	/* a pair of gains is updated once in the firmware */
 	mixer_target += ((id) >> 1) << 2;
 	omap_abe_mem_write(aess, OMAP_ABE_CMEM, mixer_target,
@@ -556,7 +556,7 @@ int omap_aess_read_gain(struct omap_aess *aess, u32 id, u32 *f_g)
 	u32 mixer_target, i;
 
 	/* SMEM bytes address */
-	mixer_target = aess->fw_info->map[OMAP_AESS_SMEM_GTARGET1_ID].offset;
+	mixer_target = aess->fw_info.map[OMAP_AESS_SMEM_GTARGET1_ID].offset;
 	mixer_target += (id<<2);
 	if (!aess->muted_gains_indicator[id]) {
 		/* load the S_G_Target SMEM table */
@@ -609,7 +609,7 @@ void omap_aess_reset_gain_mixer(struct omap_aess *aess, u32 id)
 	u32 lin_g, mixer_target;
 
 	/* SMEM bytes address for the CURRENT gain values */
-	mixer_target = aess->fw_info->map[OMAP_AESS_SMEM_GCURRENT_ID].offset;
+	mixer_target = aess->fw_info.map[OMAP_AESS_SMEM_GCURRENT_ID].offset;
 	mixer_target += (id<<2);
 	lin_g = 0;
 	/* load the S_G_Target SMEM table */

@@ -216,11 +216,11 @@ static int ul_mux_put_route(struct snd_kcontrol *kcontrol,
 	/* TODO: remove the gap */
 	if (reg < 6) {
 		/* 0  .. 5   = MM_UL */
-		abe->mixer.route_ul[reg] = abe->aess->fw_info->label_id[router[mux]];
+		abe->mixer.route_ul[reg] = abe->aess->fw_info.label_id[router[mux]];
 	} else if (reg < 10) {
 		/* 10 .. 11  = MM_UL2 */
 		/* 12 .. 13  = VX_UL */
-		abe->mixer.route_ul[reg + 4] = abe->aess->fw_info->label_id[router[mux]];
+		abe->mixer.route_ul[reg + 4] = abe->aess->fw_info.label_id[router[mux]];
 	}
 
 	omap_aess_set_router_configuration(abe->aess, (u32 *)abe->mixer.route_ul);
@@ -257,7 +257,7 @@ static int ul_mux_get_route(struct snd_kcontrol *kcontrol,
 	}
 
 	for (i = 0; i < ARRAY_SIZE(router); i++) {
-		if (abe->aess->fw_info->label_id[router[i]] == rval) {
+		if (abe->aess->fw_info.label_id[router[i]] == rval) {
 			ucontrol->value.integer.value[0] = i;
 			return 0;
 		}
@@ -573,18 +573,6 @@ static int abe_load_config(struct snd_soc_platform *platform,
 
 	return 0;
 }
-
-void abe_free_fw(struct omap_abe *abe)
-{
-	/* This below should be done in HAL  - oposite of init_mem()*/
-	if (!abe->aess)
-		return;
-
-	if (abe->aess->fw_info) {
-		kfree(abe->aess->fw_info);
-	}
-}
-EXPORT_SYMBOL(abe_free_fw);
 
 /* callback to handle vendor data */
 static int abe_vendor_load(struct snd_soc_platform *platform,

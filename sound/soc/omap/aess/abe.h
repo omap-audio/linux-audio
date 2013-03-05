@@ -158,7 +158,7 @@ struct omap_aess {
 	u32 nb_pingpong;
 
 	u32 irq_dbg_read_ptr;
-	struct omap_aess_mapping *fw_info;
+	struct omap_aess_mapping fw_info;
 
 	/* List of open ABE logical ports */
 	struct list_head ports;

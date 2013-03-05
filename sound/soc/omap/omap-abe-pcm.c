@@ -45,7 +45,6 @@ void abe_init_debugfs(struct omap_abe *abe);
 void abe_cleanup_debugfs(struct omap_abe *abe);
 int abe_opp_init_initial_opp(struct omap_abe *abe);
 
-void abe_free_fw(struct omap_abe *abe);
 extern struct snd_soc_fw_platform_ops soc_fw_ops;
 
 /* Ping pong buffer DMEM offset - we should read this from future FWs */
@@ -119,7 +118,7 @@ irqreturn_t abe_irq_handler(int irq, void *dev_id)
 
 	/* extract the write pointer index from CMEM memory (INITPTR format) */
 	/* CMEM address of the write pointer in bytes */
-	cmem_src = aess->fw_info->label_id[OMAP_AESS_BUFFER_MCU_IRQ_FIFO_PTR_ID] << 2;
+	cmem_src = aess->fw_info.label_id[OMAP_AESS_BUFFER_MCU_IRQ_FIFO_PTR_ID] << 2;
 	omap_abe_mem_read(aess, OMAP_ABE_CMEM, cmem_src,
 			  &sm_cm, sizeof(abe_irq_dbg_write_ptr));
 	/* AESS left-pointer index located on MSBs */
@@ -131,7 +130,7 @@ irqreturn_t abe_irq_handler(int irq, void *dev_id)
 		if (abe_irq_dbg_write_ptr == aess->irq_dbg_read_ptr)
 			break;
 		/* read the IRQ/DBG FIFO */
-		memcpy(&addr, &aess->fw_info->map[OMAP_AESS_DMEM_MCUIRQFIFO_ID],
+		memcpy(&addr, &aess->fw_info.map[OMAP_AESS_DMEM_MCUIRQFIFO_ID],
 		       sizeof(struct omap_aess_addr));
 		addr.offset += (aess->irq_dbg_read_ptr << 2);
 		addr.bytes = sizeof(IRQ_data);
@@ -432,7 +431,7 @@ static int abe_probe(struct snd_soc_platform *platform)
 
 	/* ZERO_labelID should really be 0 */
 	for (i = 0; i < OMAP_ABE_ROUTES_UL + 2; i++)
-		abe->mixer.route_ul[i] = abe->aess->fw_info->label_id[OMAP_AESS_BUFFER_ZERO_ID];
+		abe->mixer.route_ul[i] = abe->aess->fw_info.label_id[OMAP_AESS_BUFFER_ZERO_ID];
 
 	omap_aess_load_fw(abe->aess, abe->fw_data);
 
@@ -450,7 +449,6 @@ static int abe_probe(struct snd_soc_platform *platform)
 	return ret;
 
 err_irq:
-	abe_free_fw(abe);
 err_fw:
 	pm_runtime_disable(abe->dev);
 	return ret;
@@ -461,7 +459,6 @@ static int abe_remove(struct snd_soc_platform *platform)
 	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
 
 	abe_cleanup_debugfs(abe);
-	abe_free_fw(abe);
 	pm_runtime_disable(abe->dev);
 
 	return 0;
