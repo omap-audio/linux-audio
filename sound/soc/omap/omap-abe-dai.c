@@ -1,5 +1,5 @@
 /*
- * omap-abe.c  --  OMAP ALSA SoC DAI driver using Audio Backend
+ * omap-abe-dai.c  --  OMAP ALSA SoC DAI driver using Audio Backend
  *
  * Copyright (C) 2010 Texas Instruments
  *
