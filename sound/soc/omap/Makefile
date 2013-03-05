@@ -5,7 +5,7 @@ snd-soc-omap-mcasp-objs := omap-mcasp.o
 snd-soc-omap-mcbsp-objs := omap-mcbsp.o mcbsp.o
 snd-soc-omap-mcpdm-objs := omap-mcpdm.o
 snd-soc-omap-hdmi-objs := omap-hdmi.o
-snd-soc-omap-abe-objs := omap-abe-core.o omap-abe-dbg.o omap-abe-mixer.o \
+snd-soc-omap-abe-objs := omap-abe-core.o omap-abe-dbg.o omap-abe-fw.o \
 			omap-abe-pcm.o omap-abe-opp.o omap-abe-dai.o \
 			omap-abe-pm.o
 
