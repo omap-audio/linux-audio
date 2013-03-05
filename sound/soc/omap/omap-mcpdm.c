@@ -604,8 +604,7 @@ static int asoc_mcpdm_probe(struct platform_device *pdev)
 
 	mcpdm->dev = &pdev->dev;
 
-#if defined(CONFIG_SND_OMAP_SOC_ABE) ||\
-	defined(CONFIG_SND_OMAP_SOC_ABE_MODULE)
+#if IS_ENABLED(CONFIG_SND_OMAP_SOC_ABE)
 	nr_dai = ARRAY_SIZE(omap_mcpdm_dai);
 #else
 	nr_dai = 1;
