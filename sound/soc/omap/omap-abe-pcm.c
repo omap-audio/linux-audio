@@ -402,7 +402,7 @@ static int abe_probe(struct snd_soc_platform *platform)
 	ret = snd_soc_fw_load_platform(platform, &soc_fw_ops, abe->fw, 0);
 	if (ret < 0) {
 		dev_err(platform->dev, "request for ABE FW failed %d\n", ret);
-		goto err_fw;
+		goto out;
 	}
 
 	ret = devm_request_threaded_irq(abe->dev, abe->irq, NULL, abe_irq_handler,
@@ -410,7 +410,7 @@ static int abe_probe(struct snd_soc_platform *platform)
 	if (ret) {
 		dev_err(platform->dev, "request for ABE IRQ %d failed %d\n",
 				abe->irq, ret);
-		goto err_irq;
+		goto out;
 	}
 
 	ret = abe_opp_init_initial_opp(abe);
@@ -446,11 +446,10 @@ static int abe_probe(struct snd_soc_platform *platform)
 	pm_runtime_put_sync(abe->dev);
 	abe_init_debugfs(abe);
 
-	return ret;
+out:
+	if (ret)
+		pm_runtime_disable(abe->dev);
 
-err_irq:
-err_fw:
-	pm_runtime_disable(abe->dev);
 	return ret;
 }
 
