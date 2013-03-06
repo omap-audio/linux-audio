@@ -87,12 +87,14 @@ struct omap_aess_irq_data {
 #define OMAP_ABE_IRQTAG_PP	0x000d
 #define OMAP_ABE_IRQ_FIFO_MASK	((OMAP_ABE_D_MCUIRQFIFO_SIZE >> 2) - 1)
 
-static void abe_irq_pingpong_subroutine(struct snd_pcm_substream *substream, struct omap_abe *abe)
+static void abe_irq_pingpong_subroutine(struct snd_pcm_substream *substream,
+					struct omap_abe *abe)
 {
 
 	u32 dst, n_bytes;
 
-	omap_aess_read_next_ping_pong_buffer(abe->aess, OMAP_ABE_MM_DL_PORT, &dst, &n_bytes);
+	omap_aess_read_next_ping_pong_buffer(abe->aess, OMAP_ABE_MM_DL_PORT,
+					     &dst, &n_bytes);
 	omap_aess_set_ping_pong_buffer(abe->aess, OMAP_ABE_MM_DL_PORT, n_bytes);
 
 	/* 1st IRQ does not signal completed period */
@@ -218,10 +220,9 @@ static int aess_hw_params(struct snd_pcm_substream *substream,
 	period_size = params_period_bytes(params);
 
 	/* Connect a Ping-Pong cache-flush protocol to MM_DL port */
-	omap_aess_connect_irq_ping_pong_port(abe->aess, OMAP_ABE_MM_DL_PORT, &format,
-				0,
-				period_size, &dst,
-				PING_PONG_WITH_MCU_IRQ);
+	omap_aess_connect_irq_ping_pong_port(abe->aess, OMAP_ABE_MM_DL_PORT,
+					     &format, 0, period_size, &dst,
+					     PING_PONG_WITH_MCU_IRQ);
 
 	/* Memory mapping for hw params */
 	runtime->dma_area  = abe->io_base[0] + dst;
@@ -229,7 +230,8 @@ static int aess_hw_params(struct snd_pcm_substream *substream,
 	runtime->dma_bytes = period_size * 4;
 
 	/* Need to set the first buffer in order to get interrupt */
-	omap_aess_set_ping_pong_buffer(abe->aess, OMAP_ABE_MM_DL_PORT, period_size);
+	omap_aess_set_ping_pong_buffer(abe->aess, OMAP_ABE_MM_DL_PORT,
+				       period_size);
 	abe->mmap.first_irq = 1;
 
 out:
@@ -321,7 +323,9 @@ static snd_pcm_uframes_t aess_pointer(struct snd_pcm_substream *substream)
 	u32 pingpong;
 
 	if (!abe->mmap.first_irq) {
-		omap_aess_read_offset_from_ping_buffer(abe->aess, OMAP_ABE_MM_DL_PORT, &pingpong);
+		omap_aess_read_offset_from_ping_buffer(abe->aess,
+						       OMAP_ABE_MM_DL_PORT,
+						       &pingpong);
 		offset = (snd_pcm_uframes_t)pingpong;
 	}
 
@@ -405,8 +409,9 @@ static int abe_probe(struct snd_soc_platform *platform)
 		goto out;
 	}
 
-	ret = devm_request_threaded_irq(abe->dev, abe->irq, NULL, abe_irq_handler,
-					IRQF_ONESHOT, "ABE", (void *)abe);
+	ret = devm_request_threaded_irq(abe->dev, abe->irq, NULL,
+					abe_irq_handler, IRQF_ONESHOT, "ABE",
+					(void *)abe);
 	if (ret) {
 		dev_err(platform->dev, "request for ABE IRQ %d failed %d\n",
 				abe->irq, ret);
@@ -477,8 +482,8 @@ static unsigned int omap_abe_oppwidget_read(struct snd_soc_platform *platform,
 	return abe->opp.widget[reg];
 }
 
-static int omap_abe_oppwidget_write(struct snd_soc_platform *platform, unsigned int reg,
-		unsigned int val)
+static int omap_abe_oppwidget_write(struct snd_soc_platform *platform,
+				    unsigned int reg, unsigned int val)
 {
 	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
 
