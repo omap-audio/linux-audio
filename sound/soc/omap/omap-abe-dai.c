@@ -36,63 +36,36 @@
 /*
  * Stream DMA parameters
  */
+#define OMAP_ABE_DMA_DATA(xname)	\
+	{ .name = xname, .data_type = 32, }
+
 static struct omap_pcm_dma_data omap_abe_dai_dma_params[7][2] = {
 	{
-		{
-			.name = "Media Playback",
-			.data_type = 32,
-		},
-		{
-			.name = "Media Capture1",
-			.data_type = 32,
-		},
+		OMAP_ABE_DMA_DATA("Media Playback"),
+		OMAP_ABE_DMA_DATA("Media Capture1"),
 	},
 	{
 		{},
-		{
-			.name = "Media Capture2",
-			.data_type = 32,
-		},
+		OMAP_ABE_DMA_DATA("Media Capture2"),
 	},
 	{
-		{
-			.name = "Voice Playback",
-			.data_type = 32,
-		},
-		{
-			.name = "Voice Capture",
-			.data_type = 32,
-		},
+		OMAP_ABE_DMA_DATA("Voice Playback"),
+		OMAP_ABE_DMA_DATA("Voice Capture"),
 	},
 	{
-		{
-			.name = "Tones Playback",
-			.data_type = 32,
-		},
+		OMAP_ABE_DMA_DATA("Tones Playback"),
 		{},
 	},
 	{
-		{
-			.name = "Vibra Playback",
-			.data_type = 32,
-		},
+		OMAP_ABE_DMA_DATA("Vibra Playback"),
 		{},
 	},
 	{
-		{
-			.name = "MODEM Playback",
-			.data_type = 32,
-		},
-		{
-			.name = "MODEM Capture",
-			.data_type = 32,
-		},
+		OMAP_ABE_DMA_DATA("MODEM Playback"),
+		OMAP_ABE_DMA_DATA("MODEM Capture"),
 	},
 	{
-		{
-			.name = "Low Power Playback",
-			.data_type = 32,
-		},
+		OMAP_ABE_DMA_DATA("Low Power Playback"),
 		{},
 	},
 };
