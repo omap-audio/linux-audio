@@ -25,16 +25,6 @@
 
 #include <linux/delay.h>
 
-#include <linux/omap-dma.h>
-#define OMAP44XX_DMA_ABE_REQ_0			101
-#define OMAP44XX_DMA_ABE_REQ_1			102
-#define OMAP44XX_DMA_ABE_REQ_2			103
-#define OMAP44XX_DMA_ABE_REQ_3			104
-#define OMAP44XX_DMA_ABE_REQ_4			105
-#define OMAP44XX_DMA_ABE_REQ_5			106
-#define OMAP44XX_DMA_ABE_REQ_6			107
-#define OMAP44XX_DMA_ABE_REQ_7			108
-
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
@@ -50,12 +40,10 @@ static struct omap_pcm_dma_data omap_abe_dai_dma_params[7][2] = {
 	{
 		{
 			.name = "Media Playback",
-			.dma_req = OMAP44XX_DMA_ABE_REQ_0,
 			.data_type = 32,
 		},
 		{
 			.name = "Media Capture1",
-			.dma_req = OMAP44XX_DMA_ABE_REQ_3,
 			.data_type = 32,
 		},
 	},
@@ -63,26 +51,22 @@ static struct omap_pcm_dma_data omap_abe_dai_dma_params[7][2] = {
 		{},
 		{
 			.name = "Media Capture2",
-			.dma_req = OMAP44XX_DMA_ABE_REQ_4,
 			.data_type = 32,
 		},
 	},
 	{
 		{
 			.name = "Voice Playback",
-			.dma_req = OMAP44XX_DMA_ABE_REQ_1,
 			.data_type = 32,
 		},
 		{
 			.name = "Voice Capture",
-			.dma_req = OMAP44XX_DMA_ABE_REQ_2,
 			.data_type = 32,
 		},
 	},
 	{
 		{
 			.name = "Tones Playback",
-			.dma_req = OMAP44XX_DMA_ABE_REQ_5,
 			.data_type = 32,
 		},
 		{},
@@ -90,7 +74,6 @@ static struct omap_pcm_dma_data omap_abe_dai_dma_params[7][2] = {
 	{
 		{
 			.name = "Vibra Playback",
-			.dma_req = OMAP44XX_DMA_ABE_REQ_6,
 			.data_type = 32,
 		},
 		{},
@@ -98,23 +81,31 @@ static struct omap_pcm_dma_data omap_abe_dai_dma_params[7][2] = {
 	{
 		{
 			.name = "MODEM Playback",
-			.dma_req = OMAP44XX_DMA_ABE_REQ_1,
 			.data_type = 32,
 		},
 		{
 			.name = "MODEM Capture",
-			.dma_req = OMAP44XX_DMA_ABE_REQ_2,
 			.data_type = 32,
 		},
 	},
 	{
 		{
 			.name = "Low Power Playback",
-			.dma_req = OMAP44XX_DMA_ABE_REQ_0,
 			.data_type = 32,
 		},
 		{},
 	},
+};
+
+/* For DMA line lookup within abe->dma_lines array */
+static int dma_mapping[7][2] = {
+	{ 0, 3 },
+	{ -EINVAL, 4 },
+	{ 1, 2 },
+	{ 5, -EINVAL },
+	{ 6, -EINVAL },
+	{ 1, 2 },
+	{ 0, -EINVAL },
 };
 
 static int omap_abe_dl1_enabled(struct omap_abe *abe)
@@ -843,6 +834,7 @@ static int omap_abe_dai_startup(struct snd_pcm_substream *substream,
 {
 	struct omap_abe *abe = snd_soc_dai_get_drvdata(dai);
 	struct omap_pcm_dma_data *dma_data;
+	int dma_index = dma_mapping[dai->id][substream->stream];
 
 	dev_dbg(dai->dev, "%s: %s\n", __func__, dai->name);
 
@@ -877,6 +869,8 @@ static int omap_abe_dai_startup(struct snd_pcm_substream *substream,
 	mutex_unlock(&abe->mutex);
 
 	dma_data = &omap_abe_dai_dma_params[dai->id][substream->stream];
+	dma_data->dma_req = abe->dma_lines[dma_index];
+
 	snd_soc_dai_set_dma_data(dai, substream, dma_data);
 
 	return 0;
