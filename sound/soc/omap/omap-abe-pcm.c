@@ -337,58 +337,58 @@ static struct snd_pcm_ops omap_aess_pcm_ops = {
 	.mmap		= aess_mmap,
 };
 
-static void abe_init_gains(struct omap_aess *abe)
+static void abe_init_gains(struct omap_aess *aess)
 {
 	/* Uplink gains */
-	omap_aess_mute_gain(abe, OMAP_AESS_MIXAUDUL_MM_DL);
-	omap_aess_mute_gain(abe, OMAP_AESS_MIXAUDUL_TONES);
-	omap_aess_mute_gain(abe, OMAP_AESS_MIXAUDUL_UPLINK);
-	omap_aess_mute_gain(abe, OMAP_AESS_MIXAUDUL_VX_DL);
-	omap_aess_mute_gain(abe, OMAP_AESS_MIXVXREC_TONES);
-	omap_aess_mute_gain(abe, OMAP_AESS_MIXVXREC_VX_DL);
-	omap_aess_mute_gain(abe, OMAP_AESS_MIXVXREC_MM_DL);
-	omap_aess_mute_gain(abe, OMAP_AESS_MIXVXREC_VX_UL);
-	omap_aess_mute_gain(abe, OMAP_AESS_GAIN_DMIC1_LEFT);
-	omap_aess_mute_gain(abe, OMAP_AESS_GAIN_DMIC1_RIGHT);
-	omap_aess_mute_gain(abe, OMAP_AESS_GAIN_DMIC2_LEFT);
-	omap_aess_mute_gain(abe, OMAP_AESS_GAIN_DMIC2_RIGHT);
-	omap_aess_mute_gain(abe, OMAP_AESS_GAIN_DMIC3_LEFT);
-	omap_aess_mute_gain(abe, OMAP_AESS_GAIN_DMIC3_RIGHT);
+	omap_aess_mute_gain(aess, OMAP_AESS_MIXAUDUL_MM_DL);
+	omap_aess_mute_gain(aess, OMAP_AESS_MIXAUDUL_TONES);
+	omap_aess_mute_gain(aess, OMAP_AESS_MIXAUDUL_UPLINK);
+	omap_aess_mute_gain(aess, OMAP_AESS_MIXAUDUL_VX_DL);
+	omap_aess_mute_gain(aess, OMAP_AESS_MIXVXREC_TONES);
+	omap_aess_mute_gain(aess, OMAP_AESS_MIXVXREC_VX_DL);
+	omap_aess_mute_gain(aess, OMAP_AESS_MIXVXREC_MM_DL);
+	omap_aess_mute_gain(aess, OMAP_AESS_MIXVXREC_VX_UL);
+	omap_aess_mute_gain(aess, OMAP_AESS_GAIN_DMIC1_LEFT);
+	omap_aess_mute_gain(aess, OMAP_AESS_GAIN_DMIC1_RIGHT);
+	omap_aess_mute_gain(aess, OMAP_AESS_GAIN_DMIC2_LEFT);
+	omap_aess_mute_gain(aess, OMAP_AESS_GAIN_DMIC2_RIGHT);
+	omap_aess_mute_gain(aess, OMAP_AESS_GAIN_DMIC3_LEFT);
+	omap_aess_mute_gain(aess, OMAP_AESS_GAIN_DMIC3_RIGHT);
 
-	omap_aess_mute_gain(abe, OMAP_AESS_GAIN_AMIC_LEFT);
-	omap_aess_mute_gain(abe, OMAP_AESS_GAIN_AMIC_RIGHT);
+	omap_aess_mute_gain(aess, OMAP_AESS_GAIN_AMIC_LEFT);
+	omap_aess_mute_gain(aess, OMAP_AESS_GAIN_AMIC_RIGHT);
 
-	omap_aess_mute_gain(abe, OMAP_AESS_GAIN_BTUL_LEFT);
-	omap_aess_mute_gain(abe, OMAP_AESS_GAIN_BTUL_RIGHT);
+	omap_aess_mute_gain(aess, OMAP_AESS_GAIN_BTUL_LEFT);
+	omap_aess_mute_gain(aess, OMAP_AESS_GAIN_BTUL_RIGHT);
 
 	/* Downlink gains */
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_DL1_LEFT, GAIN_0dB);
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_DL1_RIGHT, GAIN_0dB);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_DL1_LEFT, GAIN_0dB);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_DL1_RIGHT, GAIN_0dB);
 	/*SEBG: Ramp RAMP_2MS */
 
-	omap_aess_mute_gain(abe, OMAP_AESS_GAIN_DL1_LEFT);
-	omap_aess_mute_gain(abe, OMAP_AESS_GAIN_DL1_RIGHT);
+	omap_aess_mute_gain(aess, OMAP_AESS_GAIN_DL1_LEFT);
+	omap_aess_mute_gain(aess, OMAP_AESS_GAIN_DL1_RIGHT);
 
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_DL2_LEFT, GAIN_M7dB);
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_DL2_RIGHT, GAIN_M7dB);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_DL2_LEFT, GAIN_M7dB);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_DL2_RIGHT, GAIN_M7dB);
 	/*SEBG: Ramp RAMP_2MS */
 
-	omap_aess_mute_gain(abe, OMAP_AESS_GAIN_DL2_LEFT);
-	omap_aess_mute_gain(abe, OMAP_AESS_GAIN_DL2_RIGHT);
-	omap_aess_mute_gain(abe, OMAP_AESS_MIXDL1_MM_DL);
-	omap_aess_mute_gain(abe, OMAP_AESS_MIXDL1_MM_UL2);
-	omap_aess_mute_gain(abe, OMAP_AESS_MIXDL1_VX_DL);
-	omap_aess_mute_gain(abe, OMAP_AESS_MIXDL1_TONES);
-	omap_aess_mute_gain(abe, OMAP_AESS_MIXDL2_TONES);
-	omap_aess_mute_gain(abe, OMAP_AESS_MIXDL2_VX_DL);
-	omap_aess_mute_gain(abe, OMAP_AESS_MIXDL2_MM_DL);
-	omap_aess_mute_gain(abe, OMAP_AESS_MIXDL2_MM_UL2);
-	omap_aess_mute_gain(abe, OMAP_AESS_MIXECHO_DL1);
-	omap_aess_mute_gain(abe, OMAP_AESS_MIXECHO_DL2);
+	omap_aess_mute_gain(aess, OMAP_AESS_GAIN_DL2_LEFT);
+	omap_aess_mute_gain(aess, OMAP_AESS_GAIN_DL2_RIGHT);
+	omap_aess_mute_gain(aess, OMAP_AESS_MIXDL1_MM_DL);
+	omap_aess_mute_gain(aess, OMAP_AESS_MIXDL1_MM_UL2);
+	omap_aess_mute_gain(aess, OMAP_AESS_MIXDL1_VX_DL);
+	omap_aess_mute_gain(aess, OMAP_AESS_MIXDL1_TONES);
+	omap_aess_mute_gain(aess, OMAP_AESS_MIXDL2_TONES);
+	omap_aess_mute_gain(aess, OMAP_AESS_MIXDL2_VX_DL);
+	omap_aess_mute_gain(aess, OMAP_AESS_MIXDL2_MM_DL);
+	omap_aess_mute_gain(aess, OMAP_AESS_MIXDL2_MM_UL2);
+	omap_aess_mute_gain(aess, OMAP_AESS_MIXECHO_DL1);
+	omap_aess_mute_gain(aess, OMAP_AESS_MIXECHO_DL2);
 
 	/* Sidetone gains */
-	omap_aess_mute_gain(abe, OMAP_AESS_MIXSDT_UL);
-	omap_aess_mute_gain(abe, OMAP_AESS_MIXSDT_DL);
+	omap_aess_mute_gain(aess, OMAP_AESS_MIXSDT_UL);
+	omap_aess_mute_gain(aess, OMAP_AESS_MIXSDT_DL);
 }
 
 static int abe_probe(struct snd_soc_platform *platform)
