@@ -33,8 +33,6 @@
 
 #include "omap-abe-priv.h"
 
-int abe_opp_recalc_level(struct omap_abe *abe);
-
 static struct abe_opp_req *abe_opp_lookup_requested(struct omap_abe *abe,
 					struct device *dev)
 {
@@ -104,72 +102,6 @@ out:
 	rcu_read_unlock();
 	return ret;
 }
-
-int omap_abe_opp_new_request(struct snd_soc_platform *platform,
-		struct device *dev, int opp)
-{
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
-	struct abe_opp_req *req;
-	int ret = 0;
-
-	mutex_lock(&abe->opp.req_mutex);
-
-	req = abe_opp_lookup_requested(abe, dev);
-	if (!req) {
-		req = kzalloc(sizeof(struct abe_opp_req), GFP_KERNEL);
-		if (!req) {
-			ret = -ENOMEM;
-			goto out;
-		}
-
-		req->dev = dev;
-		req->opp = 1 << opp; /* use the same convention as ABE DSP DAPM */
-
-		list_add(&req->node, &abe->opp.req);
-		dev_dbg(abe->dev, "opp: new constraint %d from %s\n", opp,
-			dev_name(dev));
-		abe->opp.req_count++;
-	} else
-		req->opp = opp;
-
-	abe_opp_recalc_level(abe);
-
-out:
-	mutex_unlock(&abe->opp.req_mutex);
-	return ret;
-}
-EXPORT_SYMBOL(omap_abe_opp_new_request);
-
-int omap_abe_opp_free_request(struct snd_soc_platform *platform,
-		struct device *dev)
-{
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
-	struct abe_opp_req *req;
-	int ret;
-
-	mutex_lock(&abe->opp.req_mutex);
-
-	req = abe_opp_lookup_requested(abe, dev);
-	if (!req) {
-		dev_err(dev, "opp: trying to remove an invalid OPP request\n");
-		ret = -EINVAL;
-		goto out;
-	}
-
-	dev_dbg(abe->dev, "opp: free constraint %d from %s\n", req->opp,
-			dev_name(dev));
-
-	list_del(&req->node);
-	abe->opp.req_count--;
-	kfree(req);
-
-	abe_opp_recalc_level(abe);
-
-out:
-	mutex_unlock(&abe->opp.req_mutex);
-	return ret;
-}
-EXPORT_SYMBOL(omap_abe_opp_free_request);
 
 int abe_opp_set_level(struct omap_abe *abe, int opp)
 {
@@ -304,3 +236,69 @@ int abe_opp_stream_event(struct snd_soc_dapm_context *dapm, int event)
 
 	return 0;
 }
+
+int omap_abe_opp_new_request(struct snd_soc_platform *platform,
+		struct device *dev, int opp)
+{
+	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct abe_opp_req *req;
+	int ret = 0;
+
+	mutex_lock(&abe->opp.req_mutex);
+
+	req = abe_opp_lookup_requested(abe, dev);
+	if (!req) {
+		req = kzalloc(sizeof(struct abe_opp_req), GFP_KERNEL);
+		if (!req) {
+			ret = -ENOMEM;
+			goto out;
+		}
+
+		req->dev = dev;
+		req->opp = 1 << opp; /* use the same convention as ABE DSP DAPM */
+
+		list_add(&req->node, &abe->opp.req);
+		dev_dbg(abe->dev, "opp: new constraint %d from %s\n", opp,
+			dev_name(dev));
+		abe->opp.req_count++;
+	} else
+		req->opp = opp;
+
+	abe_opp_recalc_level(abe);
+
+out:
+	mutex_unlock(&abe->opp.req_mutex);
+	return ret;
+}
+EXPORT_SYMBOL(omap_abe_opp_new_request);
+
+int omap_abe_opp_free_request(struct snd_soc_platform *platform,
+		struct device *dev)
+{
+	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct abe_opp_req *req;
+	int ret;
+
+	mutex_lock(&abe->opp.req_mutex);
+
+	req = abe_opp_lookup_requested(abe, dev);
+	if (!req) {
+		dev_err(dev, "opp: trying to remove an invalid OPP request\n");
+		ret = -EINVAL;
+		goto out;
+	}
+
+	dev_dbg(abe->dev, "opp: free constraint %d from %s\n", req->opp,
+			dev_name(dev));
+
+	list_del(&req->node);
+	abe->opp.req_count--;
+	kfree(req);
+
+	abe_opp_recalc_level(abe);
+
+out:
+	mutex_unlock(&abe->opp.req_mutex);
+	return ret;
+}
+EXPORT_SYMBOL(omap_abe_opp_free_request);
