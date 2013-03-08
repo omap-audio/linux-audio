@@ -270,7 +270,6 @@ out:
 	mutex_unlock(&abe->opp.req_mutex);
 	return ret;
 }
-EXPORT_SYMBOL(omap_abe_opp_new_request);
 
 int omap_abe_opp_free_request(struct snd_soc_platform *platform,
 		struct device *dev)
@@ -301,4 +300,3 @@ out:
 	mutex_unlock(&abe->opp.req_mutex);
 	return ret;
 }
-EXPORT_SYMBOL(omap_abe_opp_free_request);
