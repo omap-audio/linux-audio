@@ -32,10 +32,6 @@
  */
 #define LCD_PIXEL_CLOCK		23800
 
-struct nec_8048_data {
-	struct backlight_device *bl;
-};
-
 static const struct {
 	unsigned char addr;
 	unsigned char dat;
@@ -89,9 +85,6 @@ static int nec_8048_bl_update_status(struct backlight_device *bl)
 	struct omap_dss_device *dssdev = dev_get_drvdata(&bl->dev);
 	int level;
 
-	if (!dssdev->set_backlight)
-		return -EINVAL;
-
 	if (bl->props.fb_blank == FB_BLANK_UNBLANK &&
 			bl->props.power == FB_BLANK_UNBLANK)
 		level = bl->props.brightness;
@@ -118,59 +111,52 @@ static const struct backlight_ops nec_8048_bl_ops = {
 static int nec_8048_panel_probe(struct omap_dss_device *dssdev)
 {
 	struct backlight_device *bl;
-	struct nec_8048_data *necd;
-	struct backlight_properties props;
 	int r;
 
 	dssdev->panel.timings = nec_8048_panel_timings;
 
-	necd = kzalloc(sizeof(*necd), GFP_KERNEL);
-	if (!necd)
-		return -ENOMEM;
+	if (dssdev->set_backlight) {
+		struct backlight_properties props;
 
-	dev_set_drvdata(&dssdev->dev, necd);
+		memset(&props, 0, sizeof(struct backlight_properties));
+		props.max_brightness = 255;
+		props.type = BACKLIGHT_RAW;
 
-	memset(&props, 0, sizeof(struct backlight_properties));
-	props.max_brightness = 255;
+		bl = backlight_device_register("nec-8048", &dssdev->dev, dssdev,
+				&nec_8048_bl_ops, &props);
+		if (IS_ERR(bl))
+			return PTR_ERR(bl);
 
-	bl = backlight_device_register("nec-8048", &dssdev->dev, dssdev,
-			&nec_8048_bl_ops, &props);
-	if (IS_ERR(bl)) {
-		r = PTR_ERR(bl);
-		kfree(necd);
-		return r;
+		dev_set_drvdata(&dssdev->dev, bl);
+
+		bl->props.fb_blank = FB_BLANK_UNBLANK;
+		bl->props.power = FB_BLANK_UNBLANK;
+		bl->props.max_brightness = dssdev->max_backlight_level;
+		bl->props.brightness = dssdev->max_backlight_level;
+
+		r = nec_8048_bl_update_status(bl);
+		if (r < 0)
+			dev_err(&dssdev->dev, "failed to set lcd brightness\n");
 	}
-	necd->bl = bl;
-
-	bl->props.fb_blank = FB_BLANK_UNBLANK;
-	bl->props.power = FB_BLANK_UNBLANK;
-	bl->props.max_brightness = dssdev->max_backlight_level;
-	bl->props.brightness = dssdev->max_backlight_level;
-
-	r = nec_8048_bl_update_status(bl);
-	if (r < 0)
-		dev_err(&dssdev->dev, "failed to set lcd brightness\n");
 
 	return 0;
 }
 
 static void nec_8048_panel_remove(struct omap_dss_device *dssdev)
 {
-	struct nec_8048_data *necd = dev_get_drvdata(&dssdev->dev);
-	struct backlight_device *bl = necd->bl;
+	struct backlight_device *bl = dev_get_drvdata(&dssdev->dev);
 
-	bl->props.power = FB_BLANK_POWERDOWN;
-	nec_8048_bl_update_status(bl);
-	backlight_device_unregister(bl);
-
-	kfree(necd);
+	if (bl) {
+		bl->props.power = FB_BLANK_POWERDOWN;
+		nec_8048_bl_update_status(bl);
+		backlight_device_unregister(bl);
+	}
 }
 
 static int nec_8048_panel_power_on(struct omap_dss_device *dssdev)
 {
+	struct backlight_device *bl = dev_get_drvdata(&dssdev->dev);
 	int r;
-	struct nec_8048_data *necd = dev_get_drvdata(&dssdev->dev);
-	struct backlight_device *bl = necd->bl;
 
 	if (dssdev->state == OMAP_DSS_DISPLAY_ACTIVE)
 		return 0;
@@ -188,9 +174,11 @@ static int nec_8048_panel_power_on(struct omap_dss_device *dssdev)
 			goto err1;
 	}
 
-	r = nec_8048_bl_update_status(bl);
-	if (r < 0)
-		dev_err(&dssdev->dev, "failed to set lcd brightness\n");
+	if (bl) {
+		r = nec_8048_bl_update_status(bl);
+		if (r < 0)
+			dev_err(&dssdev->dev, "failed to set lcd brightness\n");
+	}
 
 	return 0;
 err1:
@@ -201,14 +189,15 @@ err0:
 
 static void nec_8048_panel_power_off(struct omap_dss_device *dssdev)
 {
-	struct nec_8048_data *necd = dev_get_drvdata(&dssdev->dev);
-	struct backlight_device *bl = necd->bl;
+	struct backlight_device *bl = dev_get_drvdata(&dssdev->dev);
 
 	if (dssdev->state != OMAP_DSS_DISPLAY_ACTIVE)
 		return;
 
-	bl->props.brightness = 0;
-	nec_8048_bl_update_status(bl);
+	if (bl) {
+		bl->props.brightness = 0;
+		nec_8048_bl_update_status(bl);
+	}
 
 	if (dssdev->platform_disable)
 		dssdev->platform_disable(dssdev);

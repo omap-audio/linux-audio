@@ -3,13 +3,21 @@ pwm-backlight bindings
 Required properties:
   - compatible: "pwm-backlight"
   - pwms: OF device-tree PWM specification (see PWM binding[0])
+
+  Brightness range can be configured with either "brightness-levels" or with
+  "max-brightness-level".
   - brightness-levels: Array of distinct brightness levels. Typically these
       are in the range from 0 to 255, but any range starting at 0 will do.
       The actual brightness level (PWM duty cycle) will be interpolated
       from these values. 0 means a 0% duty cycle (darkest/off), while the
       last value in the array represents a 100% duty cycle (brightest).
-  - default-brightness-level: the default brightness level (index into the
-      array defined by the "brightness-levels" property)
+  - max-brightness-level: The maximum brightness level the PWM supports. When
+      the brightness is specified using this property the whole range from 0 to
+      "max-brightness-level" will be available to configure.
+  - default-brightness-level: the default brightness level. With
+      "brightness-levels" it is an index into the array defined by the
+      "brightness-levels" property. When it is used with "max-brightness-level"
+      it is the value in the range from 0 to "max-brightness-level"
 
 Optional properties:
   - pwm-names: a list of names for the PWM devices specified in the
