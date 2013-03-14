@@ -40,6 +40,8 @@
 
 #include "omap-abe-priv.h"
 
+#define ABE_FW_NAME	"omap4_abe_new"
+
 extern struct snd_soc_platform_driver omap_aess_platform;
 extern struct snd_soc_dai_driver omap_abe_dai[6];
 
@@ -60,6 +62,19 @@ static void abe_fw_ready(const struct firmware *fw, void *context)
 	struct platform_device *pdev = (struct platform_device *)context;
 	struct omap_abe *abe = dev_get_drvdata(&pdev->dev);
 	int err;
+
+	if (unlikely(!fw)) {
+		dev_err(&pdev->dev, "%s firmware is not loaded\n",
+			ABE_FW_NAME);
+		return;
+	}
+
+	if (unlikely(!fw->data)) {
+		dev_err(&pdev->dev, "Loaded %s firmware is empty\n",
+			ABE_FW_NAME);
+		release_firmware(fw);
+		return;
+	}
 
 	abe->fw = fw;
 
@@ -143,10 +158,11 @@ static int abe_engine_probe(struct platform_device *pdev)
 	abe->dev->coherent_dma_mask = omap_abe_dmamask;
 	put_device(abe->dev);
 
-	ret = request_firmware_nowait(THIS_MODULE, 1, "omap4_abe_new", abe->dev,
+	ret = request_firmware_nowait(THIS_MODULE, 1, ABE_FW_NAME, abe->dev,
 				      GFP_KERNEL, pdev, abe_fw_ready);
-	if (!ret)
-		dev_err(abe->dev, "Failed to load firmware %d\n", ret);
+	if (ret)
+		dev_err(abe->dev, "Failed to load firmware %s: %d\n",
+			ABE_FW_NAME, ret);
 
 	return ret;
 }
