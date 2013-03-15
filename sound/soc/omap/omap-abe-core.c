@@ -27,6 +27,7 @@
 #include <linux/init.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
+#include <linux/delay.h>
 #include <linux/pm_runtime.h>
 #include <linux/firmware.h>
 #include <linux/debugfs.h>
@@ -56,6 +57,49 @@ static const char *abe_memory_bank[5] = {
 };
 
 void driver_deferred_probe_trigger(void);
+
+void omap_abe_pm_get(struct snd_soc_platform *platform)
+{
+	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	pm_runtime_get_sync(abe->dev);
+}
+EXPORT_SYMBOL_GPL(omap_abe_pm_get);
+
+void omap_abe_pm_put(struct snd_soc_platform *platform)
+{
+	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	pm_runtime_put_sync(abe->dev);
+}
+EXPORT_SYMBOL_GPL(omap_abe_pm_put);
+
+void omap_abe_pm_shutdown(struct snd_soc_platform *platform)
+{
+	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	int ret;
+
+	if (abe->active && omap_aess_check_activity(abe->aess))
+		return;
+
+	omap_aess_set_opp_processing(abe->aess, ABE_OPP25);
+	abe->opp.level = 25;
+
+	omap_aess_stop_event_generator(abe->aess);
+	udelay(250);
+	if (abe->device_scale) {
+		ret = abe->device_scale(abe->dev, abe->dev, abe->opp.freqs[0]);
+		if (ret)
+			dev_err(abe->dev, "failed to scale to lowest OPP\n");
+	}
+}
+EXPORT_SYMBOL_GPL(omap_abe_pm_shutdown);
+
+void omap_abe_pm_set_mode(struct snd_soc_platform *platform, int mode)
+{
+	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+
+	abe->dc_offset.power_mode = mode;
+}
+EXPORT_SYMBOL(omap_abe_pm_set_mode);
 
 static void abe_fw_ready(const struct firmware *fw, void *context)
 {
