@@ -33,17 +33,17 @@
 #include "omap-abe-priv.h"
 #include "omap-pcm.h"
 
-int abe_pm_save_context(struct omap_abe *abe);
-int abe_pm_restore_context(struct omap_abe *abe);
 int abe_opp_recalc_level(struct omap_abe *abe);
 int abe_opp_set_level(struct omap_abe *abe, int opp);
 
 int abe_opp_stream_event(struct snd_soc_dapm_context *dapm, int event);
-int abe_pm_suspend(struct snd_soc_dai *dai);
-int abe_pm_resume(struct snd_soc_dai *dai);
 void abe_init_debugfs(struct omap_abe *abe);
 void abe_cleanup_debugfs(struct omap_abe *abe);
 int abe_opp_init_initial_opp(struct omap_abe *abe);
+
+int abe_mixer_enable_mono(struct omap_abe *abe, int id, int enable);
+int abe_mixer_set_equ_profile(struct omap_abe *abe,
+		unsigned int id, unsigned int profile);
 
 extern struct snd_soc_fw_platform_ops soc_fw_ops;
 
@@ -82,6 +82,83 @@ struct omap_aess_irq_data {
 	unsigned int data:12;
 	unsigned int tag:4;
 };
+
+static int abe_save_context(struct omap_abe *abe)
+{
+	/* mute gains not associated with FEs/BEs */
+	omap_aess_mute_gain(abe->aess, OMAP_AESS_MIXAUDUL_MM_DL);
+	omap_aess_mute_gain(abe->aess, OMAP_AESS_MIXAUDUL_TONES);
+	omap_aess_mute_gain(abe->aess, OMAP_AESS_MIXAUDUL_VX_DL);
+	omap_aess_mute_gain(abe->aess, OMAP_AESS_MIXVXREC_TONES);
+	omap_aess_mute_gain(abe->aess, OMAP_AESS_MIXVXREC_VX_DL);
+	omap_aess_mute_gain(abe->aess, OMAP_AESS_MIXVXREC_MM_DL);
+	omap_aess_mute_gain(abe->aess, OMAP_AESS_MIXVXREC_VX_UL);
+	omap_aess_mute_gain(abe->aess, OMAP_AESS_MIXECHO_DL1);
+	omap_aess_mute_gain(abe->aess, OMAP_AESS_MIXECHO_DL2);
+
+	/*
+	 * mute gains associated with DL1 BE
+	 * ideally, these gains should be muted/saved when BE is muted, but
+	 * when ABE McPDM is started for DL1 or DL2, PDM_DL1 port gets enabled
+	 * which prevents to mute these gains since two ports on DL1 path are
+	 * active when mute is called for BT_VX_DL or MM_EXT_DL.
+	 *
+	 * These gains are not restored along with the context because they
+	 * are properly unmuted/restored when any of the DL1 BEs is unmuted
+	 */
+	omap_aess_mute_gain(abe->aess, OMAP_AESS_GAIN_DL1_LEFT);
+	omap_aess_mute_gain(abe->aess, OMAP_AESS_GAIN_DL1_RIGHT);
+	omap_aess_mute_gain(abe->aess, OMAP_AESS_MIXSDT_DL);
+
+	return 0;
+}
+
+int abe_restore_context(struct omap_abe *abe)
+{
+	int i, ret;
+
+	if (abe->device_scale) {
+		ret = abe->device_scale(abe->dev, abe->dev,
+				abe->opp.freqs[OMAP_ABE_OPP_50]);
+		if (ret) {
+			dev_err(abe->dev, "failed to scale to OPP 50\n");
+			return ret;
+		}
+	}
+
+	/* unmute gains not associated with FEs/BEs */
+	omap_aess_unmute_gain(abe->aess, OMAP_AESS_MIXAUDUL_MM_DL);
+	omap_aess_unmute_gain(abe->aess, OMAP_AESS_MIXAUDUL_TONES);
+	omap_aess_unmute_gain(abe->aess, OMAP_AESS_MIXAUDUL_VX_DL);
+	omap_aess_unmute_gain(abe->aess, OMAP_AESS_MIXVXREC_TONES);
+	omap_aess_unmute_gain(abe->aess, OMAP_AESS_MIXVXREC_VX_DL);
+	omap_aess_unmute_gain(abe->aess, OMAP_AESS_MIXVXREC_MM_DL);
+	omap_aess_unmute_gain(abe->aess, OMAP_AESS_MIXVXREC_VX_UL);
+	omap_aess_unmute_gain(abe->aess, OMAP_AESS_MIXECHO_DL1);
+	omap_aess_unmute_gain(abe->aess, OMAP_AESS_MIXECHO_DL2);
+	omap_aess_set_router_configuration(abe->aess, (u32 *)abe->mixer.route_ul);
+
+	/* DC offset cancellation setting */
+	if (abe->dc_offset.power_mode)
+		omap_aess_write_pdmdl_offset(abe->aess, 1, abe->dc_offset.hsl * 2, abe->dc_offset.hsr * 2);
+	else
+		omap_aess_write_pdmdl_offset(abe->aess, 1, abe->dc_offset.hsl, abe->dc_offset.hsr);
+
+	omap_aess_write_pdmdl_offset(abe->aess, 2, abe->dc_offset.hfl, abe->dc_offset.hfr);
+
+	abe_mixer_set_equ_profile(abe, OMAP_AESS_CMEM_DL1_COEFS_ID, abe->equ.dl1.profile);
+	abe_mixer_set_equ_profile(abe, OMAP_AESS_CMEM_DL2_L_COEFS_ID, abe->equ.dl2l.profile);
+	abe_mixer_set_equ_profile(abe, OMAP_AESS_CMEM_DL2_R_COEFS_ID, abe->equ.dl2r.profile);
+	abe_mixer_set_equ_profile(abe, OMAP_AESS_CMEM_SDT_COEFS_ID, abe->equ.sdt.profile);
+	abe_mixer_set_equ_profile(abe, OMAP_AESS_CMEM_96_48_AMIC_COEFS_ID, abe->equ.amic.profile);
+	abe_mixer_set_equ_profile(abe, OMAP_AESS_CMEM_96_48_DMIC_COEFS_ID, abe->equ.dmic.profile);
+
+	for (i = 0; i < OMAP_ABE_NUM_MONO_MIXERS; i++)
+		abe_mixer_enable_mono(abe, MIX_DL1_MONO + i, abe->mixer.mono[i]);
+
+       return 0;
+}
+
 
 #define OMAP_ABE_IRQTAG_COUNT	0x000c
 #define OMAP_ABE_IRQTAG_PP	0x000d
@@ -182,7 +259,7 @@ static int aess_open(struct snd_pcm_substream *substream)
 
 	if (!abe->active++) {
 		abe->opp.level = 0;
-		abe_pm_restore_context(abe);
+		abe_restore_context(abe);
 		abe_opp_set_level(abe, 100);
 		omap_aess_wakeup(abe->aess);
 	}
@@ -276,7 +353,7 @@ static int aess_close(struct snd_pcm_substream *substream)
 
 	if (!--abe->active) {
 		omap_aess_disable_irq(abe->aess);
-		abe_pm_save_context(abe);
+		abe_save_context(abe);
 		omap_abe_pm_shutdown(platform);
 	} else {
 		/* Only scale OPP level
@@ -495,12 +572,151 @@ static int omap_abe_oppwidget_write(struct snd_soc_platform *platform,
 	return 0;
 }
 
+#ifdef CONFIG_PM
+static int abe_suspend(struct snd_soc_dai *dai)
+{
+	struct omap_abe *abe = snd_soc_dai_get_drvdata(dai);
+	int ret = 0;
+
+	dev_dbg(dai->dev, "%s: %s active %d\n",
+		__func__, dai->name, dai->active);
+
+	if (!dai->active)
+		return 0;
+
+	pm_runtime_get_sync(abe->dev);
+
+	switch (dai->id) {
+	case OMAP_ABE_DAI_PDM_UL:
+		omap_aess_mute_gain(abe->aess, OMAP_AESS_GAIN_AMIC_LEFT);
+		omap_aess_mute_gain(abe->aess, OMAP_AESS_GAIN_AMIC_RIGHT);
+		break;
+	case OMAP_ABE_DAI_PDM_DL1:
+	case OMAP_ABE_DAI_PDM_DL2:
+		break;
+	case OMAP_ABE_DAI_BT_VX:
+		omap_aess_mute_gain(abe->aess, OMAP_AESS_GAIN_BTUL_LEFT);
+		omap_aess_mute_gain(abe->aess, OMAP_AESS_GAIN_BTUL_RIGHT);
+		break;
+	case OMAP_ABE_DAI_MM_FM:
+	case OMAP_ABE_DAI_MODEM:
+		break;
+	case OMAP_ABE_DAI_DMIC0:
+		omap_aess_mute_gain(abe->aess, OMAP_AESS_GAIN_DMIC1_LEFT);
+		omap_aess_mute_gain(abe->aess, OMAP_AESS_GAIN_DMIC1_RIGHT);
+		break;
+	case OMAP_ABE_DAI_DMIC1:
+		omap_aess_mute_gain(abe->aess, OMAP_AESS_GAIN_DMIC2_LEFT);
+		omap_aess_mute_gain(abe->aess, OMAP_AESS_GAIN_DMIC2_RIGHT);
+		break;
+	case OMAP_ABE_DAI_DMIC2:
+		omap_aess_mute_gain(abe->aess, OMAP_AESS_GAIN_DMIC3_LEFT);
+		omap_aess_mute_gain(abe->aess, OMAP_AESS_GAIN_DMIC3_RIGHT);
+		break;
+	default:
+		dev_err(dai->dev, "%s: invalid DAI id %d\n",
+				__func__, dai->id);
+		break;
+	}
+
+	pm_runtime_put_sync(abe->dev);
+	return ret;
+}
+
+static int abe_resume(struct snd_soc_dai *dai)
+{
+	struct omap_abe *abe = snd_soc_dai_get_drvdata(dai);
+	int i, ret = 0;
+
+	dev_dbg(dai->dev, "%s: %s active %d\n",
+		__func__, dai->name, dai->active);
+
+	if (!dai->active)
+		return 0;
+
+	/* context retained, no need to restore */
+	if (abe->get_context_lost_count && abe->get_context_lost_count(abe->dev) == abe->context_lost)
+		return 0;
+	abe->context_lost = abe->get_context_lost_count(abe->dev);
+	pm_runtime_get_sync(abe->dev);
+	if (abe->device_scale) {
+		ret = abe->device_scale(abe->dev, abe->dev,
+				abe->opp.freqs[OMAP_ABE_OPP_50]);
+		if (ret) {
+			dev_err(abe->dev, "failed to scale to OPP 50\n");
+			goto out;
+		}
+	}
+
+	omap_aess_reload_fw(abe->aess, abe->fw_data);
+
+	switch (dai->id) {
+	case OMAP_ABE_DAI_PDM_UL:
+		omap_aess_unmute_gain(abe->aess, OMAP_AESS_GAIN_AMIC_LEFT);
+		omap_aess_unmute_gain(abe->aess, OMAP_AESS_GAIN_AMIC_RIGHT);
+		break;
+	case OMAP_ABE_DAI_PDM_DL1:
+	case OMAP_ABE_DAI_PDM_DL2:
+		break;
+	case OMAP_ABE_DAI_BT_VX:
+		omap_aess_unmute_gain(abe->aess, OMAP_AESS_GAIN_BTUL_LEFT);
+		omap_aess_unmute_gain(abe->aess, OMAP_AESS_GAIN_BTUL_RIGHT);
+		break;
+	case OMAP_ABE_DAI_MM_FM:
+	case OMAP_ABE_DAI_MODEM:
+		break;
+	case OMAP_ABE_DAI_DMIC0:
+		omap_aess_unmute_gain(abe->aess, OMAP_AESS_GAIN_DMIC1_LEFT);
+		omap_aess_unmute_gain(abe->aess, OMAP_AESS_GAIN_DMIC1_RIGHT);
+		break;
+	case OMAP_ABE_DAI_DMIC1:
+		omap_aess_unmute_gain(abe->aess, OMAP_AESS_GAIN_DMIC2_LEFT);
+		omap_aess_unmute_gain(abe->aess, OMAP_AESS_GAIN_DMIC2_RIGHT);
+		break;
+	case OMAP_ABE_DAI_DMIC2:
+		omap_aess_unmute_gain(abe->aess, OMAP_AESS_GAIN_DMIC3_LEFT);
+		omap_aess_unmute_gain(abe->aess, OMAP_AESS_GAIN_DMIC3_RIGHT);
+		break;
+	default:
+		dev_err(dai->dev, "%s: invalid DAI id %d\n",
+				__func__, dai->id);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	omap_aess_set_router_configuration(abe->aess, (u32 *)abe->mixer.route_ul);
+
+	if (abe->dc_offset.power_mode)
+		omap_aess_write_pdmdl_offset(abe->aess, 1, abe->dc_offset.hsl * 2, abe->dc_offset.hsr * 2);
+	else
+		omap_aess_write_pdmdl_offset(abe->aess, 1, abe->dc_offset.hsl, abe->dc_offset.hsr);
+
+	omap_aess_write_pdmdl_offset(abe->aess, 2, abe->dc_offset.hfl, abe->dc_offset.hfr);
+
+	abe_mixer_set_equ_profile(abe, OMAP_AESS_CMEM_DL1_COEFS_ID, abe->equ.dl1.profile);
+	abe_mixer_set_equ_profile(abe, OMAP_AESS_CMEM_DL2_L_COEFS_ID, abe->equ.dl2l.profile);
+	abe_mixer_set_equ_profile(abe, OMAP_AESS_CMEM_DL2_R_COEFS_ID, abe->equ.dl2r.profile);
+	abe_mixer_set_equ_profile(abe, OMAP_AESS_CMEM_SDT_COEFS_ID, abe->equ.sdt.profile);
+	abe_mixer_set_equ_profile(abe, OMAP_AESS_CMEM_96_48_AMIC_COEFS_ID, abe->equ.amic.profile);
+	abe_mixer_set_equ_profile(abe, OMAP_AESS_CMEM_96_48_DMIC_COEFS_ID, abe->equ.dmic.profile);
+
+	for (i = 0; i < OMAP_ABE_NUM_MONO_MIXERS; i++)
+		abe_mixer_enable_mono(abe, MIX_DL1_MONO + i, abe->mixer.mono[i]);
+out:
+	pm_runtime_put_sync(abe->dev);
+	return ret;
+}
+#else
+#define abe_suspend	NULL
+#define abe_resume	NULL
+#endif
+
 struct snd_soc_platform_driver omap_aess_platform = {
 	.ops		= &omap_aess_pcm_ops,
 	.probe		= abe_probe,
 	.remove		= abe_remove,
-	.suspend	= abe_pm_suspend,
-	.resume		= abe_pm_resume,
+	.suspend	= abe_suspend,
+	.resume		= abe_resume,
 	.read		= omap_abe_oppwidget_read,
 	.write		= omap_abe_oppwidget_write,
 	.stream_event	= abe_opp_stream_event,
