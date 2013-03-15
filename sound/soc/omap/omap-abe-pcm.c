@@ -198,8 +198,7 @@ irqreturn_t abe_irq_handler(int irq, void *dev_id)
 	/* extract the write pointer index from CMEM memory (INITPTR format) */
 	/* CMEM address of the write pointer in bytes */
 	cmem_src = aess->fw_info.label_id[OMAP_AESS_BUFFER_MCU_IRQ_FIFO_PTR_ID] << 2;
-	omap_abe_mem_read(aess, OMAP_ABE_CMEM, cmem_src,
-			  &sm_cm, sizeof(abe_irq_dbg_write_ptr));
+	omap_abe_mem_read(aess, OMAP_ABE_CMEM, cmem_src, &sm_cm, sizeof(sm_cm));
 	/* AESS left-pointer index located on MSBs */
 	abe_irq_dbg_write_ptr = sm_cm >> 16;
 	abe_irq_dbg_write_ptr &= 0xFF;
