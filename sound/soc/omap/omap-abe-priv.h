@@ -357,7 +357,6 @@ struct omap_abe {
 	const void *fw_config;
 	const void *fw_data;
 	const struct firmware *fw;
-	int num_equ;
 
 #ifdef CONFIG_DEBUG_FS
 	struct omap_abe_debugfs debugfs;
