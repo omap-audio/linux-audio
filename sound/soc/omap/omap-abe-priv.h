@@ -233,7 +233,7 @@ struct abe_opp_req {
 	int opp;
 };
 
-struct omap_abe_debugfs {
+struct omap_abe_debug {
 	/* its intended we can switch on/off individual debug items */
 	u32 format1; /* TODO: match flag names here to debug format flags */
 	u32 format2;
@@ -359,7 +359,7 @@ struct omap_abe {
 	const struct firmware *fw;
 
 #ifdef CONFIG_DEBUG_FS
-	struct omap_abe_debugfs debugfs;
+	struct omap_abe_debug debug;
 #endif
 };
 
