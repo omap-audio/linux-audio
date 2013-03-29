@@ -105,16 +105,16 @@ static void abe_fw_ready(const struct firmware *fw, void *context)
 {
 	struct platform_device *pdev = (struct platform_device *)context;
 	struct omap_abe *abe = dev_get_drvdata(&pdev->dev);
-	int err;
+	int ret;
 
 	if (unlikely(!fw)) {
 		dev_warn(&pdev->dev, "%s firmware is not loaded. Retry.\n",
 			ABE_FW_NAME);
 
-		err = request_firmware(&fw, ABE_FW_NAME, &pdev->dev);
-		if (err) {
+		ret = request_firmware(&fw, ABE_FW_NAME, &pdev->dev);
+		if (ret) {
 			dev_err(&pdev->dev, "%s firmware loading error %d\n",
-				ABE_FW_NAME, err);
+				ABE_FW_NAME, ret);
 			return;
 		}
 	}
@@ -128,17 +128,17 @@ static void abe_fw_ready(const struct firmware *fw, void *context)
 
 	abe->fw = fw;
 
-	err = snd_soc_register_platform(&pdev->dev, &omap_aess_platform);
-	if (err < 0) {
-		dev_err(&pdev->dev, "failed to register ABE platform %d\n", err);
+	ret = snd_soc_register_platform(&pdev->dev, &omap_aess_platform);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "failed to register ABE platform %d\n", ret);
 		release_firmware(fw);
 		return;
 	}
 
-	err = snd_soc_register_dais(&pdev->dev, omap_abe_dai,
+	ret = snd_soc_register_dais(&pdev->dev, omap_abe_dai,
 			ARRAY_SIZE(omap_abe_dai));
-	if (err < 0) {
-		dev_err(&pdev->dev, "failed to register ABE DAIs %d\n", err);
+	if (ret < 0) {
+		dev_err(&pdev->dev, "failed to register ABE DAIs %d\n", ret);
 		snd_soc_unregister_platform(&pdev->dev);
 		release_firmware(fw);
 	}
