@@ -233,43 +233,6 @@ struct abe_opp_req {
 	int opp;
 };
 
-struct omap_abe_debug {
-	/* its intended we can switch on/off individual debug items */
-	u32 format1; /* TODO: match flag names here to debug format flags */
-	u32 format2;
-	u32 format3;
-
-	/* ABE DMA buffer */
-	u32 buffer_bytes;
-	u32 circular;
-	u32 buffer_msecs;  /* size of buffer in secs */
-	u32 elem_bytes;
-	dma_addr_t buffer_addr;
-	wait_queue_head_t wait;
-	size_t reader_offset;
-	size_t dma_offset;
-	int complete;
-	char *buffer;
-	struct omap_pcm_dma_data *dma_data;
-	int dma_ch;
-	int dma_req;
-
-	/* debugfs */
-	struct dentry *d_root;
-	struct dentry *d_fmt1;
-	struct dentry *d_fmt2;
-	struct dentry *d_fmt3;
-	struct dentry *d_size;
-	struct dentry *d_data;
-	struct dentry *d_circ;
-	struct dentry *d_elem_bytes;
-	struct dentry *d_opp;
-	struct dentry *d_cmem;
-	struct dentry *d_pmem;
-	struct dentry *d_smem;
-	struct dentry *d_dmem;
-};
-
 struct omap_abe_dc_offset {
 	/* DC offset cancellation */
 	int power_mode;
@@ -325,6 +288,8 @@ struct omap_abe_mixer {
 	u16 route_ul[16];
 };
 
+struct omap_abe_debug;
+
 /*
  * ABE private data.
  */
@@ -359,7 +324,7 @@ struct omap_abe {
 	const struct firmware *fw;
 
 #ifdef CONFIG_DEBUG_FS
-	struct omap_abe_debug debug;
+	struct omap_abe_debug *debug;
 #endif
 };
 
