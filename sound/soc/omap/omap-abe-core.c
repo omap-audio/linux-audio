@@ -108,9 +108,15 @@ static void abe_fw_ready(const struct firmware *fw, void *context)
 	int err;
 
 	if (unlikely(!fw)) {
-		dev_err(&pdev->dev, "%s firmware is not loaded\n",
+		dev_warn(&pdev->dev, "%s firmware is not loaded. Retry.\n",
 			ABE_FW_NAME);
-		return;
+
+		err = request_firmware(&fw, ABE_FW_NAME, &pdev->dev);
+		if (err) {
+			dev_err(&pdev->dev, "%s firmware loading error %d\n",
+				ABE_FW_NAME, err);
+			return;
+		}
 	}
 
 	if (unlikely(!fw->data)) {
