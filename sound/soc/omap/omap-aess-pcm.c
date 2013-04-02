@@ -197,7 +197,7 @@ irqreturn_t abe_irq_handler(int irq, void *dev_id)
 
 	/* extract the write pointer index from CMEM memory (INITPTR format) */
 	/* CMEM address of the write pointer in bytes */
-	cmem_src = aess->fw_info.label_id[OMAP_AESS_BUFFER_MCU_IRQ_FIFO_PTR_ID] << 2;
+	cmem_src = omap_aess_get_label_data(aess, OMAP_AESS_BUFFER_MCU_IRQ_FIFO_PTR_ID) << 2;
 	omap_abe_mem_read(aess, OMAP_ABE_CMEM, cmem_src, &sm_cm, sizeof(sm_cm));
 	/* AESS left-pointer index located on MSBs */
 	abe_irq_dbg_write_ptr = sm_cm >> 16;
@@ -512,7 +512,7 @@ static int abe_probe(struct snd_soc_platform *platform)
 
 	/* ZERO_labelID should really be 0 */
 	for (i = 0; i < OMAP_ABE_ROUTES_UL + 2; i++)
-		abe->mixer.route_ul[i] = abe->aess->fw_info.label_id[OMAP_AESS_BUFFER_ZERO_ID];
+		abe->mixer.route_ul[i] = omap_aess_get_label_data(abe->aess, OMAP_AESS_BUFFER_ZERO_ID);
 
 	omap_aess_load_fw(abe->aess, abe->fw_data);
 

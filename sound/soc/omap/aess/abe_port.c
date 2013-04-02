@@ -319,7 +319,7 @@ void omap_aess_build_scheduler_table(struct omap_aess *aess)
 	/* reset the uplink router */
 	n = aess->fw_info.map[OMAP_AESS_DMEM_AUPLINKROUTING_ID].bytes >> 1;
 	for (i = 0; i < n; i++)
-		aUplinkMuxing[i] = aess->fw_info.label_id[OMAP_AESS_BUFFER_ZERO_ID];
+		aUplinkMuxing[i] = omap_aess_get_label_data(aess, OMAP_AESS_BUFFER_ZERO_ID);
 
 	omap_aess_mem_write(aess,
 			    aess->fw_info.map[OMAP_AESS_DMEM_AUPLINKROUTING_ID],
@@ -1148,8 +1148,8 @@ int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 		datasize = abe_dma_port_iter_factor(format);
 		x_io = (u8) abe_dma_port_iteration(format);
 		nsamp = (x_io / datasize);
-		atc_ptr_saved2 = aess->fw_info.label_id[OMAP_AESS_BUFFER_DMIC_ATC_PTR_ID] + id;
-		atc_ptr_saved = aess->fw_info.label_id[OMAP_AESS_BUFFER_DMIC_ATC_PTR_ID] + id;
+		atc_ptr_saved2 = omap_aess_get_label_data(aess, OMAP_AESS_BUFFER_DMIC_ATC_PTR_ID) + id;
+		atc_ptr_saved = omap_aess_get_label_data(aess, OMAP_AESS_BUFFER_DMIC_ATC_PTR_ID) + id;
 
 		smem1 = abe_port[id].smem_buffer1;
 		smem2 = abe_port[id].smem_buffer2;
@@ -1275,7 +1275,7 @@ int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 			break;
 		case OMAP_ABE_MM_EXT_IN_PORT:
 			/* set the SMEM buffer -- programming sequence */
-			smem1 = aess->fw_info.label_id[OMAP_AESS_BUFFER_MM_EXT_IN_ID];
+			smem1 = omap_aess_get_label_data(aess, OMAP_AESS_BUFFER_MM_EXT_IN_ID);
 			break;
 		case OMAP_ABE_PDM_DL_PORT:
 		case OMAP_ABE_PDM_UL_PORT:

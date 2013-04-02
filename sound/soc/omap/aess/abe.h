@@ -122,7 +122,7 @@ enum port_state {
 struct omap_aess_mapping {
 	struct omap_aess_addr *map;
 	int *fct_id;
-	int *label_id;
+	u32 *label_id;
 	int nb_init_task;
 	struct omap_aess_task *init_table;
 	struct omap_aess_port *port;
@@ -272,6 +272,11 @@ struct omap_aess_dma {
 	void *data;
 	u32 iter;
 };
+
+static inline u32 omap_aess_get_label_data(struct omap_aess *aess, int index)
+{
+	return aess->fw_info.label_id[index];
+}
 
 int omap_aess_set_opp_processing(struct omap_aess *aess, u32 opp);
 int omap_aess_connect_debug_trace(struct omap_aess *aess,
