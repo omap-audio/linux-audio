@@ -44,7 +44,7 @@
 #include "omap-mcpdm.h"
 #include "omap-pcm.h"
 
-#include "omap-abe-priv.h"
+#include "omap-aess-priv.h"
 
 #define OMAP_MCPDM_LEGACY_DAI	0
 #define OMAP_MCPDM_ABE_DAI	1

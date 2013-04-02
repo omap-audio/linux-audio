@@ -39,7 +39,7 @@
 #include "omap-dmic.h"
 #include "omap-mcpdm.h"
 #include "omap-pcm.h"
-#include "omap-abe-priv.h"
+#include "omap-aess-priv.h"
 #include "mcbsp.h"
 #include "omap-mcbsp.h"
 #include "omap-dmic.h"

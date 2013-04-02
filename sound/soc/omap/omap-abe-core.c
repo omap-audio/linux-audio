@@ -39,7 +39,7 @@
 #include <sound/soc-fw.h>
 #include "../../../arch/arm/mach-omap2/omap-pm.h"
 
-#include "omap-abe-priv.h"
+#include "omap-aess-priv.h"
 
 #define ABE_FW_NAME	"omap4_abe_new"
 

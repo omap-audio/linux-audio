@@ -34,7 +34,7 @@
 
 #include <sound/soc.h>
 
-#include "omap-abe-priv.h"
+#include "omap-aess-priv.h"
 
 /* TODO: size in bytes of debug options */
 #define OMAP_ABE_DBG_FLAG1_SIZE	0

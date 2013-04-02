@@ -21,8 +21,8 @@
  *
  */
 
-#ifndef __OMAP_ABE_PRIV_H__
-#define __OMAP_ABE_PRIV_H__
+#ifndef __OMAP_AESS_PRIV_H__
+#define __OMAP_AESS_PRIV_H__
 
 #ifdef __KERNEL__
 
@@ -351,4 +351,4 @@ void omap_abe_set_dl1_gains(struct snd_soc_platform *platform,
 	int left, int right);
 
 #endif  /* __kernel__ */
-#endif	/* End of __OMAP_MCPDM_H__ */
+#endif	/* End of __OMAP_AESS_PRIV_H__ */

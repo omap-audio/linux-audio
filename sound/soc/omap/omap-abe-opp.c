@@ -31,7 +31,7 @@
 
 #include <sound/soc.h>
 
-#include "omap-abe-priv.h"
+#include "omap-aess-priv.h"
 
 static struct abe_opp_req *abe_opp_lookup_requested(struct omap_abe *abe,
 					struct device *dev)

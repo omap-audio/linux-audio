@@ -30,7 +30,7 @@
 #include <sound/soc.h>
 #include <sound/soc-dpcm.h>
 
-#include "omap-abe-priv.h"
+#include "omap-aess-priv.h"
 #include "omap-pcm.h"
 
 /*

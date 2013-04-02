@@ -30,7 +30,7 @@
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
 
-#include "omap-abe-priv.h"
+#include "omap-aess-priv.h"
 #include "omap-pcm.h"
 
 int abe_opp_recalc_level(struct omap_abe *abe);

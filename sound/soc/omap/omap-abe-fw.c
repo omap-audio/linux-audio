@@ -32,7 +32,7 @@
 #include <sound/tlv.h>
 #include <sound/soc-fw.h>
 
-#include "omap-abe-priv.h"
+#include "omap-aess-priv.h"
 
 #define OMAP_ABE_HS_DC_OFFSET_STEP	(1800 / 8)
 #define OMAP_ABE_HF_DC_OFFSET_STEP	(4600 / 8)
