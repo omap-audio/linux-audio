@@ -196,7 +196,7 @@ struct omap_abe_port {
 #endif
 };
 
-#if IS_ENABLED(CONFIG_SND_OMAP_SOC_ABE)
+#if IS_ENABLED(CONFIG_SND_OMAP_SOC_AESS)
 struct omap_abe_port *omap_abe_port_open(struct omap_aess *aess,
 					 int logical_id);
 void omap_abe_port_close(struct omap_aess *aess, struct omap_abe_port *port);
@@ -244,7 +244,7 @@ static inline struct omap_aess *omap_abe_port_mgr_get(void)
 static inline void omap_abe_port_mgr_put(struct omap_aess *aess)
 {
 }
-#endif /* IS_ENABLED(CONFIG_SND_OMAP_SOC_ABE) */
+#endif /* IS_ENABLED(CONFIG_SND_OMAP_SOC_AESS) */
 
 struct omap_aess_equ {
 	/* type of filter */

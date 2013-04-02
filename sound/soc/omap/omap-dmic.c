@@ -537,8 +537,7 @@ static int asoc_dmic_probe(struct platform_device *pdev)
 		goto err_put_clk;
 	}
 
-#if defined(CONFIG_SND_OMAP_SOC_ABE) ||\
-	defined(CONFIG_SND_OMAP_SOC_ABE_MODULE)
+#if IS_ENABLED(CONFIG_SND_OMAP_SOC_AESS)
 	nr_dai = ARRAY_SIZE(omap_dmic_dai);
 #else
 	nr_dai = 1;

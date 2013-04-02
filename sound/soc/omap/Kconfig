@@ -19,7 +19,7 @@ config SND_OMAP_SOC_MCPDM
 config SND_OMAP_SOC_HDMI
 	tristate
 
-config SND_OMAP_SOC_ABE
+config SND_OMAP_SOC_AESS
 	tristate
 
 config SND_OMAP_SOC_N810
@@ -101,7 +101,7 @@ config SND_OMAP_SOC_OMAP_ABE_TWL6040
 	select SND_SOC_DMIC
 	select SND_OMAP_SOC_MCASP
 	select SND_OMAP_SOC_MCBSP
-	select SND_OMAP_SOC_ABE
+	select SND_OMAP_SOC_AESS
 	select SND_DYNAMIC_MINORS
 
 	help
