@@ -108,7 +108,6 @@
 #define EVENT_GENERATOR_COUNTER_44100	(2228-1)
 
 
-int omap_aess_start_event_generator(struct omap_aess *aess);
 int omap_aess_stop_event_generator(struct omap_aess *aess);
 int omap_aess_write_event_generator(struct omap_aess *aess, u32 e);
 

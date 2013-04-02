@@ -67,9 +67,6 @@
 #include "abe_mem.h"
 #include "abe_aess.h"
 
-#define EVENT_GENERATOR_ON 1
-#define EVENT_GENERATOR_OFF 0
-
 #define EVENT_SOURCE_DMA 0
 #define EVENT_SOURCE_COUNTER 1
 
@@ -141,27 +138,11 @@ int omap_aess_write_event_generator(struct omap_aess *aess, u32 e)
 	}
 	omap_aess_reg_writel(aess, OMAP_AESS_EVENT_GENERATOR_COUNTER, counter);
 	omap_aess_reg_writel(aess, OMAP_AESS_EVENT_SOURCE_SELECTION, selection);
-	omap_aess_reg_writel(aess, OMAP_AESS_EVENT_GENERATOR_START, EVENT_GENERATOR_ON);
+	omap_aess_reg_writel(aess, OMAP_AESS_EVENT_GENERATOR_START, 1);
 	omap_aess_reg_writel(aess, OMAP_AESS_AUDIO_ENGINE_SCHEDULER, event);
 	return 0;
 }
 EXPORT_SYMBOL(omap_aess_write_event_generator);
-
-/**
- * omap_aess_start_event_generator - Starts event generator source
- * @aess: Pointer on abe handle
- *
- * Start the event genrator of AESS. No more event will be send to AESS engine.
- * Upper layer must wait 1/96kHz to be sure that engine reaches
- * the IDLE instruction.
- */
-int omap_aess_start_event_generator(struct omap_aess *aess)
-{
-	/* Start the event Generator */
-	omap_aess_reg_writel(aess, OMAP_AESS_EVENT_GENERATOR_START, 1);
-	return 0;
-}
-EXPORT_SYMBOL(omap_aess_start_event_generator);
 
 /**
  * omap_aess_stop_event_generator - Stops event generator source
