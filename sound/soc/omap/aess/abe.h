@@ -334,4 +334,8 @@ int omap_aess_set_ping_pong_buffer(struct omap_aess *aess,
 				   u32 port, u32 n_bytes);
 int omap_aess_read_offset_from_ping_buffer(struct omap_aess *aess,
 					   u32 id, u32 *n);
+
+void omap_aess_pp_handler(struct omap_aess *aess, void (*callback)(void *data),
+			  void *cb_data);
+
 #endif /* _ABE_H_ */

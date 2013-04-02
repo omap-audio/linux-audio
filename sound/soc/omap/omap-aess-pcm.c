@@ -66,23 +66,6 @@ static const struct snd_pcm_hardware omap_abe_hardware = {
 	.buffer_bytes_max	= 24 * 1024 * 2,
 };
 
-/*
- * omap_aess_irq_data
- *
- * IRQ FIFO content declaration
- *	APS interrupts : IRQ_FIFO[31:28] = IRQtag_APS,
- *		IRQ_FIFO[27:16] = APS_IRQs, IRQ_FIFO[15:0] = loopCounter
- *	SEQ interrupts : IRQ_FIFO[31:28] OMAP_ABE_IRQTAG_COUNT,
- *		IRQ_FIFO[27:16] = Count_IRQs, IRQ_FIFO[15:0] = loopCounter
- *	Ping-Pong Interrupts : IRQ_FIFO[31:28] = OMAP_ABE_IRQTAG_PP,
- *		IRQ_FIFO[27:16] = PP_MCU_IRQ, IRQ_FIFO[15:0] = loopCounter
- */
-struct omap_aess_irq_data {
-	unsigned int counter:16;
-	unsigned int data:12;
-	unsigned int tag:4;
-};
-
 static int abe_save_context(struct omap_abe *abe)
 {
 	/* mute gains not associated with FEs/BEs */
@@ -160,14 +143,10 @@ int abe_restore_context(struct omap_abe *abe)
 }
 
 
-#define OMAP_ABE_IRQTAG_COUNT	0x000c
-#define OMAP_ABE_IRQTAG_PP	0x000d
-#define OMAP_ABE_IRQ_FIFO_MASK	((OMAP_ABE_D_MCUIRQFIFO_SIZE >> 2) - 1)
-
-static void abe_irq_pingpong_subroutine(struct snd_pcm_substream *substream,
-					struct omap_abe *abe)
+static void abe_irq_pingpong_subroutine(void *data)
 {
-
+	struct omap_abe *abe = data;
+	struct snd_pcm_substream *substream;
 	u32 dst, n_bytes;
 
 	omap_aess_read_next_ping_pong_buffer(abe->aess, OMAP_ABE_MM_DL_PORT,
@@ -178,6 +157,7 @@ static void abe_irq_pingpong_subroutine(struct snd_pcm_substream *substream,
 	if (abe->mmap.first_irq) {
 		abe->mmap.first_irq = 0;
 	} else {
+		substream = abe->dai.port[OMAP_ABE_FE_PORT_MM_DL_LP]->substream;
 		if (substream)
 			snd_pcm_period_elapsed(substream);
 	}
@@ -187,54 +167,10 @@ static void abe_irq_pingpong_subroutine(struct snd_pcm_substream *substream,
 irqreturn_t abe_irq_handler(int irq, void *dev_id)
 {
 	struct omap_abe *abe = dev_id;
-	struct omap_aess_addr addr;
-	struct omap_aess *aess = abe->aess;
-	struct omap_aess_irq_data IRQ_data;
-	u32 abe_irq_dbg_write_ptr, i, cmem_src, sm_cm;
 
 	pm_runtime_get_sync(abe->dev);
-	omap_aess_clear_irq(abe->aess);
 
-	/* extract the write pointer index from CMEM memory (INITPTR format) */
-	/* CMEM address of the write pointer in bytes */
-	cmem_src = omap_aess_get_label_data(aess, OMAP_AESS_BUFFER_MCU_IRQ_FIFO_PTR_ID) << 2;
-	omap_abe_mem_read(aess, OMAP_ABE_CMEM, cmem_src, &sm_cm, sizeof(sm_cm));
-	/* AESS left-pointer index located on MSBs */
-	abe_irq_dbg_write_ptr = sm_cm >> 16;
-	abe_irq_dbg_write_ptr &= 0xFF;
-	/* loop on the IRQ FIFO content */
-	for (i = 0; i < OMAP_ABE_D_MCUIRQFIFO_SIZE; i++) {
-		/* stop when the FIFO is empty */
-		if (abe_irq_dbg_write_ptr == aess->irq_dbg_read_ptr)
-			break;
-		/* read the IRQ/DBG FIFO */
-		memcpy(&addr, &aess->fw_info.map[OMAP_AESS_DMEM_MCUIRQFIFO_ID],
-		       sizeof(struct omap_aess_addr));
-		addr.offset += (aess->irq_dbg_read_ptr << 2);
-		addr.bytes = sizeof(IRQ_data);
-		omap_aess_mem_read(aess, addr, (u32 *)&IRQ_data);
-		aess->irq_dbg_read_ptr = (aess->irq_dbg_read_ptr + 1) & OMAP_ABE_IRQ_FIFO_MASK;
-		/* select the source of the interrupt */
-		switch (IRQ_data.tag) {
-		case OMAP_ABE_IRQTAG_PP:
-			/* first IRQ doesn't represent a buffer transference completion */
-			if (aess->pp_first_irq)
-				aess->pp_first_irq = 0;
-			else
-				aess->pp_buf_id = (aess->pp_buf_id + 1) & 0x03;
-
-			abe_irq_pingpong_subroutine(abe->dai.port[OMAP_ABE_FE_PORT_MM_DL_LP]->substream,
-						    abe);
-
-			break;
-		case OMAP_ABE_IRQTAG_COUNT:
-			/*omap_aess_monitoring(aess);*/
-			break;
-		default:
-			break;
-		}
-
-	}
+	omap_aess_pp_handler(abe->aess, abe_irq_pingpong_subroutine, abe);
 
 	pm_runtime_put_sync_suspend(abe->dev);
 	return IRQ_HANDLED;
