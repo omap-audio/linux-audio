@@ -109,17 +109,15 @@ int omap_aess_write_event_generator(struct omap_aess *aess, u32 e)
 	case EVENT_STOP:
 		omap_aess_reg_writel(aess, OMAP_AESS_EVENT_GENERATOR_START, 0);
 		return 0;
+	case EVENT_44100:
+		counter = EVENT_GENERATOR_COUNTER_44100;
+		/* Fall through */
 	case EVENT_TIMER:
 		selection = EVENT_SOURCE_COUNTER;
 		event = 0;
 		break;
-	case EVENT_44100:
-		selection = EVENT_SOURCE_COUNTER;
-		event = 0;
-		counter = EVENT_GENERATOR_COUNTER_44100;
-		break;
 	default:
-		aess_err("Bad event generator selection");
+		aess_err("Bad event generator selection (%u)", e);
 		return -AESS_EINVAL;
 	}
 	omap_aess_reg_writel(aess, OMAP_AESS_EVENT_GENERATOR_COUNTER, counter);
