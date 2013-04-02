@@ -1056,7 +1056,7 @@ int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 		/* ping_pong is only supported on MM_DL */
 		if (OMAP_ABE_MM_DL_PORT != id) {
 			aess_err("Only Ping-pong port supported");
-			return -AESS_EINVAL;
+			return -EINVAL;
 		}
 		if (abe_port[id].format.f == 44100)
 			smem1 = omap_aess_update_io_task1(aess, &(aess->fw_info.ping_pong->tsk_freq[2].task), 1);
@@ -1633,7 +1633,7 @@ int omap_aess_set_ping_pong_buffer(struct omap_aess *aess, u32 port, u32 n_bytes
 	/* ping_pong is only supported on MM_DL */
 	if (port != OMAP_ABE_MM_DL_PORT) {
 		aess_err("Only Ping-pong port supported");
-		return -AESS_EINVAL;
+		return -EINVAL;
 	}
 	/* translates the number of bytes in samples */
 	/* data size in DMEM words */
@@ -1691,7 +1691,7 @@ int omap_aess_read_offset_from_ping_buffer(struct omap_aess *aess,
 	/* ping_pong is only supported on MM_DL */
 	if (OMAP_ABE_MM_DL_PORT != id) {
 		aess_err("Only Ping-pong port supported");
-		return -AESS_EINVAL;
+		return -EINVAL;
 	} else {
 		/* read the port SIO ping pong descriptor */
 		memcpy(&addr, &aess->fw_info.map[OMAP_AESS_DMEM_PINGPONGDESC_ID],
@@ -1721,7 +1721,7 @@ int omap_aess_read_offset_from_ping_buffer(struct omap_aess *aess,
 			break;
 		default:
 			aess_err("Bad data format for Ping-pong buffer");
-			return -AESS_EINVAL;
+			return -EINVAL;
 		}
 	}
 
@@ -1747,7 +1747,7 @@ int omap_aess_read_next_ping_pong_buffer(struct omap_aess *aess, u32 port,
 	/* ping_pong is only supported on MM_DL */
 	if (port != OMAP_ABE_MM_DL_PORT) {
 		aess_err("Only Ping-pong port supported");
-		return -AESS_EINVAL;
+		return -EINVAL;
 	}
 	/* read the port SIO descriptor and extract the current pointer
 	   address after reading the counter */
@@ -1790,7 +1790,7 @@ static int omap_aess_init_ping_pong_buffer(struct omap_aess *aess,
 	   is ready for ping/pong/pung/pang... */
 	if (id != OMAP_ABE_MM_DL_PORT || n_buffers > MAX_PINGPONG_BUFFERS) {
 		aess_err("Too Many Ping-pong buffers requested");
-		return -AESS_EINVAL;
+		return -EINVAL;
 	}
 
 	memcpy(&addr, &aess->fw_info.map[OMAP_AESS_DMEM_PING_ID],
@@ -1841,7 +1841,7 @@ int omap_aess_connect_irq_ping_pong_port(struct omap_aess *aess,
 	/* ping_pong is only supported on MM_DL */
 	if (id != OMAP_ABE_MM_DL_PORT) {
 		aess_err("Only Ping-pong port supported");
-		return -AESS_EINVAL;
+		return -EINVAL;
 	}
 
 	memcpy(&addr, &aess->fw_info.map[OMAP_AESS_DMEM_PING_ID],

@@ -118,7 +118,7 @@ int omap_aess_write_event_generator(struct omap_aess *aess, u32 e)
 		break;
 	default:
 		aess_err("Bad event generator selection (%u)", e);
-		return -AESS_EINVAL;
+		return -EINVAL;
 	}
 	omap_aess_reg_writel(aess, OMAP_AESS_EVENT_GENERATOR_COUNTER, counter);
 	omap_aess_reg_writel(aess, OMAP_AESS_EVENT_SOURCE_SELECTION, selection);

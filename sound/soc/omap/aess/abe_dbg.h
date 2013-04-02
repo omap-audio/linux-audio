@@ -79,6 +79,4 @@
 
 #endif
 
-#define AESS_EINVAL	EINVAL
-
 #endif /* _ABE_DBG_H_ */
