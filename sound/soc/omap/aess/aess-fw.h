@@ -495,8 +495,10 @@ struct omap_aess_io_desc {
 /*
  *	EVENT GENERATORS - abe_event_id
  */
-#define EVENT_TIMER 0
-#define EVENT_44100 1
+#define EVENT_TIMER	0
+#define EVENT_44100	1
+#define EVENT_STOP	2
+
 /*
  *	SERIAL PORTS IDs - abe_mcbsp_id
  */

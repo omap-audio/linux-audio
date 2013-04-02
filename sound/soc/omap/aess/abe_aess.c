@@ -106,6 +106,9 @@ int omap_aess_write_event_generator(struct omap_aess *aess, u32 e)
 	u32 counter = EVENT_GENERATOR_COUNTER_DEFAULT;
 
 	switch (e) {
+	case EVENT_STOP:
+		omap_aess_reg_writel(aess, OMAP_AESS_EVENT_GENERATOR_START, 0);
+		return 0;
 	case EVENT_TIMER:
 		selection = EVENT_SOURCE_COUNTER;
 		event = 0;
