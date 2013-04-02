@@ -71,23 +71,6 @@
 #define EVENT_SOURCE_COUNTER 1
 
 /**
- * omap_aess_hw_configuration
- * @aess: Pointer on aess handle
- *
- * Initialize the AESS HW registers for MPU and DMA
- * request visibility.
- */
-void omap_aess_hw_configuration(struct omap_aess *aess)
-{
-	/* enable AESS auto gating (required to release all AESS clocks) */
-	omap_aess_reg_writel(aess, OMAP_AESS_AUTO_GATING_ENABLE, 1);
-	/* enables the DMAreq from AESS AESS_DMAENABLE_SET = 255 */
-	omap_aess_reg_writel(aess, OMAP_AESS_DMAENABLE_SET, DMA_ENABLE_ALL);
-	/* enables the MCU IRQ from AESS to Cortex A9 */
-	omap_aess_reg_writel(aess, OMAP_AESS_MCU_IRQENABLE_SET, INT_SET);
-}
-
-/**
  * omap_aess_clear_irq - clear ABE interrupt
  * @aess: Pointer on aess handle
  *
@@ -95,7 +78,7 @@ void omap_aess_hw_configuration(struct omap_aess *aess)
  */
 int omap_aess_clear_irq(struct omap_aess *aess)
 {
-	omap_aess_reg_writel(aess, OMAP_AESS_MCU_IRQSTATUS, INT_CLR);
+	omap_aess_reg_writel(aess, OMAP_AESS_MCU_IRQSTATUS, INT_MASK);
 	return 0;
 }
 EXPORT_SYMBOL(omap_aess_clear_irq);
@@ -170,9 +153,9 @@ int omap_aess_disable_irq(struct omap_aess *aess)
 {
 	/* disables the DMAreq from AESS AESS_DMAENABLE_CLR = 127
 	 * DMA_Req7 will still be enabled as it is used for ABE trace */
-	omap_aess_reg_writel(aess, OMAP_AESS_DMAENABLE_CLR, 0x7F);
+	omap_aess_reg_writel(aess, OMAP_AESS_DMAENABLE_CLR, DMA_SELECT(0x7f));
 	/* disables the MCU IRQ from AESS to Cortex A9 */
-	omap_aess_reg_writel(aess, OMAP_AESS_MCU_IRQENABLE_CLR, 0x01);
+	omap_aess_reg_writel(aess, OMAP_AESS_MCU_IRQENABLE_CLR, INT_MASK);
 	return 0;
 }
 EXPORT_SYMBOL(omap_aess_disable_irq);

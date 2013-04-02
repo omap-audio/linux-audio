@@ -69,6 +69,24 @@
 #include "abe_mem.h"
 #include "abe_dbg.h"
 
+
+/**
+ * omap_aess_hw_configuration
+ * @aess: Pointer on aess handle
+ *
+ * Initialize the AESS HW registers for MPU and DMA
+ * request visibility.
+ */
+static void omap_aess_hw_configuration(struct omap_aess *aess)
+{
+	/* enable AESS auto gating (required to release all AESS clocks) */
+	omap_aess_reg_writel(aess, OMAP_AESS_AUTO_GATING_ENABLE, 1);
+	/* enables the DMAreq from AESS AESS_DMAENABLE_SET = 255 */
+	omap_aess_reg_writel(aess, OMAP_AESS_DMAENABLE_SET, DMA_SELECT(0xff));
+	/* enables the MCU IRQ from AESS to Cortex A9 */
+	omap_aess_reg_writel(aess, OMAP_AESS_MCU_IRQENABLE_SET, INT_MASK);
+}
+
 /**
  * omap_aess_reset_hal - reset the ABE/HAL
  * @aess: Pointer on aess handle

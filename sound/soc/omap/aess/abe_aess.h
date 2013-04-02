@@ -74,30 +74,11 @@
 #define OMAP_AESS_AUTO_GATING_ENABLE		0x7C
 #define OMAP_AESS_DMASTATUS_RAW			0x84
 
-/*
- * AESS_MCU_IRQSTATUS bit field
- */
-#define INT_CLEAR			0x01
+/* AESS_MCU_IRQENABLE_SET/CLR (0x3c/0x40) bit field */
+#define INT_MASK			0x01
 
-/*
- * AESS_MCU_IRQENABLE_SET bit field
- */
-#define INT_SET				0x01
-
-/*
- * AESS_MCU_IRQENABLE_CLR bit field
- */
-#define INT_CLR				0x01
-
-/*
- * AESS_DMAENABLE_SET bit fields
- */
-#define DMA_ENABLE_ALL		0xFF
-
-/*
- * AESS_DMAENABLE_CLR bit fields
- */
-#define DMA_DISABLE_ALL		0xFF
+/* AESS_DMAENABLE_SET/CLR (0x60/0x64) bit fields */
+#define DMA_SELECT(x)			(x & 0xFF)
 
 /*
  * EVENT_GENERATOR_COUNTER COUNTER_VALUE bit field
@@ -113,7 +94,5 @@ int omap_aess_write_event_generator(struct omap_aess *aess, u32 e);
 
 int omap_aess_disable_irq(struct omap_aess *aess);
 int omap_aess_clear_irq(struct omap_aess *aess);
-
-void omap_aess_hw_configuration(struct omap_aess *aess);
 
 #endif /* _ABE_AESS_H_ */
