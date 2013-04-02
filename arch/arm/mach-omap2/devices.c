@@ -427,8 +427,7 @@ static void __init omap_init_dmic(void)
 static inline void omap_init_dmic(void) {}
 #endif
 
-#if defined(CONFIG_SND_OMAP_SOC_ABE) || \
-	defined(CONFIG_SND_OMAP_SOC_ABE_MODULE)
+#if IS_ENABLED(CONFIG_SND_OMAP_SOC_AESS)
 
 static void omap_init_aess(void)
 {
