@@ -521,7 +521,7 @@ static int abe_probe(struct snd_soc_platform *platform)
 	abe_init_gains(abe->aess);
 
 	/* Stop the engine */
-	omap_aess_stop_event_generator(abe->aess);
+	omap_aess_write_event_generator(abe->aess, EVENT_STOP);
 	omap_aess_disable_irq(abe->aess);
 
 	pm_runtime_put_sync(abe->dev);

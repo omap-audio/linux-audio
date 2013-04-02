@@ -131,22 +131,6 @@ int omap_aess_write_event_generator(struct omap_aess *aess, u32 e)
 EXPORT_SYMBOL(omap_aess_write_event_generator);
 
 /**
- * omap_aess_stop_event_generator - Stops event generator source
- * @aess: Pointer on abe handle
- *
- * Stop the event genrator of AESS. No more event will be send to AESS engine.
- * Upper layer must wait 1/96kHz to be sure that engine reaches
- * the IDLE instruction.
- */
-int omap_aess_stop_event_generator(struct omap_aess *aess)
-{
-	/* Stop the event Generator */
-	omap_aess_reg_writel(aess, OMAP_AESS_EVENT_GENERATOR_START, 0);
-	return 0;
-}
-EXPORT_SYMBOL(omap_aess_stop_event_generator);
-
-/**
  * omap_aess_disable_irq - disable MCU/DSP ABE interrupt
  * @aess: Pointer on abe handle
  *

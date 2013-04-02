@@ -83,7 +83,7 @@ void omap_abe_pm_shutdown(struct snd_soc_platform *platform)
 	omap_aess_set_opp_processing(abe->aess, ABE_OPP25);
 	abe->opp.level = 25;
 
-	omap_aess_stop_event_generator(abe->aess);
+	omap_aess_write_event_generator(abe->aess, EVENT_STOP);
 	udelay(250);
 	if (abe->device_scale) {
 		ret = abe->device_scale(abe->dev, abe->dev, abe->opp.freqs[0]);
