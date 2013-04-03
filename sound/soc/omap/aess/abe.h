@@ -273,11 +273,6 @@ struct omap_aess_dma {
 	u32 iter;
 };
 
-static inline u32 omap_aess_get_label_data(struct omap_aess *aess, int index)
-{
-	return aess->fw_info.label_id[index];
-}
-
 int omap_aess_set_opp_processing(struct omap_aess *aess, u32 opp);
 int omap_aess_connect_debug_trace(struct omap_aess *aess,
 				  struct omap_aess_dma *dma2);
@@ -335,6 +330,7 @@ int omap_aess_set_ping_pong_buffer(struct omap_aess *aess,
 int omap_aess_read_offset_from_ping_buffer(struct omap_aess *aess,
 					   u32 id, u32 *n);
 
+u32 omap_aess_get_label_data(struct omap_aess *aess, int index);
 void omap_aess_pp_handler(struct omap_aess *aess, void (*callback)(void *data),
 			  void *cb_data);
 

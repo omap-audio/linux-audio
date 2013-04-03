@@ -289,3 +289,9 @@ void omap_aess_pp_handler(struct omap_aess *aess, void (*callback)(void *data),
 	}
 }
 EXPORT_SYMBOL(omap_aess_pp_handler);
+
+u32 omap_aess_get_label_data(struct omap_aess *aess, int index)
+{
+	return aess->fw_info.label_id[index];
+}
+EXPORT_SYMBOL(omap_aess_get_label_data);
