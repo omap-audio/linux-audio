@@ -32,6 +32,7 @@
 
 #include "omap-aess-priv.h"
 #include "omap-pcm.h"
+#include "aess/abe_gain.h"
 
 int abe_opp_recalc_level(struct omap_abe *abe);
 int abe_opp_set_level(struct omap_abe *abe, int opp);
