@@ -102,4 +102,11 @@ static inline void *omap_aess_clear(struct omap_aess *aess, int bank,
 #define omap_aess_mem_reset(aess, addr) \
 	omap_aess_clear(aess, addr.bank, addr.offset, addr.bytes)
 
+/* Operations via aess->fw_info.map[] */
+#define omap_aess_write_map(aess, map_id, src) \
+	omap_aess_write(aess, aess->fw_info.map[map_id].bank, \
+			aess->fw_info.map[map_id].offset, src, \
+			aess->fw_info.map[map_id].bytes)
+
+
 #endif /*_ABE_MEM_H_*/

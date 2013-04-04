@@ -323,7 +323,7 @@ int omap_aess_write_equalizer(struct omap_aess *aess,
 
 	length = param->equ_length;
 	src = (u32 *)((param->coef).type1);
-	omap_aess_mem_write(aess, aess->fw_info.map[id], src);
+	omap_aess_write_map(aess, id, src);
 
 	/* reset SMEM buffers after the coefficients are loaded */
 	omap_aess_mem_reset(aess, equ_addr);

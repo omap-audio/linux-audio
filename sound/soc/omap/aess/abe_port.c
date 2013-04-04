@@ -313,17 +313,16 @@ void omap_aess_build_scheduler_table(struct omap_aess *aess)
 		aess->MultiFrame[task->frame][task->slot] = task->task;
 	}
 
-	omap_aess_mem_write(aess, aess->fw_info.map[OMAP_AESS_DMEM_MULTIFRAME_ID],
-			    (u32 *)aess->MultiFrame);
+	omap_aess_write_map(aess, OMAP_AESS_DMEM_MULTIFRAME_ID,
+			    aess->MultiFrame);
 
 	/* reset the uplink router */
 	n = aess->fw_info.map[OMAP_AESS_DMEM_AUPLINKROUTING_ID].bytes >> 1;
 	for (i = 0; i < n; i++)
 		aUplinkMuxing[i] = omap_aess_get_label_data(aess, OMAP_AESS_BUFFER_ZERO_ID);
 
-	omap_aess_mem_write(aess,
-			    aess->fw_info.map[OMAP_AESS_DMEM_AUPLINKROUTING_ID],
-			    (u32 *)aUplinkMuxing);
+	omap_aess_write_map(aess, OMAP_AESS_DMEM_AUPLINKROUTING_ID,
+			    aUplinkMuxing);
 }
 
 /**
@@ -803,8 +802,8 @@ int omap_aess_enable_data_transfer(struct omap_aess *aess, u32 id)
 		break;
 	}
 
-	omap_aess_mem_write(aess, aess->fw_info.map[OMAP_AESS_DMEM_MULTIFRAME_ID],
-			    (u32 *)aess->MultiFrame);
+	omap_aess_write_map(aess, OMAP_AESS_DMEM_MULTIFRAME_ID,
+			    aess->MultiFrame);
 
 	/* local host variable status= "port is running" */
 	abe_port[id].status = OMAP_ABE_PORT_ACTIVITY_RUNNING;
@@ -1327,8 +1326,8 @@ int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 		omap_aess_mem_write(aess, addr, (u32 *)&sio_desc);
 
 	}
-	omap_aess_mem_write(aess, aess->fw_info.map[OMAP_AESS_DMEM_MULTIFRAME_ID],
-			    (u32 *)aess->MultiFrame);
+	omap_aess_write_map(aess, OMAP_AESS_DMEM_MULTIFRAME_ID,
+			    aess->MultiFrame);
 
 	return 0;
 }
@@ -1354,8 +1353,7 @@ int omap_aess_select_main_port(struct omap_aess *aess, u32 id)
 	if (abe_port[id].protocol.direction == ABE_ATC_DIRECTION_IN)
 		selection |= 0x80000;
 
-	omap_aess_mem_write(aess, aess->fw_info.map[OMAP_AESS_DMEM_SLOT23_CTRL_ID],
-			    &selection);
+	omap_aess_write_map(aess, OMAP_AESS_DMEM_SLOT23_CTRL_ID, &selection);
 	return 0;
 }
 
@@ -1553,8 +1551,8 @@ int omap_aess_mono_mixer(struct omap_aess *aess, u32 id, u32 on_off)
 
 	aess->MultiFrame[task->frame][task->slot] = task->task;
 
-	omap_aess_mem_write(aess, aess->fw_info.map[OMAP_AESS_DMEM_MULTIFRAME_ID],
-			    (u32 *)aess->MultiFrame);
+	omap_aess_write_map(aess, OMAP_AESS_DMEM_MULTIFRAME_ID,
+			    aess->MultiFrame);
 
 	return 0;
 }
@@ -1604,10 +1602,10 @@ void omap_aess_write_pdmdl_offset(struct omap_aess *aess, u32 path,
 
 	switch (path) {
 	case 1:
-		omap_aess_mem_write(aess, aess->fw_info.map[OMAP_AESS_SMEM_DC_HS_ID], offset);
+		omap_aess_write_map(aess, OMAP_AESS_SMEM_DC_HS_ID, offset);
 		break;
 	case 2:
-		omap_aess_mem_write(aess, aess->fw_info.map[OMAP_AESS_SMEM_DC_HF_ID], offset);
+		omap_aess_write_map(aess, OMAP_AESS_SMEM_DC_HF_ID, offset);
 		break;
 	default:
 		break;
