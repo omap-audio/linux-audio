@@ -108,5 +108,9 @@ static inline void *omap_aess_clear(struct omap_aess *aess, int bank,
 			aess->fw_info.map[map_id].offset, src, \
 			aess->fw_info.map[map_id].bytes)
 
+#define omap_aess_reset_map(aess, map_id) \
+	omap_aess_clear(aess, aess->fw_info.map[map_id].bank, \
+			aess->fw_info.map[map_id].offset, \
+			aess->fw_info.map[map_id].bytes)
 
 #endif /*_ABE_MEM_H_*/

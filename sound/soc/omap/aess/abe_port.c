@@ -420,10 +420,10 @@ static void omap_aess_clean_temporary_buffers(struct omap_aess *aess, u32 id)
 {
 	switch (id) {
 	case OMAP_ABE_DMIC_PORT:
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_DMEM_DMIC_UL_FIFO_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_DMIC0_96_48_DATA_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_DMIC1_96_48_DATA_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_DMIC2_96_48_DATA_ID]);
+		omap_aess_reset_map(aess, OMAP_AESS_DMEM_DMIC_UL_FIFO_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_DMIC0_96_48_DATA_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_DMIC1_96_48_DATA_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_DMIC2_96_48_DATA_ID);
 		/* reset working values of the gain, target gain is preserved */
 		omap_aess_reset_gain_mixer(aess, OMAP_AESS_GAIN_DMIC1_LEFT);
 		omap_aess_reset_gain_mixer(aess, OMAP_AESS_GAIN_DMIC1_RIGHT);
@@ -433,88 +433,88 @@ static void omap_aess_clean_temporary_buffers(struct omap_aess *aess, u32 id)
 		omap_aess_reset_gain_mixer(aess, OMAP_AESS_GAIN_DMIC3_RIGHT);
 		break;
 	case OMAP_ABE_PDM_UL_PORT:
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_DMEM_MCPDM_UL_FIFO_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_AMIC_96_48_DATA_ID]);
+		omap_aess_reset_map(aess, OMAP_AESS_DMEM_MCPDM_UL_FIFO_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_AMIC_96_48_DATA_ID);
 		/* reset working values of the gain, target gain is preserved */
 		omap_aess_reset_gain_mixer(aess, OMAP_AESS_GAIN_AMIC_LEFT);
 		omap_aess_reset_gain_mixer(aess, OMAP_AESS_GAIN_AMIC_RIGHT);
 		break;
 	case OMAP_ABE_BT_VX_UL_PORT:
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_DMEM_BT_UL_FIFO_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_BT_UL_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_BT_UL_8_48_HP_DATA_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_BT_UL_8_48_LP_DATA_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_BT_UL_16_48_HP_DATA_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_BT_UL_16_48_LP_DATA_ID]);
+		omap_aess_reset_map(aess, OMAP_AESS_DMEM_BT_UL_FIFO_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_BT_UL_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_BT_UL_8_48_HP_DATA_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_BT_UL_8_48_LP_DATA_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_BT_UL_16_48_HP_DATA_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_BT_UL_16_48_LP_DATA_ID);
 		/* reset working values of the gain, target gain is preserved */
 		omap_aess_reset_gain_mixer(aess, OMAP_AESS_GAIN_BTUL_LEFT);
 		omap_aess_reset_gain_mixer(aess, OMAP_AESS_GAIN_BTUL_RIGHT);
 		break;
 	case OMAP_ABE_MM_UL_PORT:
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_DMEM_MM_UL_FIFO_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_MM_UL_ID]);
+		omap_aess_reset_map(aess, OMAP_AESS_DMEM_MM_UL_FIFO_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_MM_UL_ID);
 		break;
 	case OMAP_ABE_MM_UL2_PORT:
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_DMEM_MM_UL2_FIFO_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_MM_UL2_ID]);
+		omap_aess_reset_map(aess, OMAP_AESS_DMEM_MM_UL2_FIFO_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_MM_UL2_ID);
 		break;
 	case OMAP_ABE_VX_UL_PORT:
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_DMEM_VX_UL_FIFO_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_VX_UL_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_VX_UL_48_8_HP_DATA_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_VX_UL_48_8_LP_DATA_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_VX_UL_48_16_HP_DATA_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_VX_UL_48_16_LP_DATA_ID]);
+		omap_aess_reset_map(aess, OMAP_AESS_DMEM_VX_UL_FIFO_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_VX_UL_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_VX_UL_48_8_HP_DATA_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_VX_UL_48_8_LP_DATA_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_VX_UL_48_16_HP_DATA_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_VX_UL_48_16_LP_DATA_ID);
 		omap_aess_reset_gain_mixer(aess, OMAP_AESS_MIXAUDUL_UPLINK);
 		break;
 	case OMAP_ABE_MM_DL_PORT:
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_DMEM_MM_DL_FIFO_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_MM_DL_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_MM_DL_44P1_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_MM_DL_44P1_XK_ID]);
+		omap_aess_reset_map(aess, OMAP_AESS_DMEM_MM_DL_FIFO_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_MM_DL_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_MM_DL_44P1_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_MM_DL_44P1_XK_ID);
 		omap_aess_reset_gain_mixer(aess, OMAP_AESS_MIXDL1_MM_DL);
 		omap_aess_reset_gain_mixer(aess, OMAP_AESS_MIXDL2_MM_DL);
 		break;
 	case OMAP_ABE_VX_DL_PORT:
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_DMEM_VX_DL_FIFO_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_VX_DL_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_VX_DL_8_48_HP_DATA_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_VX_DL_8_48_LP_DATA_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_VX_DL_8_48_OSR_LP_DATA_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_VX_DL_16_48_HP_DATA_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_VX_DL_16_48_LP_DATA_ID]);
+		omap_aess_reset_map(aess, OMAP_AESS_DMEM_VX_DL_FIFO_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_VX_DL_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_VX_DL_8_48_HP_DATA_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_VX_DL_8_48_LP_DATA_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_VX_DL_8_48_OSR_LP_DATA_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_VX_DL_16_48_HP_DATA_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_VX_DL_16_48_LP_DATA_ID);
 		omap_aess_reset_gain_mixer(aess, OMAP_AESS_MIXDL1_VX_DL);
 		omap_aess_reset_gain_mixer(aess, OMAP_AESS_MIXDL2_VX_DL);
 		break;
 	case OMAP_ABE_TONES_DL_PORT:
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_DMEM_TONES_DL_FIFO_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_TONES_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_TONES_44P1_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_TONES_44P1_XK_ID]);
+		omap_aess_reset_map(aess, OMAP_AESS_DMEM_TONES_DL_FIFO_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_TONES_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_TONES_44P1_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_TONES_44P1_XK_ID);
 		omap_aess_reset_gain_mixer(aess, OMAP_AESS_MIXDL1_TONES);
 		omap_aess_reset_gain_mixer(aess, OMAP_AESS_MIXDL2_TONES);
 		break;
 	case OMAP_ABE_MCASP_DL_PORT:
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_DMEM_MCASP_DL_FIFO_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_MCASP1_ID]);
+		omap_aess_reset_map(aess, OMAP_AESS_DMEM_MCASP_DL_FIFO_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_MCASP1_ID);
 		break;
 	case OMAP_ABE_BT_VX_DL_PORT:
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_DMEM_BT_DL_FIFO_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_BT_DL_ID]);
+		omap_aess_reset_map(aess, OMAP_AESS_DMEM_BT_DL_FIFO_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_BT_DL_ID);
 #if !defined(CONFIG_SND_OMAP4_ABE_USE_ALT_FW)
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_BT_DL_8_48_OSR_LP_DATA_ID]);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_BT_DL_8_48_OSR_LP_DATA_ID);
 #endif
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_BT_DL_48_8_HP_DATA_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_BT_DL_48_8_LP_DATA_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_BT_DL_48_16_HP_DATA_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_BT_DL_48_16_LP_DATA_ID]);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_BT_DL_48_8_HP_DATA_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_BT_DL_48_8_LP_DATA_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_BT_DL_48_16_HP_DATA_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_BT_DL_48_16_LP_DATA_ID);
 		break;
 	case OMAP_ABE_PDM_DL_PORT:
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_DMEM_MCPDM_DL_FIFO_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_DL2_M_LR_EQ_DATA_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_DL1_M_EQ_DATA_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_EARP_48_96_LP_DATA_ID]);
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_SMEM_IHF_48_96_LP_DATA_ID]);
+		omap_aess_reset_map(aess, OMAP_AESS_DMEM_MCPDM_DL_FIFO_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_DL2_M_LR_EQ_DATA_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_DL1_M_EQ_DATA_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_EARP_48_96_LP_DATA_ID);
+		omap_aess_reset_map(aess, OMAP_AESS_SMEM_IHF_48_96_LP_DATA_ID);
 		omap_aess_reset_gain_mixer(aess, OMAP_AESS_GAIN_DL1_LEFT);
 		omap_aess_reset_gain_mixer(aess, OMAP_AESS_GAIN_DL1_RIGHT);
 		omap_aess_reset_gain_mixer(aess, OMAP_AESS_GAIN_DL2_LEFT);
@@ -523,10 +523,10 @@ static void omap_aess_clean_temporary_buffers(struct omap_aess *aess, u32 id)
 		omap_aess_reset_gain_mixer(aess, OMAP_AESS_MIXSDT_DL);
 		break;
 	case OMAP_ABE_MM_EXT_OUT_PORT:
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_DMEM_MM_EXT_OUT_FIFO_ID]);
+		omap_aess_reset_map(aess, OMAP_AESS_DMEM_MM_EXT_OUT_FIFO_ID);
 		break;
 	case OMAP_ABE_MM_EXT_IN_PORT:
-		omap_aess_mem_reset(aess, aess->fw_info.map[OMAP_AESS_DMEM_MM_EXT_IN_FIFO_ID]);
+		omap_aess_reset_map(aess, OMAP_AESS_DMEM_MM_EXT_IN_FIFO_ID);
 		break;
 	}
 }
