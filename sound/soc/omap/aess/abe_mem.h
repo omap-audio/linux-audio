@@ -61,53 +61,45 @@
 
 #include <asm/io.h>
 
-/* Distinction between Read and Write from/to ABE memory
- * is useful for simulation tool */
-static inline void omap_abe_mem_write(struct omap_aess *abe, int bank,
-				u32 offset, u32 *src, size_t bytes)
+#include "abe.h"
+
+static inline void omap_aess_write(struct omap_aess *aess, int bank, u32 offset,
+				   void *src, size_t bytes)
 {
-	memcpy((void __force *)(abe->io_base[bank] + offset), src, bytes);
+	memcpy((void __force *)(aess->io_base[bank] + offset), src, bytes);
 }
 
-static inline void omap_abe_mem_read(struct omap_aess *abe, int bank,
-				u32 offset, u32 *dest, size_t bytes)
+static inline void omap_aess_read(struct omap_aess *aess, int bank, u32 offset,
+				  void *dest, size_t bytes)
 {
-	memcpy(dest, (void __force *)(abe->io_base[bank] + offset), bytes);
+	memcpy(dest, (void __force *)(aess->io_base[bank] + offset), bytes);
 }
 
-static inline u32 omap_aess_reg_readl(struct omap_aess *abe, u32 offset)
+static inline u32 omap_aess_reg_read(struct omap_aess *aess, u32 offset)
 {
-	return __raw_readl(abe->io_base[OMAP_ABE_AESS] + offset);
+	return __raw_readl(aess->io_base[OMAP_ABE_AESS] + offset);
 }
 
-static inline void omap_aess_reg_writel(struct omap_aess *abe,
-				u32 offset, u32 val)
+static inline void omap_aess_reg_write(struct omap_aess *aess, u32 offset,
+				       u32 val)
 {
-	__raw_writel(val, (abe->io_base[OMAP_ABE_AESS] + offset));
+	__raw_writel(val, (aess->io_base[OMAP_ABE_AESS] + offset));
 }
 
-static inline void *omap_abe_reset_mem(struct omap_aess *abe, int bank,
-			u32 offset, size_t bytes)
+static inline void *omap_aess_clear(struct omap_aess *aess, int bank,
+				    u32 offset, size_t bytes)
 {
-	return memset((u32 *)(abe->io_base[bank] + offset), 0, bytes);
+	return memset((void __force *)(aess->io_base[bank] + offset), 0, bytes);
 }
 
-static inline void omap_aess_mem_write(struct omap_aess *abe,
-			struct omap_aess_addr addr, u32 *src)
-{
-	memcpy((void __force *)(abe->io_base[addr.bank] + addr.offset), src, addr.bytes);
-}
+/* struct omap_aess_addr based operations */
+#define omap_aess_mem_write(aess, addr, src) \
+	omap_aess_write(aess, addr.bank, addr.offset, src, addr.bytes)
 
-static inline void omap_aess_mem_read(struct omap_aess *abe,
-				struct omap_aess_addr addr, u32 *dest)
-{
-	memcpy(dest, (void __force *)(abe->io_base[addr.bank] + addr.offset), addr.bytes);
-}
+#define omap_aess_mem_read(aess, addr, dst) \
+	omap_aess_read(aess, addr.bank, addr.offset, dst, addr.bytes)
 
-static inline void *omap_aess_reset_mem(struct omap_aess *abe,
-			struct omap_aess_addr addr)
-{
-	return memset((void __force *)(abe->io_base[addr.bank] + addr.offset), 0, addr.bytes);
-}
+#define omap_aess_mem_reset(aess, addr) \
+	omap_aess_clear(aess, addr.bank, addr.offset, addr.bytes)
 
 #endif /*_ABE_MEM_H_*/

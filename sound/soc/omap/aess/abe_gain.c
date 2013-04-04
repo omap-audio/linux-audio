@@ -319,14 +319,14 @@ int omap_aess_write_equalizer(struct omap_aess *aess,
 	}
 
 	/* reset SMEM buffers before the coefficients are loaded */
-	omap_aess_reset_mem(aess, equ_addr);
+	omap_aess_mem_reset(aess, equ_addr);
 
 	length = param->equ_length;
 	src = (u32 *)((param->coef).type1);
 	omap_aess_mem_write(aess, aess->fw_info.map[id], src);
 
 	/* reset SMEM buffers after the coefficients are loaded */
-	omap_aess_reset_mem(aess, equ_addr);
+	omap_aess_mem_reset(aess, equ_addr);
 	return 0;
 }
 EXPORT_SYMBOL(omap_aess_write_equalizer);
@@ -458,9 +458,8 @@ int omap_aess_write_gain(struct omap_aess *aess,
 
 	if (!aess->muted_gains_indicator[id])
 		/* load the S_G_Target SMEM table */
-		omap_abe_mem_write(aess, OMAP_ABE_SMEM,
-				   mixer_target, (u32 *)&lin_g,
-				   sizeof(lin_g));
+		omap_aess_write(aess, OMAP_ABE_SMEM, mixer_target, &lin_g,
+				sizeof(lin_g));
 	else
 		/* update muted gain with new value */
 		aess->muted_gains_decibel[id] = f_g;
@@ -507,14 +506,13 @@ int omap_aess_write_gain_ramp(struct omap_aess *aess, u32 id, u32 ramp)
 	/* a pair of gains is updated once in the firmware */
 	mixer_target += ((id) >> 1) << 2;
 	/* load the ramp delay data */
-	omap_abe_mem_write(aess, OMAP_ABE_CMEM, mixer_target,
-			   (u32 *)&alpha, sizeof(alpha));
+	omap_aess_write(aess, OMAP_ABE_CMEM, mixer_target, &alpha,
+			sizeof(alpha));
 	/* CMEM bytes address */
 	mixer_target = aess->fw_info.map[OMAP_AESS_CMEM_ALPHA_ID].offset;
 	/* a pair of gains is updated once in the firmware */
 	mixer_target += ((id) >> 1) << 2;
-	omap_abe_mem_write(aess, OMAP_ABE_CMEM, mixer_target,
-			   (u32 *)&beta, sizeof(beta));
+	omap_aess_write(aess, OMAP_ABE_CMEM, mixer_target, &beta, sizeof(beta));
 	return 0;
 }
 EXPORT_SYMBOL(omap_aess_write_gain_ramp);
@@ -560,8 +558,8 @@ int omap_aess_read_gain(struct omap_aess *aess, u32 id, u32 *f_g)
 	mixer_target += (id<<2);
 	if (!aess->muted_gains_indicator[id]) {
 		/* load the S_G_Target SMEM table */
-		omap_abe_mem_read(aess, OMAP_ABE_SMEM, mixer_target,
-				  (u32 *)f_g, sizeof(*f_g));
+		omap_aess_read(aess, OMAP_ABE_SMEM, mixer_target, f_g,
+			       sizeof(*f_g));
 		for (i = 0; i < OMAP_AESS_GAIN_DB2LIN_SIZE; i++) {
 				if (abe_db2lin_table[i] == *f_g)
 					goto found;
@@ -613,6 +611,6 @@ void omap_aess_reset_gain_mixer(struct omap_aess *aess, u32 id)
 	mixer_target += (id<<2);
 	lin_g = 0;
 	/* load the S_G_Target SMEM table */
-	omap_abe_mem_write(aess, OMAP_ABE_SMEM, mixer_target,
-			   (u32 *)&lin_g, sizeof(lin_g));
+	omap_aess_write(aess, OMAP_ABE_SMEM, mixer_target, &lin_g,
+			sizeof(lin_g));
 }

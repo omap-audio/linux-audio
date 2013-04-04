@@ -78,7 +78,7 @@
  */
 int omap_aess_clear_irq(struct omap_aess *aess)
 {
-	omap_aess_reg_writel(aess, OMAP_AESS_MCU_IRQSTATUS, INT_MASK);
+	omap_aess_reg_write(aess, OMAP_AESS_MCU_IRQSTATUS, INT_MASK);
 	return 0;
 }
 EXPORT_SYMBOL(omap_aess_clear_irq);
@@ -107,7 +107,7 @@ int omap_aess_write_event_generator(struct omap_aess *aess, u32 e)
 
 	switch (e) {
 	case EVENT_STOP:
-		omap_aess_reg_writel(aess, OMAP_AESS_EVENT_GENERATOR_START, 0);
+		omap_aess_reg_write(aess, OMAP_AESS_EVENT_GENERATOR_START, 0);
 		return 0;
 	case EVENT_44100:
 		counter = EVENT_GENERATOR_COUNTER_44100;
@@ -120,10 +120,10 @@ int omap_aess_write_event_generator(struct omap_aess *aess, u32 e)
 		aess_err("Bad event generator selection (%u)", e);
 		return -EINVAL;
 	}
-	omap_aess_reg_writel(aess, OMAP_AESS_EVENT_GENERATOR_COUNTER, counter);
-	omap_aess_reg_writel(aess, OMAP_AESS_EVENT_SOURCE_SELECTION, selection);
-	omap_aess_reg_writel(aess, OMAP_AESS_EVENT_GENERATOR_START, 1);
-	omap_aess_reg_writel(aess, OMAP_AESS_AUDIO_ENGINE_SCHEDULER, event);
+	omap_aess_reg_write(aess, OMAP_AESS_EVENT_GENERATOR_COUNTER, counter);
+	omap_aess_reg_write(aess, OMAP_AESS_EVENT_SOURCE_SELECTION, selection);
+	omap_aess_reg_write(aess, OMAP_AESS_EVENT_GENERATOR_START, 1);
+	omap_aess_reg_write(aess, OMAP_AESS_AUDIO_ENGINE_SCHEDULER, event);
 	return 0;
 }
 EXPORT_SYMBOL(omap_aess_write_event_generator);
@@ -138,9 +138,9 @@ int omap_aess_disable_irq(struct omap_aess *aess)
 {
 	/* disables the DMAreq from AESS AESS_DMAENABLE_CLR = 127
 	 * DMA_Req7 will still be enabled as it is used for ABE trace */
-	omap_aess_reg_writel(aess, OMAP_AESS_DMAENABLE_CLR, DMA_SELECT(0x7f));
+	omap_aess_reg_write(aess, OMAP_AESS_DMAENABLE_CLR, DMA_SELECT(0x7f));
 	/* disables the MCU IRQ from AESS to Cortex A9 */
-	omap_aess_reg_writel(aess, OMAP_AESS_MCU_IRQENABLE_CLR, INT_MASK);
+	omap_aess_reg_write(aess, OMAP_AESS_MCU_IRQENABLE_CLR, INT_MASK);
 	return 0;
 }
 EXPORT_SYMBOL(omap_aess_disable_irq);

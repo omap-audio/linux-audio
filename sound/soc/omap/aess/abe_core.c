@@ -97,11 +97,11 @@ struct omap_aess_irq_data {
 static void omap_aess_hw_configuration(struct omap_aess *aess)
 {
 	/* enable AESS auto gating (required to release all AESS clocks) */
-	omap_aess_reg_writel(aess, OMAP_AESS_AUTO_GATING_ENABLE, 1);
+	omap_aess_reg_write(aess, OMAP_AESS_AUTO_GATING_ENABLE, 1);
 	/* enables the DMAreq from AESS AESS_DMAENABLE_SET = 255 */
-	omap_aess_reg_writel(aess, OMAP_AESS_DMAENABLE_SET, DMA_SELECT(0xff));
+	omap_aess_reg_write(aess, OMAP_AESS_DMAENABLE_SET, DMA_SELECT(0xff));
 	/* enables the MCU IRQ from AESS to Cortex A9 */
-	omap_aess_reg_writel(aess, OMAP_AESS_MCU_IRQENABLE_SET, INT_MASK);
+	omap_aess_reg_write(aess, OMAP_AESS_MCU_IRQENABLE_SET, INT_MASK);
 }
 
 /**
@@ -248,7 +248,7 @@ void omap_aess_pp_handler(struct omap_aess *aess, void (*callback)(void *data),
 	 */
 	cmem_src = omap_aess_get_label_data(aess,
 				OMAP_AESS_BUFFER_MCU_IRQ_FIFO_PTR_ID) << 2;
-	omap_abe_mem_read(aess, OMAP_ABE_CMEM, cmem_src, &sm_cm, sizeof(sm_cm));
+	omap_aess_read(aess, OMAP_ABE_CMEM, cmem_src, &sm_cm, sizeof(sm_cm));
 	/* AESS left-pointer index located on MSBs */
 	abe_irq_dbg_write_ptr = sm_cm >> 16;
 	abe_irq_dbg_write_ptr &= 0xFF;

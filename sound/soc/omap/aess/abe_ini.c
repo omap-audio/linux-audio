@@ -293,10 +293,10 @@ static int omap_aess_load_fw_param(struct omap_aess *abe, const void *data)
 	dmem_ptr = cmem_ptr + (cmem_size >> 2);
 	smem_ptr = dmem_ptr + (dmem_size >> 2);
 
-	omap_abe_mem_write(abe, OMAP_ABE_PMEM, 0, pmem_ptr, pmem_size);
-	omap_abe_mem_write(abe, OMAP_ABE_CMEM, 0, cmem_ptr, cmem_size);
-	omap_abe_mem_write(abe, OMAP_ABE_SMEM, 0, smem_ptr, smem_size);
-	omap_abe_mem_write(abe, OMAP_ABE_DMEM, 0, dmem_ptr, dmem_size);
+	omap_aess_write(abe, OMAP_ABE_PMEM, 0, pmem_ptr, pmem_size);
+	omap_aess_write(abe, OMAP_ABE_CMEM, 0, cmem_ptr, cmem_size);
+	omap_aess_write(abe, OMAP_ABE_SMEM, 0, smem_ptr, smem_size);
+	omap_aess_write(abe, OMAP_ABE_DMEM, 0, dmem_ptr, dmem_size);
 
 	return 0;
 }

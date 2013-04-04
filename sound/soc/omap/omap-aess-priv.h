@@ -31,7 +31,6 @@
 #include "aess/abe.h"
 #include "aess/abe_gain.h"
 #include "aess/abe_aess.h"
-#include "aess/abe_mem.h"
 
 #endif
 
