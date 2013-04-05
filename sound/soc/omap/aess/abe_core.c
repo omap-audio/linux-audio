@@ -105,6 +105,23 @@ static void omap_aess_hw_configuration(struct omap_aess *aess)
 }
 
 /**
+ * omap_aess_disable_irq - disable MCU/DSP ABE interrupt
+ * @aess: Pointer on abe handle
+ *
+ * This subroutine is disabling ABE MCU/DSP Irq
+ */
+int omap_aess_disable_irq(struct omap_aess *aess)
+{
+	/* disables the DMAreq from AESS AESS_DMAENABLE_CLR = 127
+	 * DMA_Req7 will still be enabled as it is used for ABE trace */
+	omap_aess_reg_write(aess, OMAP_AESS_DMAENABLE_CLR, DMA_SELECT(0x7f));
+	/* disables the MCU IRQ from AESS to Cortex A9 */
+	omap_aess_reg_write(aess, OMAP_AESS_MCU_IRQENABLE_CLR, INT_MASK);
+	return 0;
+}
+EXPORT_SYMBOL(omap_aess_disable_irq);
+
+/**
  * omap_aess_reset_hal - reset the ABE/HAL
  * @aess: Pointer on aess handle
  *
@@ -237,7 +254,8 @@ void omap_aess_pp_handler(struct omap_aess *aess, void (*callback)(void *data),
 	if (!callback || !cb_data)
 		return;
 
-	omap_aess_clear_irq(aess);
+	/* Clear interrupts */
+	omap_aess_reg_write(aess, OMAP_AESS_MCU_IRQSTATUS, INT_MASK);
 
 	/*
 	 * extract the write pointer index from CMEM memory (INITPTR format)

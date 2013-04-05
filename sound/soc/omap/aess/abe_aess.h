@@ -91,7 +91,4 @@
 
 int omap_aess_write_event_generator(struct omap_aess *aess, u32 e);
 
-int omap_aess_disable_irq(struct omap_aess *aess);
-int omap_aess_clear_irq(struct omap_aess *aess);
-
 #endif /* _ABE_AESS_H_ */
