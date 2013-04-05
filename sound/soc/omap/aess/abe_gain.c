@@ -290,10 +290,6 @@ int omap_aess_write_equalizer(struct omap_aess *aess,
 		       sizeof(struct omap_aess_addr));
 		break;
 	case OMAP_AESS_CMEM_DL2_L_COEFS_ID:
-		memcpy(&equ_addr,
-		       &aess->fw_info.map[OMAP_AESS_SMEM_DL2_M_LR_EQ_DATA_ID],
-		       sizeof(struct omap_aess_addr));
-		break;
 	case OMAP_AESS_CMEM_DL2_R_COEFS_ID:
 		memcpy(&equ_addr,
 		       &aess->fw_info.map[OMAP_AESS_SMEM_DL2_M_LR_EQ_DATA_ID],
