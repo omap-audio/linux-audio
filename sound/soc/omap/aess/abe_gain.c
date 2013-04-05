@@ -316,6 +316,8 @@ int omap_aess_write_equalizer(struct omap_aess *aess,
 		/* three DMIC are clear at the same time DMIC0 DMIC1 DMIC2 */
 		equ_addr.bytes *= 3;
 		break;
+	default:
+		return -EINVAL;
 	}
 
 	/* reset SMEM buffers before the coefficients are loaded */
@@ -488,7 +490,7 @@ int omap_aess_write_gain_ramp(struct omap_aess *aess, u32 id, u32 ramp)
 	mixer_target = aess->fw_info.map[OMAP_AESS_SMEM_GTARGET1_ID].offset;
 	mixer_target += (id<<2);
 
-	ramp = max(min(RAMP_MAXLENGTH, ramp), RAMP_MINLENGTH);
+	ramp = max(min(ramp, (u32)RAMP_MAXLENGTH), (u32)RAMP_MINLENGTH);
 	/* ramp data should be interpolated in the table instead */
 	ramp_index = 3;
 	if ((RAMP_2MS <= ramp) && (ramp < RAMP_5MS))
