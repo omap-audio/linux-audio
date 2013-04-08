@@ -29,6 +29,7 @@
 #include <sound/soc-fw.h>
 
 #include "aess/abe.h"
+#include "omap-aess.h"
 
 #endif
 
@@ -39,19 +40,6 @@
 #define OMAP_ABE_FRONTEND_DAI_MODEM		4
 #define OMAP_ABE_FRONTEND_DAI_LP_MEDIA		5
 #define OMAP_ABE_FRONTEND_DAI_NUM		6
-
-/* This must currently match the BE order in DSP */
-#define OMAP_ABE_DAI_PDM_UL			0
-#define OMAP_ABE_DAI_PDM_DL1			1
-#define OMAP_ABE_DAI_PDM_DL2			2
-#define OMAP_ABE_DAI_BT_VX			3
-#define OMAP_ABE_DAI_MM_FM			4
-#define OMAP_ABE_DAI_MODEM			5
-#define OMAP_ABE_DAI_DMIC0			6
-#define OMAP_ABE_DAI_DMIC1			7
-#define OMAP_ABE_DAI_DMIC2			8
-#define OMAP_ABE_DAI_VXREC			9
-#define OMAP_ABE_DAI_NUM			10
 
 #define OMAP_ABE_MIXER(x)		(x)
 
@@ -325,27 +313,7 @@ struct omap_abe {
 #endif
 };
 
-/* External API for client component drivers */
-
-/* Power Management */
-void omap_abe_pm_shutdown(struct snd_soc_platform *platform);
-void omap_abe_pm_get(struct snd_soc_platform *platform);
-void omap_abe_pm_put(struct snd_soc_platform *platform);
-void omap_abe_pm_set_mode(struct snd_soc_platform *platform, int mode);
-
-/* Operating Point */
-int omap_abe_opp_new_request(struct snd_soc_platform *platform,
-		struct device *dev, int opp);
-int omap_abe_opp_free_request(struct snd_soc_platform *platform,
-		struct device *dev);
-
-/* DC Offset */
-void omap_abe_dc_set_hs_offset(struct snd_soc_platform *platform,
-	int left, int right, int step_mV);
-void omap_abe_dc_set_hf_offset(struct snd_soc_platform *platform,
-	int left, int right);
-void omap_abe_set_dl1_gains(struct snd_soc_platform *platform,
-	int left, int right);
+extern int abe_mixer_enable_mono(struct omap_abe *abe, int id, int enable);
 
 #endif  /* __kernel__ */
 #endif	/* End of __OMAP_AESS_PRIV_H__ */

@@ -42,7 +42,6 @@ void abe_init_debugfs(struct omap_abe *abe);
 void abe_cleanup_debugfs(struct omap_abe *abe);
 int abe_opp_init_initial_opp(struct omap_abe *abe);
 
-int abe_mixer_enable_mono(struct omap_abe *abe, int id, int enable);
 int abe_mixer_set_equ_profile(struct omap_abe *abe,
 		unsigned int id, unsigned int profile);
 
