@@ -29,7 +29,6 @@
 #include <sound/soc-fw.h>
 
 #include "aess/abe.h"
-#include "aess/abe_aess.h"
 
 #endif
 

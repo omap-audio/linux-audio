@@ -64,7 +64,7 @@
 
 #include "abe.h"
 #include "abe_gain.h"
-#include "abe_aess.h"
+#include "aess-priv.h"
 #include "abe_port.h"
 #include "abe_mem.h"
 #include "abe_dbg.h"

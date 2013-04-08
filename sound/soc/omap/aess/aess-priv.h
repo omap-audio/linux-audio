@@ -56,8 +56,8 @@
  *
  */
 
-#ifndef _ABE_AESS_H_
-#define _ABE_AESS_H_
+#ifndef _AESS_PRIV_H
+#define _AESS_PRIV_H
 
 #define OMAP_AESS_REVISION			0x00
 #define OMAP_AESS_MCU_IRQSTATUS_RAW		0x24
@@ -74,4 +74,4 @@
 #define OMAP_AESS_AUTO_GATING_ENABLE		0x7C
 #define OMAP_AESS_DMASTATUS_RAW			0x84
 
-#endif /* _ABE_AESS_H_ */
+#endif /* _AESS_PRIV_H */

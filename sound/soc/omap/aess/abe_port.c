@@ -68,7 +68,7 @@
 #include "abe_dbg.h"
 #include "abe_mem.h"
 #include "abe_gain.h"
-#include "abe_aess.h"
+#include "aess-priv.h"
 
 /*
  * GLOBAL DEFINITION

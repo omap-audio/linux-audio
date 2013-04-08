@@ -65,7 +65,6 @@
 #include <linux/device.h>
 
 #include "abe.h"
-#include "abe_aess.h"
 #include "abe_gain.h"
 #include "abe_mem.h"
 #include "abe_port.h"
