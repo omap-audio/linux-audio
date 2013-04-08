@@ -505,26 +505,6 @@ int omap_aess_write_gain_ramp(struct omap_aess *aess, u32 id, u32 ramp)
 EXPORT_SYMBOL(omap_aess_write_gain_ramp);
 
 /**
- * omap_aess_write_mixer
- * @aess: Pointer on aess handle
- * @id: name of the mixer
- * @f_g: input gain for the mixer
- *
- * Load the gain coefficients in FW memory. This API can be called when
- * the corresponding MIXER is not activated. After reloading the firmware
- * the default coefficients corresponds to "all input and output mixer's
- * gain in mute state". A mixer is disabled with a network reconfiguration
- * corresponding to an OPP value.
- */
-int omap_aess_write_mixer(struct omap_aess *aess, u32 id, s32 f_g)
-{
-
-	omap_aess_write_gain(aess, id, f_g);
-	return 0;
-}
-EXPORT_SYMBOL(omap_aess_write_mixer);
-
-/**
  * omap_aess_read_gain
  * @aess: Pointer on aess handle
  * @id: name of the mixer
@@ -562,25 +542,6 @@ found:
 	return 0;
 }
 EXPORT_SYMBOL(omap_aess_read_gain);
-
-/**
- * omap_aess_read_mixer
- * @aess: Pointer on aess handle
- * @id: name of the mixer
- * @f_g: pointer on the gain for the mixer
- *
- * Read the gain coefficients in FW memory. This API can be called when
- * the corresponding MIXER is not activated. After reloading the firmware
- * the default coefficients corresponds to "all input and output mixer's
- * gain in mute state". A mixer is disabled with a network reconfiguration
- * corresponding to an OPP value.
- */
-int omap_aess_read_mixer(struct omap_aess *aess, u32 id, u32 *f_g)
-{
-	omap_aess_read_gain(aess, id, f_g);
-	return 0;
-}
-EXPORT_SYMBOL(omap_aess_read_mixer);
 
 /**
  * omap_aess_reset_gain_mixer

@@ -287,10 +287,10 @@ int omap_aess_enable_gain(struct omap_aess *aess, u32 id);
 int omap_aess_mute_gain(struct omap_aess *aess, u32 id);
 int omap_aess_unmute_gain(struct omap_aess *aess, u32 id);
 
-int omap_aess_write_gain(struct omap_aess *aess,	u32 id, s32 f_g);
-int omap_aess_write_mixer(struct omap_aess *aess, u32 id, s32 f_g);
+int omap_aess_write_gain(struct omap_aess *aess, u32 id, s32 f_g);
 int omap_aess_read_gain(struct omap_aess *aess, u32 id, u32 *f_g);
-int omap_aess_read_mixer(struct omap_aess *aess, u32 id, u32 *f_g);
+#define omap_aess_write_mixer(aess, id, f_g) omap_aess_write_gain(aess, id, f_g)
+#define omap_aess_read_mixer(aess, id, f_g) omap_aess_read_gain(aess, id, f_g)
 
 int omap_aess_init_mem(struct omap_aess *aess, struct device *dev,
 	void __iomem **_io_base, const void *fw_config);
