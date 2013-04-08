@@ -77,155 +77,155 @@
 #define OMAP_ABE_SUPPORTED_FW_VERSION 0x09590
 
 /**
- * abe_reset_all_ports
- * @abe: Pointer on aess handle
+ * omap_aess_reset_all_ports
+ * @aess: Pointer on aess handle
  *
  * load default configuration for all features
  */
-static void omap_aess_reset_all_ports(struct omap_aess *abe)
+static void omap_aess_reset_all_ports(struct omap_aess *aess)
 {
 	u16 i;
 
 	for (i = 0; i < LAST_PORT_ID; i++)
-		omap_aess_reset_port(abe, i);
+		omap_aess_reset_port(aess, i);
 
 	/* mixers' configuration */
-	omap_aess_write_mixer(abe, OMAP_AESS_MIXDL1_MM_DL, MUTE_GAIN);
-	omap_aess_write_mixer(abe, OMAP_AESS_MIXDL1_MM_UL2, MUTE_GAIN);
-	omap_aess_write_mixer(abe, OMAP_AESS_MIXDL1_VX_DL, MUTE_GAIN);
-	omap_aess_write_mixer(abe, OMAP_AESS_MIXDL1_TONES, MUTE_GAIN);
-	omap_aess_write_mixer(abe, OMAP_AESS_MIXDL2_TONES, MUTE_GAIN);
-	omap_aess_write_mixer(abe, OMAP_AESS_MIXDL2_VX_DL, MUTE_GAIN);
-	omap_aess_write_mixer(abe, OMAP_AESS_MIXDL2_MM_DL, MUTE_GAIN);
-	omap_aess_write_mixer(abe, OMAP_AESS_MIXDL2_MM_UL2, MUTE_GAIN);
-	omap_aess_write_mixer(abe, OMAP_AESS_MIXSDT_UL, MUTE_GAIN);
-	omap_aess_write_mixer(abe, OMAP_AESS_MIXSDT_DL, GAIN_0dB);
-	omap_aess_write_mixer(abe, OMAP_AESS_MIXECHO_DL1, MUTE_GAIN);
-	omap_aess_write_mixer(abe, OMAP_AESS_MIXECHO_DL2, MUTE_GAIN);
-	omap_aess_write_mixer(abe, OMAP_AESS_MIXAUDUL_MM_DL, MUTE_GAIN);
-	omap_aess_write_mixer(abe, OMAP_AESS_MIXAUDUL_TONES, MUTE_GAIN);
-	omap_aess_write_mixer(abe, OMAP_AESS_MIXAUDUL_UPLINK, GAIN_0dB);
-	omap_aess_write_mixer(abe, OMAP_AESS_MIXAUDUL_VX_DL, MUTE_GAIN);
-	omap_aess_write_mixer(abe, OMAP_AESS_MIXVXREC_TONES, MUTE_GAIN);
-	omap_aess_write_mixer(abe, OMAP_AESS_MIXVXREC_VX_DL, MUTE_GAIN);
-	omap_aess_write_mixer(abe, OMAP_AESS_MIXVXREC_MM_DL, MUTE_GAIN);
-	omap_aess_write_mixer(abe, OMAP_AESS_MIXVXREC_VX_UL, MUTE_GAIN);
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_DMIC1_LEFT, GAIN_0dB);
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_DMIC1_RIGHT, GAIN_0dB);
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_DMIC2_LEFT, GAIN_0dB);
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_DMIC2_RIGHT, GAIN_0dB);
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_DMIC3_LEFT, GAIN_0dB);
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_DMIC3_RIGHT, GAIN_0dB);
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_AMIC_LEFT, GAIN_0dB);
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_AMIC_RIGHT, GAIN_0dB);
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_SPLIT_LEFT, GAIN_0dB);
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_SPLIT_RIGHT, GAIN_0dB);
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_DL1_LEFT, GAIN_0dB);
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_DL1_RIGHT, GAIN_0dB);
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_DL2_LEFT, GAIN_0dB);
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_DL2_RIGHT, GAIN_0dB);
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_BTUL_LEFT, GAIN_0dB);
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_BTUL_RIGHT, GAIN_0dB);
+	omap_aess_write_mixer(aess, OMAP_AESS_MIXDL1_MM_DL, MUTE_GAIN);
+	omap_aess_write_mixer(aess, OMAP_AESS_MIXDL1_MM_UL2, MUTE_GAIN);
+	omap_aess_write_mixer(aess, OMAP_AESS_MIXDL1_VX_DL, MUTE_GAIN);
+	omap_aess_write_mixer(aess, OMAP_AESS_MIXDL1_TONES, MUTE_GAIN);
+	omap_aess_write_mixer(aess, OMAP_AESS_MIXDL2_TONES, MUTE_GAIN);
+	omap_aess_write_mixer(aess, OMAP_AESS_MIXDL2_VX_DL, MUTE_GAIN);
+	omap_aess_write_mixer(aess, OMAP_AESS_MIXDL2_MM_DL, MUTE_GAIN);
+	omap_aess_write_mixer(aess, OMAP_AESS_MIXDL2_MM_UL2, MUTE_GAIN);
+	omap_aess_write_mixer(aess, OMAP_AESS_MIXSDT_UL, MUTE_GAIN);
+	omap_aess_write_mixer(aess, OMAP_AESS_MIXSDT_DL, GAIN_0dB);
+	omap_aess_write_mixer(aess, OMAP_AESS_MIXECHO_DL1, MUTE_GAIN);
+	omap_aess_write_mixer(aess, OMAP_AESS_MIXECHO_DL2, MUTE_GAIN);
+	omap_aess_write_mixer(aess, OMAP_AESS_MIXAUDUL_MM_DL, MUTE_GAIN);
+	omap_aess_write_mixer(aess, OMAP_AESS_MIXAUDUL_TONES, MUTE_GAIN);
+	omap_aess_write_mixer(aess, OMAP_AESS_MIXAUDUL_UPLINK, GAIN_0dB);
+	omap_aess_write_mixer(aess, OMAP_AESS_MIXAUDUL_VX_DL, MUTE_GAIN);
+	omap_aess_write_mixer(aess, OMAP_AESS_MIXVXREC_TONES, MUTE_GAIN);
+	omap_aess_write_mixer(aess, OMAP_AESS_MIXVXREC_VX_DL, MUTE_GAIN);
+	omap_aess_write_mixer(aess, OMAP_AESS_MIXVXREC_MM_DL, MUTE_GAIN);
+	omap_aess_write_mixer(aess, OMAP_AESS_MIXVXREC_VX_UL, MUTE_GAIN);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_DMIC1_LEFT, GAIN_0dB);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_DMIC1_RIGHT, GAIN_0dB);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_DMIC2_LEFT, GAIN_0dB);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_DMIC2_RIGHT, GAIN_0dB);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_DMIC3_LEFT, GAIN_0dB);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_DMIC3_RIGHT, GAIN_0dB);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_AMIC_LEFT, GAIN_0dB);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_AMIC_RIGHT, GAIN_0dB);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_SPLIT_LEFT, GAIN_0dB);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_SPLIT_RIGHT, GAIN_0dB);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_DL1_LEFT, GAIN_0dB);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_DL1_RIGHT, GAIN_0dB);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_DL2_LEFT, GAIN_0dB);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_DL2_RIGHT, GAIN_0dB);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_BTUL_LEFT, GAIN_0dB);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_BTUL_RIGHT, GAIN_0dB);
 }
 
 /**
  * omap_aess_init_gain_ramp
- * @abe: Pointer on aess handle
+ * @aess: Pointer on aess handle
  *
  * load default gain ramp configuration.
  */
-static void omap_aess_init_gain_ramp(struct omap_aess *abe)
+static void omap_aess_init_gain_ramp(struct omap_aess *aess)
 {
 	/* Ramps configuration */
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_MIXDL1_MM_DL, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_MIXDL1_MM_UL2, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_MIXDL1_VX_DL, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_MIXDL1_TONES, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_MIXDL2_TONES, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_MIXDL2_VX_DL, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_MIXDL2_MM_DL, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_MIXDL2_MM_UL2, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_MIXSDT_UL, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_MIXSDT_DL, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_MIXECHO_DL1, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_MIXECHO_DL2, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_MIXAUDUL_MM_DL, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_MIXAUDUL_TONES, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_MIXAUDUL_UPLINK, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_MIXAUDUL_VX_DL, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_MIXVXREC_TONES, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_MIXVXREC_VX_DL, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_MIXVXREC_MM_DL, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_MIXVXREC_VX_UL, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_GAIN_DMIC1_LEFT, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_GAIN_DMIC1_RIGHT, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_GAIN_DMIC2_LEFT, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_GAIN_DMIC2_RIGHT, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_GAIN_DMIC3_LEFT, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_GAIN_DMIC3_RIGHT, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_GAIN_AMIC_LEFT, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_GAIN_AMIC_RIGHT, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_GAIN_SPLIT_LEFT, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_GAIN_SPLIT_RIGHT, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_GAIN_DL1_LEFT, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_GAIN_DL1_RIGHT, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_GAIN_DL2_LEFT, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_GAIN_DL2_RIGHT, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_GAIN_BTUL_LEFT, RAMP_2MS);
-	omap_aess_write_gain_ramp(abe, OMAP_AESS_GAIN_BTUL_RIGHT, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_MIXDL1_MM_DL, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_MIXDL1_MM_UL2, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_MIXDL1_VX_DL, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_MIXDL1_TONES, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_MIXDL2_TONES, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_MIXDL2_VX_DL, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_MIXDL2_MM_DL, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_MIXDL2_MM_UL2, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_MIXSDT_UL, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_MIXSDT_DL, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_MIXECHO_DL1, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_MIXECHO_DL2, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_MIXAUDUL_MM_DL, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_MIXAUDUL_TONES, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_MIXAUDUL_UPLINK, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_MIXAUDUL_VX_DL, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_MIXVXREC_TONES, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_MIXVXREC_VX_DL, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_MIXVXREC_MM_DL, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_MIXVXREC_VX_UL, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_GAIN_DMIC1_LEFT, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_GAIN_DMIC1_RIGHT, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_GAIN_DMIC2_LEFT, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_GAIN_DMIC2_RIGHT, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_GAIN_DMIC3_LEFT, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_GAIN_DMIC3_RIGHT, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_GAIN_AMIC_LEFT, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_GAIN_AMIC_RIGHT, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_GAIN_SPLIT_LEFT, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_GAIN_SPLIT_RIGHT, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_GAIN_DL1_LEFT, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_GAIN_DL1_RIGHT, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_GAIN_DL2_LEFT, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_GAIN_DL2_RIGHT, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_GAIN_BTUL_LEFT, RAMP_2MS);
+	omap_aess_write_gain_ramp(aess, OMAP_AESS_GAIN_BTUL_RIGHT, RAMP_2MS);
 }
 
 /**
  * omap_aess_init_mem - Allocate Kernel space memory map for ABE
- * @abe: Pointer on abe handle
+ * @aess: Pointer on aess handle
  * @dev: Pointer on device handle
  * @_io_base: Pointer on the different AESS memory banks (DT or HW data)
  * @fw_header: Pointer on the firmware header commit from the FS.
  *
  * Memory map of ABE memory space for PMEM/DMEM/SMEM/DMEM
  */
-int omap_aess_init_mem(struct omap_aess *abe, struct device *dev,
+int omap_aess_init_mem(struct omap_aess *aess, struct device *dev,
 	void __iomem **_io_base, const void *fw_config)
 {
 	u32 *fw_header = (u32*) fw_config;
-	struct omap_aess_mapping *fw_info = &abe->fw_info;
+	struct omap_aess_mapping *fw_info = &aess->fw_info;
 	int i, offset = 0;
 	u32 count;
 
-	abe->dev = dev;
+	aess->dev = dev;
 
 	for (i = 0; i < 5; i++)
-		abe->io_base[i] = _io_base[i];
+		aess->io_base[i] = _io_base[i];
 
-	dev_dbg(abe->dev, "DMEM bank at 0x%p\n", abe->io_base[OMAP_ABE_DMEM]);
-	dev_dbg(abe->dev, "CMEM bank at 0x%p\n", abe->io_base[OMAP_ABE_CMEM]);
-	dev_dbg(abe->dev, "SMEM bank at 0x%p\n", abe->io_base[OMAP_ABE_SMEM]);
-	dev_dbg(abe->dev, "PMEM bank at 0x%p\n", abe->io_base[OMAP_ABE_PMEM]);
-	dev_dbg(abe->dev, "AESS bank at 0x%p\n", abe->io_base[OMAP_ABE_AESS]);
+	dev_dbg(aess->dev, "DMEM bank at 0x%p\n", aess->io_base[OMAP_ABE_DMEM]);
+	dev_dbg(aess->dev, "CMEM bank at 0x%p\n", aess->io_base[OMAP_ABE_CMEM]);
+	dev_dbg(aess->dev, "SMEM bank at 0x%p\n", aess->io_base[OMAP_ABE_SMEM]);
+	dev_dbg(aess->dev, "PMEM bank at 0x%p\n", aess->io_base[OMAP_ABE_PMEM]);
+	dev_dbg(aess->dev, "AESS bank at 0x%p\n", aess->io_base[OMAP_ABE_AESS]);
 
 	/* get mapping */
 	count = fw_header[offset];
-	dev_dbg(abe->dev, "Map %d items of size 0x%x at offset 0x%x\n", count,
+	dev_dbg(aess->dev, "Map %d items of size 0x%x at offset 0x%x\n", count,
 		sizeof(struct omap_aess_addr), offset << 2);
 	fw_info->map = (struct omap_aess_addr *)&fw_header[++offset];
 	offset += (sizeof(struct omap_aess_addr) * count) / 4;
 
 	/* get label IDs */
 	count = fw_header[offset];
-	dev_dbg(abe->dev, "Labels %d at offset 0x%x\n", count, offset << 2);
+	dev_dbg(aess->dev, "Labels %d at offset 0x%x\n", count, offset << 2);
 	fw_info->label_id = &fw_header[++offset];
 	offset += count;
 
 	/* get function IDs */
 	count = fw_header[offset];
-	dev_dbg(abe->dev, "Functions %d at offset 0x%x\n", count,
+	dev_dbg(aess->dev, "Functions %d at offset 0x%x\n", count,
 		offset << 2);
 	fw_info->fct_id = &fw_header[++offset];
 	offset += count;
 
 	/* get tasks */
 	count = fw_header[offset];
-	dev_dbg(abe->dev, "Tasks %d of size 0x%x at offset 0x%x\n", count,
+	dev_dbg(aess->dev, "Tasks %d of size 0x%x at offset 0x%x\n", count,
 		sizeof(struct omap_aess_task), offset << 2);
 	fw_info->nb_init_task = count;
 	fw_info->init_table = (struct omap_aess_task *)&fw_header[++offset];
@@ -233,36 +233,36 @@ int omap_aess_init_mem(struct omap_aess *abe, struct device *dev,
 
 	/* get ports */
 	count = fw_header[offset];
-	dev_dbg(abe->dev, "Ports %d of size 0x%x at offset 0x%x\n", count,
+	dev_dbg(aess->dev, "Ports %d of size 0x%x at offset 0x%x\n", count,
 		sizeof(struct omap_aess_port), offset << 2);
 	fw_info->port = (struct omap_aess_port *)&fw_header[++offset];
 	offset += (sizeof(struct omap_aess_port) * count) / 4;
 
 	/* get ping pong port */
-	dev_dbg(abe->dev, "Ping pong port at offset 0x%x\n", offset << 2);
+	dev_dbg(aess->dev, "Ping pong port at offset 0x%x\n", offset << 2);
 	fw_info->ping_pong = (struct omap_aess_port *)&fw_header[offset];
 	offset += sizeof(struct omap_aess_port) / 4;
 
 	/* get DL1 mono mixer */
-	dev_dbg(abe->dev, "DL1 mono mixer at offset 0x%x\n", offset << 2);
+	dev_dbg(aess->dev, "DL1 mono mixer at offset 0x%x\n", offset << 2);
 	fw_info->dl1_mono_mixer = (struct omap_aess_task *)&fw_header[offset];
 	offset += (sizeof(struct omap_aess_task) / 4) * 2;
 
 	/* get DL2 mono mixer */
-	dev_dbg(abe->dev, "DL2 mono mixer at offset 0x%x\n", offset << 2);
+	dev_dbg(aess->dev, "DL2 mono mixer at offset 0x%x\n", offset << 2);
 	fw_info->dl2_mono_mixer = (struct omap_aess_task *)&fw_header[offset];
 	offset += (sizeof(struct omap_aess_task) / 4) * 2;
 
 	/* get AUDUL mono mixer */
-	dev_dbg(abe->dev, "AUDUL mixer at offset 0x%x\n", offset << 2);
+	dev_dbg(aess->dev, "AUDUL mixer at offset 0x%x\n", offset << 2);
 	fw_info->audul_mono_mixer = (struct omap_aess_task *)&fw_header[offset];
 	offset += (sizeof(struct omap_aess_task) / 4) * 2;
 
 	/* ASRC */
-	dev_dbg(abe->dev, "ASRC at offset 0x%x\n", offset << 2);
+	dev_dbg(aess->dev, "ASRC at offset 0x%x\n", offset << 2);
 	fw_info->asrc = &fw_header[offset];
 
-	mutex_init(&abe->mutex);
+	mutex_init(&aess->mutex);
 	return 0;
 
 }
@@ -270,19 +270,19 @@ EXPORT_SYMBOL(omap_aess_init_mem);
 
 /**
  * omap_aess_load_fw_param - Load the ABE FW inside AESS memories
- * @abe: Pointer on abe handle
+ * @aess: Pointer on aess handle
  * @data: Pointer on the ABE firmware (after the header)
  *
  * Load the different AESS memories PMEM/DMEM/SMEM/DMEM
  */
-static int omap_aess_load_fw_param(struct omap_aess *abe, const void *data)
+static int omap_aess_load_fw_param(struct omap_aess *aess, const void *data)
 {
 	u32 pmem_size, dmem_size, smem_size, cmem_size;
 	u32 *pmem_ptr, *dmem_ptr, *smem_ptr, *cmem_ptr;
 	u32 *fw_ptr = (u32*) data;
 
 	/* Analyze FW memories banks sizes */
-	abe->firmware_version_number = *fw_ptr++;
+	aess->firmware_version_number = *fw_ptr++;
 	pmem_size = *fw_ptr++;
 	cmem_size = *fw_ptr++;
 	dmem_size = *fw_ptr++;
@@ -292,46 +292,46 @@ static int omap_aess_load_fw_param(struct omap_aess *abe, const void *data)
 	dmem_ptr = cmem_ptr + (cmem_size >> 2);
 	smem_ptr = dmem_ptr + (dmem_size >> 2);
 
-	omap_aess_write(abe, OMAP_ABE_PMEM, 0, pmem_ptr, pmem_size);
-	omap_aess_write(abe, OMAP_ABE_CMEM, 0, cmem_ptr, cmem_size);
-	omap_aess_write(abe, OMAP_ABE_SMEM, 0, smem_ptr, smem_size);
-	omap_aess_write(abe, OMAP_ABE_DMEM, 0, dmem_ptr, dmem_size);
+	omap_aess_write(aess, OMAP_ABE_PMEM, 0, pmem_ptr, pmem_size);
+	omap_aess_write(aess, OMAP_ABE_CMEM, 0, cmem_ptr, cmem_size);
+	omap_aess_write(aess, OMAP_ABE_SMEM, 0, smem_ptr, smem_size);
+	omap_aess_write(aess, OMAP_ABE_DMEM, 0, dmem_ptr, dmem_size);
 
 	return 0;
 }
 
 /**
  * omap_aess_load_fw - Load ABE Firmware and initialize memories
- * @abe: Pointer on aess handle
+ * @aess: Pointer on aess handle
  * @firmware: Pointer on the ABE firmware (after the header)
  *
  */
-int omap_aess_load_fw(struct omap_aess *abe, const void *firmware)
+int omap_aess_load_fw(struct omap_aess *aess, const void *firmware)
 {
-	omap_aess_load_fw_param(abe, firmware);
-	omap_aess_reset_all_ports(abe);
-	omap_aess_init_gain_ramp(abe);
-	omap_aess_build_scheduler_table(abe);
-	omap_aess_select_main_port(abe, OMAP_ABE_PDM_DL_PORT);
+	omap_aess_load_fw_param(aess, firmware);
+	omap_aess_reset_all_ports(aess);
+	omap_aess_init_gain_ramp(aess);
+	omap_aess_build_scheduler_table(aess);
+	omap_aess_select_main_port(aess, OMAP_ABE_PDM_DL_PORT);
 	return 0;
 }
 EXPORT_SYMBOL(omap_aess_load_fw);
 
 /**
- * abe_reload_fw - Reload ABE Firmware after OFF mode
- * @abe: Pointer on aess handle
+ * omap_aess_reload_fw - Reload AESS Firmware after OFF mode
+ * @aess: Pointer on aess handle
  * @firmware: Pointer on the ABE firmware (after the header)
  */
-int omap_aess_reload_fw(struct omap_aess *abe, const void *firmware)
+int omap_aess_reload_fw(struct omap_aess *aess, const void *firmware)
 {
-	omap_aess_load_fw_param(abe, firmware);
-	omap_aess_init_gain_ramp(abe);
-	omap_aess_build_scheduler_table(abe);
+	omap_aess_load_fw_param(aess, firmware);
+	omap_aess_init_gain_ramp(aess);
+	omap_aess_build_scheduler_table(aess);
 	/* IRQ circular read pointer in DMEM */
-	abe->irq_dbg_read_ptr = 0;
+	aess->irq_dbg_read_ptr = 0;
 	/* Restore Gains not managed by the drivers */
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_SPLIT_LEFT, GAIN_0dB);
-	omap_aess_write_gain(abe, OMAP_AESS_GAIN_SPLIT_RIGHT, GAIN_0dB);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_SPLIT_LEFT, GAIN_0dB);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_SPLIT_RIGHT, GAIN_0dB);
 
 	return 0;
 }
