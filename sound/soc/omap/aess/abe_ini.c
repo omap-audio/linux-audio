@@ -69,13 +69,6 @@
 #include "abe_mem.h"
 #include "abe_port.h"
 
-/* FW version that this HAL supports.
- * We cheat and since we include the FW in the driver atm we can get the
- * FW version based on aess_firmware_array[5]. This should be updated when the
- * FW is removed from HAL code for modular builds.
- */
-#define OMAP_ABE_SUPPORTED_FW_VERSION 0x09590
-
 /**
  * omap_aess_reset_all_ports
  * @aess: Pointer on aess handle
