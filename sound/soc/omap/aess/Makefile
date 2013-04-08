@@ -1,5 +1,4 @@
-snd-soc-omap-aess-lib-objs += abe_aess.o \
-			abe_asrc.o \
+snd-soc-omap-aess-lib-objs += abe_asrc.o \
 			abe_core.o \
 			abe_ini.o \
 			abe_gain.o \

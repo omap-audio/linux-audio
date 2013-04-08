@@ -334,5 +334,6 @@ int omap_aess_disable_irq(struct omap_aess *aess);
 u32 omap_aess_get_label_data(struct omap_aess *aess, int index);
 void omap_aess_pp_handler(struct omap_aess *aess, void (*callback)(void *data),
 			  void *cb_data);
+int omap_aess_write_event_generator(struct omap_aess *aess, u32 e);
 
 #endif /* _ABE_H_ */

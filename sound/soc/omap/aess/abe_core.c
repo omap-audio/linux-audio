@@ -69,6 +69,22 @@
 #include "abe_mem.h"
 #include "abe_dbg.h"
 
+/* AESS_MCU_IRQENABLE_SET/CLR (0x3c/0x40) bit field */
+#define INT_MASK			0x01
+
+/* AESS_DMAENABLE_SET/CLR (0x60/0x64) bit fields */
+#define DMA_SELECT(x)			(x & 0xFF)
+
+#define EVENT_SOURCE_DMA 0
+#define EVENT_SOURCE_COUNTER 1
+
+/* EVENT_GENERATOR_COUNTER COUNTER_VALUE bit field */
+
+/* PLL output/desired sampling rate = (32768 * 6000)/96000 */
+#define EVENT_GENERATOR_COUNTER_DEFAULT	(2048-1)
+/* PLL output/desired sampling rate = (32768 * 6000)/88200 */
+#define EVENT_GENERATOR_COUNTER_44100	(2228-1)
+
 /*
  * omap_aess_irq_data
  *
@@ -148,6 +164,51 @@ int omap_aess_reset_hal(struct omap_aess *aess)
 	return 0;
 }
 EXPORT_SYMBOL(omap_aess_reset_hal);
+
+/**
+ * abe_write_event_generator - Selects event generator source
+ * @aess: Pointer on abe handle
+ * @e: Event Generation Counter, McPDM, DMIC or default.
+ *
+ * Loads the AESS event generator hardware source.
+ * Indicates to the FW which data stream is the most important to preserve
+ * in case all the streams are asynchronous.
+ *
+ * the Audio Engine will generaly use its own timer EVENT generator programmed
+ * with the EVENT_COUNTER. The event counter will be tuned in order to deliver
+ * a pulse frequency at 96 kHz.
+ * The DPLL output at 100% OPP is MCLK = (32768kHz x6000) = 196.608kHz
+ * The ratio is (MCLK/96000)+(1<<1) = 2050
+ * (1<<1) in order to have the same speed at 50% and 100% OPP
+ * (only 15 MSB bits are used at OPP50%)
+ */
+int omap_aess_write_event_generator(struct omap_aess *aess, u32 e)
+{
+	u32 event, selection;
+	u32 counter = EVENT_GENERATOR_COUNTER_DEFAULT;
+
+	switch (e) {
+	case EVENT_STOP:
+		omap_aess_reg_write(aess, OMAP_AESS_EVENT_GENERATOR_START, 0);
+		return 0;
+	case EVENT_44100:
+		counter = EVENT_GENERATOR_COUNTER_44100;
+		/* Fall through */
+	case EVENT_TIMER:
+		selection = EVENT_SOURCE_COUNTER;
+		event = 0;
+		break;
+	default:
+		aess_err("Bad event generator selection (%u)", e);
+		return -EINVAL;
+	}
+	omap_aess_reg_write(aess, OMAP_AESS_EVENT_GENERATOR_COUNTER, counter);
+	omap_aess_reg_write(aess, OMAP_AESS_EVENT_SOURCE_SELECTION, selection);
+	omap_aess_reg_write(aess, OMAP_AESS_EVENT_GENERATOR_START, 1);
+	omap_aess_reg_write(aess, OMAP_AESS_AUDIO_ENGINE_SCHEDULER, event);
+	return 0;
+}
+EXPORT_SYMBOL(omap_aess_write_event_generator);
 
 /**
  * omap_aess_wakeup - Wakeup ABE

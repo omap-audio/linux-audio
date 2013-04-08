@@ -74,21 +74,4 @@
 #define OMAP_AESS_AUTO_GATING_ENABLE		0x7C
 #define OMAP_AESS_DMASTATUS_RAW			0x84
 
-/* AESS_MCU_IRQENABLE_SET/CLR (0x3c/0x40) bit field */
-#define INT_MASK			0x01
-
-/* AESS_DMAENABLE_SET/CLR (0x60/0x64) bit fields */
-#define DMA_SELECT(x)			(x & 0xFF)
-
-/*
- * EVENT_GENERATOR_COUNTER COUNTER_VALUE bit field
- */
-/* PLL output/desired sampling rate = (32768 * 6000)/96000 */
-#define EVENT_GENERATOR_COUNTER_DEFAULT	(2048-1)
-/* PLL output/desired sampling rate = (32768 * 6000)/88200 */
-#define EVENT_GENERATOR_COUNTER_44100	(2228-1)
-
-
-int omap_aess_write_event_generator(struct omap_aess *aess, u32 e);
-
 #endif /* _ABE_AESS_H_ */
