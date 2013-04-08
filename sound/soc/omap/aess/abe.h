@@ -297,7 +297,6 @@ int omap_aess_init_mem(struct omap_aess *aess, struct device *dev,
 int omap_aess_reset_hal(struct omap_aess *aess);
 int omap_aess_load_fw(struct omap_aess *aess, const void *firmware);
 int omap_aess_reload_fw(struct omap_aess *aess, const void *firmware);
-u32 omap_abe_get_supported_fw_version(void);
 
 /* port */
 int omap_aess_mono_mixer(struct omap_aess *aess, u32 id, u32 on_off);
