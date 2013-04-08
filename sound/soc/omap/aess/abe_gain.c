@@ -339,17 +339,13 @@ EXPORT_SYMBOL(omap_aess_write_equalizer);
  */
 int omap_aess_disable_gain(struct omap_aess *aess, u32 id)
 {
-	u32 f_g;
-
-	f_g = GAIN_MUTE;
 	if (!(aess->muted_gains_indicator[id] & OMAP_AESS_GAIN_DISABLED)) {
 		/* Check if we are in mute */
-		if (!(aess->muted_gains_indicator[id] &
-		      OMAP_AESS_GAIN_MUTED)) {
+		if (!(aess->muted_gains_indicator[id] & OMAP_AESS_GAIN_MUTED)) {
 			aess->muted_gains_decibel[id] =
-				aess->desired_gains_decibel[id];
+						aess->desired_gains_decibel[id];
 			/* mute the gain */
-			omap_aess_write_gain(aess, id, f_g);
+			omap_aess_write_gain(aess, id, GAIN_MUTE);
 		}
 		aess->muted_gains_indicator[id] |= OMAP_AESS_GAIN_DISABLED;
 	}
@@ -366,13 +362,11 @@ EXPORT_SYMBOL(omap_aess_disable_gain);
  */
 int omap_aess_enable_gain(struct omap_aess *aess, u32 id)
 {
-	u32 f_g;
-
 	if ((aess->muted_gains_indicator[id] & OMAP_AESS_GAIN_DISABLED)) {
 		/* restore the input parameters for mute/unmute */
-		f_g = aess->muted_gains_decibel[id];
-		aess->muted_gains_indicator[id] &=
-			~OMAP_AESS_GAIN_DISABLED;
+		u32 f_g = aess->muted_gains_decibel[id];
+
+		aess->muted_gains_indicator[id] &= ~OMAP_AESS_GAIN_DISABLED;
 		/* unmute the gain */
 		omap_aess_write_gain(aess, id, f_g);
 	}
@@ -389,14 +383,10 @@ EXPORT_SYMBOL(omap_aess_enable_gain);
  */
 int omap_aess_mute_gain(struct omap_aess *aess, u32 id)
 {
-	u32 f_g;
-
-	f_g = GAIN_MUTE;
 	if (!aess->muted_gains_indicator[id]) {
-		aess->muted_gains_decibel[id] =
-			aess->desired_gains_decibel[id];
+		aess->muted_gains_decibel[id] = aess->desired_gains_decibel[id];
 		/* mute the gain */
-		omap_aess_write_gain(aess, id, f_g);
+		omap_aess_write_gain(aess, id, GAIN_MUTE);
 	}
 	aess->muted_gains_indicator[id] |= OMAP_AESS_GAIN_MUTED;
 	return 0;
@@ -411,12 +401,11 @@ EXPORT_SYMBOL(omap_aess_mute_gain);
  */
 int omap_aess_unmute_gain(struct omap_aess *aess, u32 id)
 {
-	u32 f_g;
 	if ((aess->muted_gains_indicator[id] & OMAP_AESS_GAIN_MUTED)) {
 		/* restore the input parameters for mute/unmute */
-		f_g = aess->muted_gains_decibel[id];
-		aess->muted_gains_indicator[id] &=
-			~OMAP_AESS_GAIN_MUTED;
+		u32 f_g = aess->muted_gains_decibel[id];
+
+		aess->muted_gains_indicator[id] &= ~OMAP_AESS_GAIN_MUTED;
 		/* unmute the gain */
 		omap_aess_write_gain(aess, id, f_g);
 	}
@@ -444,7 +433,7 @@ int omap_aess_write_gain(struct omap_aess *aess,
 
 	gain_index = ((f_g - OMAP_AESS_GAIN_MIN_MDB) / 100);
 	gain_index = max(gain_index, 0);
-	gain_index = min(gain_index, OMAP_AESS_GAIN_DB2LIN_SIZE);
+	gain_index = min(gain_index, (s32)OMAP_AESS_GAIN_DB2LIN_SIZE);
 	lin_g = abe_db2lin_table[gain_index];
 	/* save the input parameters for mute/unmute */
 	aess->desired_gains_linear[id] = lin_g;
