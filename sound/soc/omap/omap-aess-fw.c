@@ -546,14 +546,7 @@ static int abe_load_fw(struct snd_soc_platform *platform,
 		abe->hdr.dmem_size, abe->hdr.smem_size);
 
 	dev_info(abe->dev, "ABE Firmware version %x\n", abe->hdr.version);
-#if 0
-	if (omap_abe_get_supported_fw_version() <= abe->hdr.firmware_version) {
-		dev_err(abe->dev, "firmware version too old. Need %x have %x\n",
-			omap_abe_get_supported_fw_version(),
-			abe->hdr.firmware_version);
-		return -EINVAL;
-	}
-#endif
+
 	/* store ABE firmware for later context restore */
 	abe->fw_data = fw_data;
 
