@@ -31,7 +31,7 @@
 #include <sound/soc-dpcm.h>
 
 #include "omap-aess-priv.h"
-#include "omap-pcm.h"
+#include "../omap-pcm.h"
 
 /*
  * Stream DMA parameters

@@ -28,7 +28,7 @@
 
 #include <sound/soc-fw.h>
 
-#include "aess/abe.h"
+#include "abe.h"
 #include "omap-aess.h"
 
 #endif
