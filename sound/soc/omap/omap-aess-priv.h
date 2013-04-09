@@ -212,12 +212,6 @@ struct fw_header {
 	u32 smem_size;
 };
 
-struct abe_opp_req {
-	struct device *dev;
-	struct list_head node;
-	int opp;
-};
-
 struct omap_abe_dc_offset {
 	/* DC offset cancellation */
 	int power_mode;

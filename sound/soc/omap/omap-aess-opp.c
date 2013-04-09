@@ -33,6 +33,12 @@
 
 #include "omap-aess-priv.h"
 
+struct abe_opp_req {
+	struct device *dev;
+	struct list_head node;
+	int opp;
+};
+
 static struct abe_opp_req *abe_opp_lookup_requested(struct omap_abe *abe,
 					struct device *dev)
 {
