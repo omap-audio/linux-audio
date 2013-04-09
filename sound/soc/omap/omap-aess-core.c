@@ -41,7 +41,7 @@
 
 #include "omap-aess-priv.h"
 
-#define ABE_FW_NAME	"omap4_abe_new"
+#define ABE_FW_NAME	"omap_aess-adfw.bin"
 
 extern struct snd_soc_platform_driver omap_aess_platform;
 extern struct snd_soc_dai_driver omap_abe_dai[6];
