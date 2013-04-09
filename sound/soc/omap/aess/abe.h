@@ -148,7 +148,6 @@ struct omap_aess {
 	int pp_buf_id_next;
 	int pp_buf_addr[4];
 	int pp_first_irq;
-	struct mutex mutex;
 
 	/* base addresses of the ping pong buffers in bytes addresses */
 	u32 base_address_pingpong[MAX_PINGPONG_BUFFERS];

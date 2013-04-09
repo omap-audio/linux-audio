@@ -255,7 +255,6 @@ int omap_aess_init_mem(struct omap_aess *aess, struct device *dev,
 	dev_dbg(aess->dev, "ASRC at offset 0x%x\n", offset << 2);
 	fw_info->asrc = &fw_header[offset];
 
-	mutex_init(&aess->mutex);
 	return 0;
 
 }
