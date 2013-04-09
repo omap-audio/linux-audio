@@ -307,7 +307,11 @@ struct omap_abe {
 #endif
 };
 
+extern struct snd_soc_fw_platform_ops soc_fw_ops;
+
 extern int abe_mixer_enable_mono(struct omap_abe *abe, int id, int enable);
+extern int abe_mixer_set_equ_profile(struct omap_abe *abe, unsigned int id,
+				     unsigned int profile);
 
 #endif  /* __kernel__ */
 #endif	/* End of __OMAP_AESS_PRIV_H__ */

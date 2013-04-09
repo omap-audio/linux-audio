@@ -42,11 +42,6 @@ void abe_init_debugfs(struct omap_abe *abe);
 void abe_cleanup_debugfs(struct omap_abe *abe);
 int abe_opp_init_initial_opp(struct omap_abe *abe);
 
-int abe_mixer_set_equ_profile(struct omap_abe *abe,
-		unsigned int id, unsigned int profile);
-
-extern struct snd_soc_fw_platform_ops soc_fw_ops;
-
 /* Ping pong buffer DMEM offset - we should read this from future FWs */
 #define OMAP_ABE_DMEM_BASE_OFFSET_PING_PONG	0x4000
 
