@@ -81,6 +81,8 @@
 #define ABE_DEFAULT_BASE_ADDRESS_L4 0x40100000L
 #define ABE_DEFAULT_BASE_ADDRESS_DEFAULT ABE_DEFAULT_BASE_ADDRESS_L3
 
+struct snd_pcm_substream;
+
 /*
  * TODO: These structures, enums and port ID macros should be moved to the
  * new public ABE API header.
@@ -135,6 +137,9 @@ struct omap_aess_mapping {
 	int *asrc;
 };
 
+/* structure used for client port info */
+struct omap_abe_port;
+
 /* main ABE structure */
 struct omap_aess {
 	struct device *dev;
@@ -162,6 +167,7 @@ struct omap_aess {
 	struct omap_aess_mapping fw_info;
 
 	/* List of open ABE logical ports */
+	struct omap_abe_port *port[OMAP_ABE_PORT_ID_LAST];
 	struct list_head ports;
 
 	/* spinlock */
@@ -172,69 +178,56 @@ struct omap_aess {
 #endif
 };
 
-/* structure used for client port info */
-struct omap_abe_port {
-
-	/* logical and physical port IDs that correspond this port */
-	int logical_id;
-	int physical_id;
-	int physical_users;
-
-	/* enabled or disabled */
-	enum port_state state;
-
-	/* logical port ref count */
-	int users;
-
-	struct list_head list;
-	struct omap_aess *aess;
-	struct snd_pcm_substream *substream;
-
-#ifdef CONFIG_DEBUG_FS
-	struct dentry *debugfs_lstate;
-	struct dentry *debugfs_lphy;
-	struct dentry *debugfs_lusers;
-#endif
-};
-
 #if IS_ENABLED(CONFIG_SND_OMAP_SOC_AESS)
-struct omap_abe_port *omap_abe_port_open(struct omap_aess *aess,
-					 int logical_id);
-void omap_abe_port_close(struct omap_aess *aess, struct omap_abe_port *port);
-int omap_abe_port_enable(struct omap_aess *aess, struct omap_abe_port *port);
-int omap_abe_port_disable(struct omap_aess *aess, struct omap_abe_port *port);
-int omap_abe_port_is_enabled(struct omap_aess *aess,
-			     struct omap_abe_port *port);
+int omap_abe_port_open(struct omap_aess *aess, int logical_id);
+void omap_abe_port_close(struct omap_aess *aess, int logical_id);
+int omap_abe_port_enable(struct omap_aess *aess, int logical_id);
+int omap_abe_port_disable(struct omap_aess *aess, int logical_id);
+int omap_abe_port_is_enabled(struct omap_aess *aess, int logical_id);
+void omap_abe_port_set_substream(struct omap_aess *aess, int logical_id,
+				 struct snd_pcm_substream *substream);
+struct snd_pcm_substream *omap_abe_port_get_substream(struct omap_aess *aess,
+						      int logical_id);
+
 struct omap_aess *omap_abe_port_mgr_get(void);
 void omap_abe_port_mgr_put(struct omap_aess *aess);
 #else
-static inline struct omap_abe_port *omap_abe_port_open(struct omap_aess *aess,
-						       int logical_id)
-{
-	return NULL;
-}
-
-static inline void omap_abe_port_close(struct omap_aess *aess,
-				       struct omap_abe_port *port)
-{
-}
-
-static inline int omap_abe_port_enable(struct omap_aess *aess,
-				       struct omap_abe_port *port)
+static inline int omap_abe_port_open(struct omap_aess *aess, int logical_id)
 {
 	return 0;
 }
 
-static inline int omap_abe_port_disable(struct omap_aess *aess,
-					struct omap_abe_port *port)
+static inline void omap_abe_port_close(struct omap_aess *aess, int logical_id)
+{
+}
+
+static inline int omap_abe_port_enable(struct omap_aess *aess, int logical_id)
+{
+	return 0;
+}
+
+static inline int omap_abe_port_disable(struct omap_aess *aess, int logical_id)
 {
 	return 0;
 }
 
 static inline int omap_abe_port_is_enabled(struct omap_aess *aess,
-					   struct omap_abe_port *port)
+					   int logical_id)
 {
 	return 0;
+}
+
+static inline void omap_abe_port_set_substream(struct omap_aess *aess,
+					    int logical_id,
+					    struct snd_pcm_substream *substream)
+{
+}
+
+static inline struct snd_pcm_substream *omap_abe_port_get_substream(
+							struct omap_aess *aess,
+							int logical_id)
+{
+	return NULL;
 }
 
 static inline struct omap_aess *omap_abe_port_mgr_get(void)

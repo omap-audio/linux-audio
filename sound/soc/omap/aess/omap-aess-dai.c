@@ -84,12 +84,9 @@ static int dma_mapping[7][2] = {
 static int omap_abe_dl1_enabled(struct omap_abe *abe)
 {
 	/* DL1 path is common for PDM_DL1, BT_VX_DL and MM_EXT_DL */
-	return omap_abe_port_is_enabled(abe->aess,
-				abe->dai.port[OMAP_ABE_BE_PORT_PDM_DL1]) +
-		omap_abe_port_is_enabled(abe->aess,
-				abe->dai.port[OMAP_ABE_BE_PORT_BT_VX_DL]) +
-		omap_abe_port_is_enabled(abe->aess,
-				abe->dai.port[OMAP_ABE_BE_PORT_MM_EXT_DL]);
+	return omap_abe_port_is_enabled(abe->aess, OMAP_ABE_BE_PORT_PDM_DL1) +
+		omap_abe_port_is_enabled(abe->aess, OMAP_ABE_BE_PORT_BT_VX_DL) +
+		omap_abe_port_is_enabled(abe->aess, OMAP_ABE_BE_PORT_MM_EXT_DL);
 }
 
 static void mute_be(struct snd_soc_pcm_runtime *be,
@@ -228,7 +225,7 @@ static void enable_be_port(struct snd_soc_pcm_runtime *be,
 
 			/* port can only be configured if it's not running */
 			if (omap_abe_port_is_enabled(abe->aess,
-					abe->dai.port[OMAP_ABE_BE_PORT_BT_VX_DL]))
+						OMAP_ABE_BE_PORT_BT_VX_DL))
 				return;
 
 			/* BT_DL connection to McBSP 1 ports */
@@ -236,12 +233,12 @@ static void enable_be_port(struct snd_soc_pcm_runtime *be,
 			format.samp_format = OMAP_AESS_FORMAT_STEREO_RSHIFTED_16;
 			omap_aess_connect_serial_port(abe->aess, OMAP_ABE_BT_VX_DL_PORT, &format, MCBSP1_TX, NULL);
 			omap_abe_port_enable(abe->aess,
-				abe->dai.port[OMAP_ABE_BE_PORT_BT_VX_DL]);
+					     OMAP_ABE_BE_PORT_BT_VX_DL);
 		} else {
 
 			/* port can only be configured if it's not running */
 			if (omap_abe_port_is_enabled(abe->aess,
-					abe->dai.port[OMAP_ABE_BE_PORT_BT_VX_UL]))
+						OMAP_ABE_BE_PORT_BT_VX_UL))
 				return;
 
 			/* BT_UL connection to McBSP 1 ports */
@@ -249,7 +246,7 @@ static void enable_be_port(struct snd_soc_pcm_runtime *be,
 			format.samp_format = OMAP_AESS_FORMAT_STEREO_RSHIFTED_16;
 			omap_aess_connect_serial_port(abe->aess, OMAP_ABE_BT_VX_UL_PORT, &format, MCBSP1_RX, NULL);
 			omap_abe_port_enable(abe->aess,
-				abe->dai.port[OMAP_ABE_BE_PORT_BT_VX_UL]);
+					     OMAP_ABE_BE_PORT_BT_VX_UL);
 		}
 		break;
 	case OMAP_ABE_DAI_MM_FM:
@@ -257,7 +254,7 @@ static void enable_be_port(struct snd_soc_pcm_runtime *be,
 
 			/* port can only be configured if it's not running */
 			if (omap_abe_port_is_enabled(abe->aess,
-					abe->dai.port[OMAP_ABE_BE_PORT_MM_EXT_DL]))
+						OMAP_ABE_BE_PORT_MM_EXT_DL))
 				return;
 
 			/* MM_EXT connection to McBSP 2 ports */
@@ -265,12 +262,12 @@ static void enable_be_port(struct snd_soc_pcm_runtime *be,
 			format.samp_format = OMAP_AESS_FORMAT_STEREO_RSHIFTED_16;
 			omap_aess_connect_serial_port(abe->aess, OMAP_ABE_MM_EXT_OUT_PORT, &format, MCBSP2_TX, NULL);
 			omap_abe_port_enable(abe->aess,
-				abe->dai.port[OMAP_ABE_BE_PORT_MM_EXT_DL]);
+					     OMAP_ABE_BE_PORT_MM_EXT_DL);
 		} else {
 
 			/* port can only be configured if it's not running */
 			if (omap_abe_port_is_enabled(abe->aess,
-					abe->dai.port[OMAP_ABE_BE_PORT_MM_EXT_UL]))
+						OMAP_ABE_BE_PORT_MM_EXT_UL))
 				return;
 
 			/* MM_EXT connection to McBSP 2 ports */
@@ -278,20 +275,17 @@ static void enable_be_port(struct snd_soc_pcm_runtime *be,
 			format.samp_format = OMAP_AESS_FORMAT_STEREO_RSHIFTED_16;
 			omap_aess_connect_serial_port(abe->aess, OMAP_ABE_MM_EXT_IN_PORT, &format, MCBSP2_RX, NULL);
 			omap_abe_port_enable(abe->aess,
-				abe->dai.port[OMAP_ABE_BE_PORT_MM_EXT_UL]);
+					     OMAP_ABE_BE_PORT_MM_EXT_UL);
 		}
 		break;
 	case OMAP_ABE_DAI_DMIC0:
-		omap_abe_port_enable(abe->aess,
-				abe->dai.port[OMAP_ABE_BE_PORT_DMIC0]);
+		omap_abe_port_enable(abe->aess, OMAP_ABE_BE_PORT_DMIC0);
 		break;
 	case OMAP_ABE_DAI_DMIC1:
-		omap_abe_port_enable(abe->aess,
-				abe->dai.port[OMAP_ABE_BE_PORT_DMIC1]);
+		omap_abe_port_enable(abe->aess, OMAP_ABE_BE_PORT_DMIC1);
 		break;
 	case OMAP_ABE_DAI_DMIC2:
-		omap_abe_port_enable(abe->aess,
-				abe->dai.port[OMAP_ABE_BE_PORT_DMIC2]);
+		omap_abe_port_enable(abe->aess, OMAP_ABE_BE_PORT_DMIC2);
 		break;
 	}
 }
@@ -308,36 +302,35 @@ static void enable_fe_port(struct snd_pcm_substream *substream,
 	case OMAP_ABE_FRONTEND_DAI_MEDIA:
 		if (stream == SNDRV_PCM_STREAM_PLAYBACK)
 			omap_abe_port_enable(abe->aess,
-					abe->dai.port[OMAP_ABE_FE_PORT_MM_DL1]);
+					     OMAP_ABE_FE_PORT_MM_DL1);
 		else
 			omap_abe_port_enable(abe->aess,
-					abe->dai.port[OMAP_ABE_FE_PORT_MM_UL1]);
+					     OMAP_ABE_FE_PORT_MM_UL1);
 		break;
 	case OMAP_ABE_FRONTEND_DAI_LP_MEDIA:
 		if (stream == SNDRV_PCM_STREAM_PLAYBACK) {
 			omap_abe_port_enable(abe->aess,
-					abe->dai.port[OMAP_ABE_FE_PORT_MM_DL_LP]);
-			abe->dai.port[OMAP_ABE_FE_PORT_MM_DL_LP]->substream = substream;
+					     OMAP_ABE_FE_PORT_MM_DL_LP);
+			omap_abe_port_set_substream(abe->aess,
+						    OMAP_ABE_FE_PORT_MM_DL_LP,
+						    substream);
 		}
 		break;
 	case OMAP_ABE_FRONTEND_DAI_MEDIA_CAPTURE:
 		if (stream == SNDRV_PCM_STREAM_CAPTURE)
 			omap_abe_port_enable(abe->aess,
-					abe->dai.port[OMAP_ABE_FE_PORT_MM_UL2]);
+					     OMAP_ABE_FE_PORT_MM_UL2);
 		break;
 	case OMAP_ABE_FRONTEND_DAI_MODEM:
 	case OMAP_ABE_FRONTEND_DAI_VOICE:
 		if (stream == SNDRV_PCM_STREAM_PLAYBACK)
-			omap_abe_port_enable(abe->aess,
-					abe->dai.port[OMAP_ABE_FE_PORT_VX_DL]);
+			omap_abe_port_enable(abe->aess, OMAP_ABE_FE_PORT_VX_DL);
 		else
-			omap_abe_port_enable(abe->aess,
-					abe->dai.port[OMAP_ABE_FE_PORT_VX_UL]);
+			omap_abe_port_enable(abe->aess, OMAP_ABE_FE_PORT_VX_UL);
 		break;
 	case OMAP_ABE_FRONTEND_DAI_TONES:
 		if (stream == SNDRV_PCM_STREAM_PLAYBACK)
-			omap_abe_port_enable(abe->aess,
-					abe->dai.port[OMAP_ABE_FE_PORT_TONES]);
+			omap_abe_port_enable(abe->aess, OMAP_ABE_FE_PORT_TONES);
 		break;
 	}
 }
@@ -358,31 +351,28 @@ static void disable_be_port(struct snd_soc_pcm_runtime *be,
 	case OMAP_ABE_DAI_BT_VX:
 		if (stream == SNDRV_PCM_STREAM_PLAYBACK)
 			omap_abe_port_disable(abe->aess,
-					abe->dai.port[OMAP_ABE_BE_PORT_BT_VX_DL]);
+					      OMAP_ABE_BE_PORT_BT_VX_DL);
 		else
 			omap_abe_port_disable(abe->aess,
-					abe->dai.port[OMAP_ABE_BE_PORT_BT_VX_UL]);
+					      OMAP_ABE_BE_PORT_BT_VX_UL);
 		break;
 	case OMAP_ABE_DAI_MM_FM:
 	case OMAP_ABE_DAI_MODEM:
 		if (stream == SNDRV_PCM_STREAM_PLAYBACK)
 			omap_abe_port_disable(abe->aess,
-					abe->dai.port[OMAP_ABE_BE_PORT_MM_EXT_DL]);
+					      OMAP_ABE_BE_PORT_MM_EXT_DL);
 		else
 			omap_abe_port_disable(abe->aess,
-					abe->dai.port[OMAP_ABE_BE_PORT_MM_EXT_UL]);
+					      OMAP_ABE_BE_PORT_MM_EXT_UL);
 		break;
 	case OMAP_ABE_DAI_DMIC0:
-		omap_abe_port_disable(abe->aess,
-				abe->dai.port[OMAP_ABE_BE_PORT_DMIC0]);
+		omap_abe_port_disable(abe->aess, OMAP_ABE_BE_PORT_DMIC0);
 		break;
 	case OMAP_ABE_DAI_DMIC1:
-		omap_abe_port_disable(abe->aess,
-				abe->dai.port[OMAP_ABE_BE_PORT_DMIC1]);
+		omap_abe_port_disable(abe->aess, OMAP_ABE_BE_PORT_DMIC1);
 		break;
 	case OMAP_ABE_DAI_DMIC2:
-		omap_abe_port_disable(abe->aess,
-				abe->dai.port[OMAP_ABE_BE_PORT_DMIC2]);
+		omap_abe_port_disable(abe->aess, OMAP_ABE_BE_PORT_DMIC2);
 		break;
 	}
 }
@@ -399,34 +389,34 @@ static void disable_fe_port(struct snd_pcm_substream *substream,
 	case OMAP_ABE_FRONTEND_DAI_MEDIA:
 		if (stream == SNDRV_PCM_STREAM_PLAYBACK)
 			omap_abe_port_disable(abe->aess,
-					abe->dai.port[OMAP_ABE_FE_PORT_MM_DL1]);
+					      OMAP_ABE_FE_PORT_MM_DL1);
 		else
 			omap_abe_port_disable(abe->aess,
-					abe->dai.port[OMAP_ABE_FE_PORT_MM_UL1]);
+					      OMAP_ABE_FE_PORT_MM_UL1);
 		break;
 	case OMAP_ABE_FRONTEND_DAI_LP_MEDIA:
 		if (stream == SNDRV_PCM_STREAM_PLAYBACK)
 			omap_abe_port_disable(abe->aess,
-					abe->dai.port[OMAP_ABE_FE_PORT_MM_DL_LP]);
+					      OMAP_ABE_FE_PORT_MM_DL_LP);
 		break;
 	case OMAP_ABE_FRONTEND_DAI_MEDIA_CAPTURE:
 		if (stream == SNDRV_PCM_STREAM_CAPTURE)
 			omap_abe_port_disable(abe->aess,
-					abe->dai.port[OMAP_ABE_FE_PORT_MM_UL2]);
+					      OMAP_ABE_FE_PORT_MM_UL2);
 		break;
 	case OMAP_ABE_FRONTEND_DAI_MODEM:
 	case OMAP_ABE_FRONTEND_DAI_VOICE:
 		if (stream == SNDRV_PCM_STREAM_PLAYBACK)
 			omap_abe_port_disable(abe->aess,
-					abe->dai.port[OMAP_ABE_FE_PORT_VX_DL]);
+					      OMAP_ABE_FE_PORT_VX_DL);
 		else
 			omap_abe_port_disable(abe->aess,
-					abe->dai.port[OMAP_ABE_FE_PORT_VX_UL]);
+					      OMAP_ABE_FE_PORT_VX_UL);
 		break;
 	case OMAP_ABE_FRONTEND_DAI_TONES:
 		if (stream == SNDRV_PCM_STREAM_PLAYBACK)
 			omap_abe_port_disable(abe->aess,
-					abe->dai.port[OMAP_ABE_FE_PORT_TONES]);
+					      OMAP_ABE_FE_PORT_TONES);
 		break;
 	}
 }
@@ -1100,18 +1090,16 @@ static int omap_abe_dai_probe(struct snd_soc_dai *dai)
 
 	for (i = 0; i < OMAP_ABE_PORT_ID_LAST; i++) {
 
-		abe->dai.port[i] = omap_abe_port_open(abe->aess, i);
-		if (IS_ERR(abe->dai.port[i])) {
-			ret = PTR_ERR(abe->dai.port[i]);
+		ret = omap_abe_port_open(abe->aess, i);
+		if (ret)
 			goto err_port;
-		}
 	}
 
 	return 0;
 
 err_port:
 	for (--i; i >= 0; i--)
-		omap_abe_port_close(abe->aess, abe->dai.port[i]);
+		omap_abe_port_close(abe->aess, i);
 	omap_abe_port_mgr_put(abe->aess);
 err:
 	return ret;
@@ -1123,7 +1111,7 @@ static int omap_abe_dai_remove(struct snd_soc_dai *dai)
 	int i;
 
 	for (i = 0; i < OMAP_ABE_PORT_ID_LAST; i++)
-		omap_abe_port_close(abe->aess, abe->dai.port[i]);
+		omap_abe_port_close(abe->aess, i);
 
 	omap_abe_port_mgr_put(abe->aess);
 	return 0;

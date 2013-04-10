@@ -151,7 +151,8 @@ static void abe_irq_pingpong_subroutine(void *data)
 	if (abe->mmap.first_irq) {
 		abe->mmap.first_irq = 0;
 	} else {
-		substream = abe->dai.port[OMAP_ABE_FE_PORT_MM_DL_LP]->substream;
+		substream = omap_abe_port_get_substream(abe->aess,
+						OMAP_ABE_FE_PORT_MM_DL_LP);
 		if (substream)
 			snd_pcm_period_elapsed(substream);
 	}

@@ -73,8 +73,6 @@ struct omap_mcpdm {
 	int active_dai;
 
 	struct omap_aess *aess;
-	struct omap_abe_port *dl_port;
-	struct omap_abe_port *ul_port;
 };
 
 /*
@@ -323,9 +321,9 @@ static void omap_mcpdm_dai_shutdown(struct snd_pcm_substream *substream,
 				omap_mcpdm_close_streams(mcpdm);
 			} else {
 				omap_abe_port_disable(mcpdm->aess,
-						      mcpdm->dl_port);
+						      OMAP_ABE_BE_PORT_PDM_DL1);
 				omap_abe_port_disable(mcpdm->aess,
-						      mcpdm->ul_port);
+						      OMAP_ABE_BE_PORT_PDM_UL1);
 				usleep_range(250, 300);
 				omap_mcpdm_stop(mcpdm);
 				omap_mcpdm_close_streams(mcpdm);
@@ -410,15 +408,17 @@ static int omap_mcpdm_prepare(struct snd_pcm_substream *substream,
 
 	if (dai->id == OMAP_MCPDM_ABE_DAI) {
 		/* Check if ABE McPDM DL is already started */
-		if ((omap_abe_port_is_enabled(mcpdm->aess, mcpdm->dl_port)) ||
-			(omap_abe_port_is_enabled(mcpdm->aess, mcpdm->ul_port)))
+		if (omap_abe_port_is_enabled(mcpdm->aess,
+					     OMAP_ABE_BE_PORT_PDM_DL1) ||
+			omap_abe_port_is_enabled(mcpdm->aess,
+						 OMAP_ABE_BE_PORT_PDM_UL1))
 			return 0;
 
 		omap_abe_pm_get(platform);
 
 		/* start ATC before McPDM IP */
-		omap_abe_port_enable(mcpdm->aess, mcpdm->dl_port);
-		omap_abe_port_enable(mcpdm->aess, mcpdm->ul_port);
+		omap_abe_port_enable(mcpdm->aess, OMAP_ABE_BE_PORT_PDM_DL1);
+		omap_abe_port_enable(mcpdm->aess, OMAP_ABE_BE_PORT_PDM_UL1);
 
 		/* wait 250us for ABE tick */
 		usleep_range(250, 300);
@@ -445,19 +445,17 @@ static int omap_mcpdm_probe(struct snd_soc_dai *dai)
 
 	mcpdm->aess = omap_abe_port_mgr_get();
 
-	mcpdm->dl_port = omap_abe_port_open(mcpdm->aess,
-					    OMAP_ABE_BE_PORT_PDM_DL1);
-	if (IS_ERR(mcpdm->dl_port)) {
+	ret = omap_abe_port_open(mcpdm->aess, OMAP_ABE_BE_PORT_PDM_DL1);
+	if (ret) {
 		omap_abe_port_mgr_put(mcpdm->aess);
-		return PTR_ERR(mcpdm->dl_port);
+		return ret;
 	}
 
-	mcpdm->ul_port = omap_abe_port_open(mcpdm->aess,
-					    OMAP_ABE_BE_PORT_PDM_UL1);
-	if (IS_ERR(mcpdm->ul_port)) {
-		omap_abe_port_close(mcpdm->aess, mcpdm->dl_port);
+	ret = omap_abe_port_open(mcpdm->aess, OMAP_ABE_BE_PORT_PDM_UL1);
+	if (ret) {
+		omap_abe_port_close(mcpdm->aess, OMAP_ABE_BE_PORT_PDM_DL1);
 		omap_abe_port_mgr_put(mcpdm->aess);
-		return PTR_ERR(mcpdm->ul_port);
+		return ret;
 	}
 
 	pm_runtime_enable(mcpdm->dev);
@@ -475,8 +473,8 @@ static int omap_mcpdm_probe(struct snd_soc_dai *dai)
 		dev_err(mcpdm->dev, "Request for IRQ failed\n");
 		pm_runtime_disable(mcpdm->dev);
 
-		omap_abe_port_close(mcpdm->aess, mcpdm->dl_port);
-		omap_abe_port_close(mcpdm->aess, mcpdm->ul_port);
+		omap_abe_port_close(mcpdm->aess, OMAP_ABE_BE_PORT_PDM_DL1);
+		omap_abe_port_close(mcpdm->aess, OMAP_ABE_BE_PORT_PDM_UL1);
 		omap_abe_port_mgr_put(mcpdm->aess);
 	}
 
@@ -492,8 +490,8 @@ static int omap_mcpdm_remove(struct snd_soc_dai *dai)
 
 	pm_runtime_disable(mcpdm->dev);
 
-	omap_abe_port_close(mcpdm->aess, mcpdm->dl_port);
-	omap_abe_port_close(mcpdm->aess, mcpdm->ul_port);
+	omap_abe_port_close(mcpdm->aess, OMAP_ABE_BE_PORT_PDM_DL1);
+	omap_abe_port_close(mcpdm->aess, OMAP_ABE_BE_PORT_PDM_UL1);
 	omap_abe_port_mgr_put(mcpdm->aess);
 
 	return 0;

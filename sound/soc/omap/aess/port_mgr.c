@@ -30,6 +30,31 @@
 #include "abe.h"
 #include "abe_port.h"
 
+/* structure used for client port info */
+struct omap_abe_port {
+
+	/* logical and physical port IDs that correspond this port */
+	int logical_id;
+	int physical_id;
+	int physical_users;
+
+	/* enabled or disabled */
+	enum port_state state;
+
+	/* logical port ref count */
+	int users;
+
+	struct list_head list;
+	struct omap_aess *aess;
+	struct snd_pcm_substream *substream;
+
+#ifdef CONFIG_DEBUG_FS
+	struct dentry *debugfs_lstate;
+	struct dentry *debugfs_lphy;
+	struct dentry *debugfs_lusers;
+#endif
+};
+
 /* this must match logical ID numbers in port_mgr.h */
 static const char *lport_name[] = {
 		"dmic0", "dmic1", "dmic2", "pdmdl1", "pdmdl2", "mcasp",
@@ -120,10 +145,17 @@ static int port_is_open(struct omap_aess *aess, int logical_id)
  * Check whether the physical port is enabled for this PHY port ID.
  * Locks held by callers.
  */
-int omap_abe_port_is_enabled(struct omap_aess *aess, struct omap_abe_port *port)
+int omap_abe_port_is_enabled(struct omap_aess *aess, int logical_id)
 {
+	struct omap_abe_port *port = aess->port[logical_id];
 	struct omap_abe_port *p;
 	unsigned long flags;
+
+	if (!port) {
+		dev_err(aess->dev, "Port %s is not open.\n",
+			lport_name[logical_id]);
+		return 0;
+	}
 
 	spin_lock_irqsave(&aess->lock, flags);
 
@@ -143,12 +175,19 @@ EXPORT_SYMBOL(omap_abe_port_is_enabled);
  * omap_abe_port_enable - enable ABE logical port
  *
  * aess -  AESS.
- * @port - logical ABE port ID to be enabled.
+ * logical_id - logical ABE port ID to be enabled.
  */
-int omap_abe_port_enable(struct omap_aess *aess, struct omap_abe_port *port)
+int omap_abe_port_enable(struct omap_aess *aess, int logical_id)
 {
-	int ret = 0;
+	struct omap_abe_port *port = aess->port[logical_id];
 	unsigned long flags;
+	int ret = 0;
+
+	if (!port) {
+		dev_err(aess->dev, "Port %s is not open, can not be enabled\n",
+			lport_name[logical_id]);
+		return -EINVAL;
+	}
 
 	/* only enable the physical port iff it is disabled */
 	pr_debug("port %s increment count %d\n",
@@ -174,12 +213,19 @@ EXPORT_SYMBOL(omap_abe_port_enable);
  * omap_abe_port_disable - disable ABE logical port
  *
  * aess -  ABE.
- * @port - logical ABE port ID to be disabled.
+ * logical_id - logical ABE port ID to be disabled.
  */
-int omap_abe_port_disable(struct omap_aess *aess, struct omap_abe_port *port)
+int omap_abe_port_disable(struct omap_aess *aess, int logical_id)
 {
-	int ret = 0;
+	struct omap_abe_port *port = aess->port[logical_id];
 	unsigned long flags;
+	int ret = 0;
+
+	if (!port) {
+		dev_err(aess->dev, "Port %s is not open, can not be disabled\n",
+			lport_name[logical_id]);
+		return -EINVAL;
+	}
 
 	/* only disable the port iff no other users are using it */
 	pr_debug("port %s decrement count %d\n",
@@ -208,7 +254,7 @@ EXPORT_SYMBOL(omap_abe_port_disable);
  * @abe -  ABE.
  * @logical_id - logical ABE port ID to be opened.
  */
-struct omap_abe_port *omap_abe_port_open(struct omap_aess *aess, int logical_id)
+int omap_abe_port_open(struct omap_aess *aess, int logical_id)
 {
 	struct omap_abe_port *port;
 	unsigned long flags;
@@ -219,22 +265,23 @@ struct omap_abe_port *omap_abe_port_open(struct omap_aess *aess, int logical_id)
 
 	if (logical_id < 0 || logical_id >= OMAP_ABE_PORT_ID_LAST) {
 		pr_err("invalid logical port %d\n", logical_id);
-		return ERR_PTR(-EINVAL);
+		return -EINVAL;
 	}
 
 	if (port_is_open(aess, logical_id)) {
 		pr_err("logical port %d already open\n", logical_id);
-		return ERR_PTR(-EBUSY);
+		return -EBUSY;
 	}
 
 	port = kzalloc(sizeof(struct omap_abe_port), GFP_KERNEL);
 	if (port == NULL)
-		return ERR_PTR(-ENOMEM);
+		return -ENOMEM;
 
 	port->logical_id = logical_id;
 	port->physical_id = get_physical_id(logical_id);
 	port->state = PORT_DISABLED;
 	port->aess = aess;
+	aess->port[logical_id] = port;
 
 	spin_lock_irqsave(&aess->lock, flags);
 	list_add(&port->list, &aess->ports);
@@ -254,7 +301,7 @@ struct omap_abe_port *omap_abe_port_open(struct omap_aess *aess, int logical_id)
 #endif
 
 	pr_debug("opened port %s\n", lport_name[logical_id]);
-	return port;
+	return 0;
 }
 EXPORT_SYMBOL(omap_abe_port_open);
 
@@ -263,21 +310,57 @@ EXPORT_SYMBOL(omap_abe_port_open);
  *
  * @port - logical ABE port to be closed (and disabled).
  */
-void omap_abe_port_close(struct omap_aess *aess, struct omap_abe_port *port)
+void omap_abe_port_close(struct omap_aess *aess, int logical_id)
 {
+	struct omap_abe_port *port = aess->port[logical_id];
 	unsigned long flags;
 
+	if (!port) {
+		dev_err(aess->dev, "Port %s is not open, can not be closed\n",
+			lport_name[logical_id]);
+		return;
+	}
+
 	/* disable the port */
-	omap_abe_port_disable(aess, port);
+	omap_abe_port_disable(aess, logical_id);
 
 	spin_lock_irqsave(&aess->lock, flags);
 	list_del(&port->list);
 	spin_unlock_irqrestore(&aess->lock, flags);
 
 	pr_debug("closed port %s\n", lport_name[port->logical_id]);
+
+	aess->port[port->logical_id] = NULL;
 	kfree(port);
+	
 }
 EXPORT_SYMBOL(omap_abe_port_close);
+
+void omap_abe_port_set_substream(struct omap_aess *aess, int logical_id,
+				 struct snd_pcm_substream *substream)
+{
+	if (!aess->port[logical_id]) {
+		dev_err(aess->dev, "Port %s is not open.\n",
+			lport_name[logical_id]);
+		return;
+	}
+
+	aess->port[logical_id]->substream = substream;
+}
+EXPORT_SYMBOL(omap_abe_port_set_substream);
+
+struct snd_pcm_substream *omap_abe_port_get_substream(struct omap_aess *aess,
+						      int logical_id)
+{
+	if (!aess->port[logical_id]) {
+		dev_err(aess->dev, "Port %s is not open.\n",
+			lport_name[logical_id]);
+		return NULL;
+	}
+
+	return aess->port[logical_id]->substream;
+}
+EXPORT_SYMBOL(omap_abe_port_get_substream);
 
 static struct omap_aess *omap_abe_port_mgr_init(void)
 {
