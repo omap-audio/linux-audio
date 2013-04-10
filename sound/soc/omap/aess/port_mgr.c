@@ -105,12 +105,12 @@ static int port_get_num_users(struct omap_aess *aess, struct omap_abe_port *port
 	return users;
 }
 
-static int port_is_open(struct omap_aess *aess, int phy_port)
+static int port_is_open(struct omap_aess *aess, int logical_id)
 {
 	struct omap_abe_port *p;
 
 	list_for_each_entry(p, &aess->ports, list) {
-		if (p->physical_id == phy_port && p->state == PORT_ENABLED)
+		if (p->logical_id == logical_id && p->state == PORT_ENABLED)
 			return 1;
 	}
 	return 0;
