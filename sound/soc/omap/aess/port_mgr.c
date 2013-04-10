@@ -217,7 +217,7 @@ struct omap_abe_port *omap_abe_port_open(struct omap_aess *aess, int logical_id)
 	char debug_fs_name[32];
 #endif
 
-	if (logical_id < 0 || logical_id > OMAP_ABE_MAX_PORT_ID) {
+	if (logical_id < 0 || logical_id >= OMAP_ABE_PORT_ID_LAST) {
 		pr_err("invalid logical port %d\n", logical_id);
 		return ERR_PTR(-EINVAL);
 	}

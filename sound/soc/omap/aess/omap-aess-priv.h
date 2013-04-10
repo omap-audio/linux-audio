@@ -257,7 +257,7 @@ struct omap_abe_equ {
 };
 
 struct omap_abe_dai {
-	struct omap_abe_port *port[OMAP_ABE_MAX_PORT_ID + 1];
+	struct omap_abe_port *port[OMAP_ABE_PORT_ID_LAST];
 	int num_active;
 	int num_suspended;
 };

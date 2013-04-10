@@ -1098,7 +1098,7 @@ static int omap_abe_dai_probe(struct snd_soc_dai *dai)
 	if (!abe->aess)
 		goto err;
 
-	for (i = 0; i <= OMAP_ABE_MAX_PORT_ID; i++) {
+	for (i = 0; i < OMAP_ABE_PORT_ID_LAST; i++) {
 
 		abe->dai.port[i] = omap_abe_port_open(abe->aess, i);
 		if (IS_ERR(abe->dai.port[i])) {
@@ -1122,7 +1122,7 @@ static int omap_abe_dai_remove(struct snd_soc_dai *dai)
 	struct omap_abe *abe = snd_soc_dai_get_drvdata(dai);
 	int i;
 
-	for (i = 0; i <= OMAP_ABE_MAX_PORT_ID; i++)
+	for (i = 0; i < OMAP_ABE_PORT_ID_LAST; i++)
 		omap_abe_port_close(abe->aess, abe->dai.port[i]);
 
 	omap_abe_port_mgr_put(abe->aess);
