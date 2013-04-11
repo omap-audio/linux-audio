@@ -273,6 +273,12 @@ int omap_abe_port_open(struct omap_aess *aess, int logical_id)
 		return -EBUSY;
 	}
 
+	if (aess->port[logical_id]) {
+		dev_info(aess->dev, "Port %s is already open\n",
+			 lport_name[logical_id]);
+		return 0;
+	}
+
 	port = kzalloc(sizeof(struct omap_abe_port), GFP_KERNEL);
 	if (port == NULL)
 		return -ENOMEM;
