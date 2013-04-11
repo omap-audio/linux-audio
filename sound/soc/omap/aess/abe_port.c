@@ -255,25 +255,7 @@ static void omap_aess_update_scheduling_table(struct omap_aess *aess,
 }
 
 static u32 omap_aess_update_io_task(struct omap_aess *aess,
-				    struct omap_aess_io_task *io_task,
-				    int enable)
-{
-	int i;
-	struct omap_aess_task *task;
-
-	for (i = 0; i < io_task->nb_task; i++) {
-		task = &io_task->task[i];
-		if (enable)
-			aess->MultiFrame[task->frame][task->slot] = task->task;
-		else
-			aess->MultiFrame[task->frame][task->slot] = 0;
-	}
-
-	return io_task->smem;
-}
-
-static u32 omap_aess_update_io_task1(struct omap_aess *aess,
-				     struct omap_aess_io_task1 *io_task,
+				     struct omap_aess_io_task *io_task,
 				     int enable)
 {
 	int i;
@@ -1024,9 +1006,9 @@ int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 			return -EINVAL;
 		}
 		if (abe_port[id].format.f == 44100)
-			smem1 = omap_aess_update_io_task1(aess, &(aess->fw_info.ping_pong->tsk_freq[2].task), 1);
+			smem1 = omap_aess_update_io_task(aess, &(aess->fw_info.ping_pong->tsk_freq[2].task), 1);
 		else
-			smem1 = omap_aess_update_io_task1(aess, &(aess->fw_info.ping_pong->tsk_freq[3].task), 1);
+			smem1 = omap_aess_update_io_task(aess, &(aess->fw_info.ping_pong->tsk_freq[3].task), 1);
 
 		/* able  interrupt to be generated at the first frame */
 		desc_pp.split_addr1 = 1;
@@ -1173,7 +1155,7 @@ int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 		case OMAP_ABE_VX_DL_PORT:
 			omap_aess_update_scheduling_table(aess, &(aess->fw_info.port[id].task), 1);
 
-			smem1 = omap_aess_update_io_task1(aess, &(aess->fw_info.port[id].tsk_freq[idx].task), 1);
+			smem1 = omap_aess_update_io_task(aess, &(aess->fw_info.port[id].tsk_freq[idx].task), 1);
 			/* check for 8kHz/16kHz */
 			if (idx < 2) {
 				/* ASRC set only for McBSP */
@@ -1203,7 +1185,7 @@ int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 		case OMAP_ABE_VX_UL_PORT:
 			omap_aess_update_scheduling_table(aess, &(aess->fw_info.port[id].task), 1);
 
-			smem1 = omap_aess_update_io_task1(aess, &(aess->fw_info.port[id].tsk_freq[idx].task), 1);
+			smem1 = omap_aess_update_io_task(aess, &(aess->fw_info.port[id].tsk_freq[idx].task), 1);
 			/* check for 8kHz/16kHz */
 			if (idx < 2) {
 				/* ASRC set only for McBSP */
@@ -1233,7 +1215,7 @@ int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 		case OMAP_ABE_BT_VX_UL_PORT:
 		case OMAP_ABE_MM_DL_PORT:
 		case OMAP_ABE_TONES_DL_PORT:
-			smem1 = omap_aess_update_io_task1(aess, &(aess->fw_info.port[id].tsk_freq[idx].task), 1);
+			smem1 = omap_aess_update_io_task(aess, &(aess->fw_info.port[id].tsk_freq[idx].task), 1);
 			break;
 		case OMAP_ABE_MM_UL_PORT:
 			copy_func_index1 = fct_id[OMAP_AESS_COPY_FCT_MM_UL_ID];

@@ -644,12 +644,6 @@ struct omap_aess_init_task {
 struct omap_aess_io_task {
 	u32 nb_task;
 	u32 smem;
-	struct omap_aess_task *task;
-};
-
-struct omap_aess_io_task1 {
-	u32 nb_task;
-	u32 smem;
 	struct omap_aess_task task[2];
 };
 
@@ -659,7 +653,7 @@ struct omap_aess_port_type {
 };
 
 struct omap_aess_asrc_port {
-	struct omap_aess_io_task1 task;
+	struct omap_aess_io_task task;
 	struct omap_aess_port_type asrc;
 };
 
