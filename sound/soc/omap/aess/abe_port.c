@@ -592,6 +592,7 @@ static void omap_aess_dma_request_set(struct omap_aess *aess, u32 id, u32 on)
  */
 static void omap_aess_init_atc(struct omap_aess *aess, u32 id)
 {
+	struct omap_aess_port_protocol *protocol = &abe_port[id].protocol;
 	u8 iter;
 	s32 datasize;
 	struct omap_abe_atc_desc atc_desc;
@@ -600,8 +601,8 @@ static void omap_aess_init_atc(struct omap_aess *aess, u32 id)
 	/* load default values of the descriptor */
 	memset(&atc_desc, 0, sizeof(struct omap_abe_atc_desc));
 
-	datasize = abe_dma_port_iter_factor(&((abe_port[id]).format));
-	iter = (u8) abe_dma_port_iteration(&((abe_port[id]).format));
+	datasize = abe_dma_port_iter_factor(&(abe_port[id].format));
+	iter = (u8) abe_dma_port_iteration(&(abe_port[id].format));
 	/* if the ATC FIFO is too small there will be two ABE firmware
 	   utasks to do the copy this happems on DMIC and MCPDMDL */
 	/* VXDL_8kMono = 4 = 2 + 2x1 */
@@ -613,7 +614,7 @@ static void omap_aess_init_atc(struct omap_aess *aess, u32 id)
 	/* MM_UL2_Stereo = 4 */
 	/* PDMDL = 12 */
 	/* IN from AESS point of view */
-	if (abe_port[id].protocol.direction == ABE_ATC_DIRECTION_IN)
+	if (protocol->direction == ABE_ATC_DIRECTION_IN)
 		if (iter + 2 * datasize > 126)
 			atc_desc.wrpt = (iter >> 1) +
 				((JITTER_MARGIN-1) * datasize);
@@ -622,29 +623,24 @@ static void omap_aess_init_atc(struct omap_aess *aess, u32 id)
 	else
 		atc_desc.wrpt = 0 + ((JITTER_MARGIN+1) * datasize);
 
-	switch ((abe_port[id]).protocol.protocol_switch) {
+	switch (protocol->protocol_switch) {
 	case OMAP_AESS_PORT_SERIAL:
-		atc_desc.cbdir = (abe_port[id]).protocol.direction;
-		atc_desc.cbsize =
-			(abe_port[id]).protocol.p.prot_serial.buf_size;
-		atc_desc.badd =
-			((abe_port[id]).protocol.p.prot_serial.buf_addr) >> 4;
-		atc_desc.iter = (abe_port[id]).protocol.p.prot_serial.iter;
+		atc_desc.cbdir = protocol->direction;
+		atc_desc.cbsize = protocol->p.prot_serial.buf_size;
+		atc_desc.badd = protocol->p.prot_serial.buf_addr >> 4;
+		atc_desc.iter = protocol->p.prot_serial.iter;
 		atc_desc.srcid =
-			abe_atc_srcid[(abe_port[id]).protocol.p.prot_serial.
-				      desc_addr >> 3];
+			abe_atc_srcid[protocol->p.prot_serial.desc_addr >> 3];
 		atc_desc.destid =
-			abe_atc_dstid[(abe_port[id]).protocol.p.prot_serial.
-				      desc_addr >> 3];
+			abe_atc_dstid[protocol->p.prot_serial.desc_addr >> 3];
 		omap_aess_write(aess, OMAP_ABE_DMEM,
-				abe_port[id].protocol.p.prot_serial.desc_addr,
+				protocol->p.prot_serial.desc_addr,
 				&atc_desc, sizeof(atc_desc));
 		break;
 	case OMAP_AESS_PORT_DMIC:
 		atc_desc.cbdir = ABE_ATC_DIRECTION_IN;
-		atc_desc.cbsize = (abe_port[id]).protocol.p.prot_dmic.buf_size;
-		atc_desc.badd =
-			((abe_port[id]).protocol.p.prot_dmic.buf_addr) >> 4;
+		atc_desc.cbsize = protocol->p.prot_dmic.buf_size;
+		atc_desc.badd = protocol->p.prot_dmic.buf_addr >> 4;
 		atc_desc.iter = DMIC_ITER;
 		atc_desc.srcid = abe_atc_srcid[ABE_ATC_DMIC_DMA_REQ];
 		omap_aess_write(aess, OMAP_ABE_DMEM,
@@ -653,10 +649,8 @@ static void omap_aess_init_atc(struct omap_aess *aess, u32 id)
 		break;
 	case OMAP_AESS_PORT_MCPDMDL:
 		atc_desc.cbdir = ABE_ATC_DIRECTION_OUT;
-		atc_desc.cbsize =
-			(abe_port[id]).protocol.p.prot_mcpdmdl.buf_size;
-		atc_desc.badd =
-			((abe_port[id]).protocol.p.prot_mcpdmdl.buf_addr) >> 4;
+		atc_desc.cbsize = protocol->p.prot_mcpdmdl.buf_size;
+		atc_desc.badd = protocol->p.prot_mcpdmdl.buf_addr >> 4;
 		atc_desc.iter = MCPDM_DL_ITER;
 		atc_desc.destid = abe_atc_dstid[ABE_ATC_MCPDMDL_DMA_REQ];
 		omap_aess_write(aess, OMAP_ABE_DMEM,
@@ -665,10 +659,8 @@ static void omap_aess_init_atc(struct omap_aess *aess, u32 id)
 		break;
 	case OMAP_AESS_PORT_MCPDMUL:
 		atc_desc.cbdir = ABE_ATC_DIRECTION_IN;
-		atc_desc.cbsize =
-			(abe_port[id]).protocol.p.prot_mcpdmul.buf_size;
-		atc_desc.badd =
-			((abe_port[id]).protocol.p.prot_mcpdmul.buf_addr) >> 4;
+		atc_desc.cbsize = protocol->p.prot_mcpdmul.buf_size;
+		atc_desc.badd = protocol->p.prot_mcpdmul.buf_addr >> 4;
 		atc_desc.iter = MCPDM_UL_ITER;
 		atc_desc.srcid = abe_atc_srcid[ABE_ATC_MCPDMUL_DMA_REQ];
 		omap_aess_write(aess, OMAP_ABE_DMEM,
@@ -679,30 +671,26 @@ static void omap_aess_init_atc(struct omap_aess *aess, u32 id)
 		/* software protocol, nothing to do on ATC */
 		break;
 	case OMAP_AESS_PORT_DMAREQ:
-		atc_desc.cbdir = (abe_port[id]).protocol.direction;
-		atc_desc.cbsize =
-			(abe_port[id]).protocol.p.prot_dmareq.buf_size;
-		atc_desc.badd =
-			((abe_port[id]).protocol.p.prot_dmareq.buf_addr) >> 4;
+		atc_desc.cbdir = protocol->direction;
+		atc_desc.cbsize = protocol->p.prot_dmareq.buf_size;
+		atc_desc.badd = protocol->p.prot_dmareq.buf_addr >> 4;
 		/* CBPr needs ITER=1.
 		It is the job of eDMA to do the iterations */
 		atc_desc.iter = 1;
 		/* input from ABE point of view */
-		if (abe_port[id].protocol.direction == ABE_ATC_DIRECTION_IN) {
+		if (protocol->direction == ABE_ATC_DIRECTION_IN) {
 			/* atc_atc_desc.rdpt = 127; */
 			/* atc_atc_desc.wrpt = 0; */
-			atc_desc.srcid = abe_atc_srcid
-				[(abe_port[id]).protocol.p.prot_dmareq.
-				 desc_addr >> 3];
+			atc_desc.srcid =
+			  abe_atc_srcid[protocol->p.prot_dmareq.desc_addr >> 3];
 		} else {
 			/* atc_atc_desc.rdpt = 0; */
 			/* atc_atc_desc.wrpt = 127; */
-			atc_desc.destid = abe_atc_dstid
-				[(abe_port[id]).protocol.p.prot_dmareq.
-				 desc_addr >> 3];
+			atc_desc.destid =
+			  abe_atc_dstid[protocol->p.prot_dmareq.desc_addr >> 3];
 		}
 		omap_aess_write(aess, OMAP_ABE_DMEM,
-				abe_port[id].protocol.p.prot_dmareq.desc_addr,
+				protocol->p.prot_dmareq.desc_addr,
 				&atc_desc, sizeof(atc_desc));
 		break;
 	}
@@ -765,14 +753,14 @@ int omap_aess_enable_data_transfer(struct omap_aess *aess, u32 id)
 	case OMAP_ABE_PDM_DL_PORT:
 	case OMAP_ABE_DMIC_PORT:
 		/* initializes the ABE ATC descriptors in DMEM for BE ports */
-		protocol = &(abe_port[id].protocol);
+		protocol = &abe_port[id].protocol;
 		format = abe_port[id].format;
 		omap_aess_init_atc(aess, id);
 		omap_aess_init_io_tasks(aess, id, &format, protocol);
 		break;
 
 	case OMAP_ABE_MM_DL_PORT:
-		protocol = &(abe_port[OMAP_ABE_MM_DL_PORT].protocol);
+		protocol = &abe_port[OMAP_ABE_MM_DL_PORT].protocol;
 		if (protocol->protocol_switch == OMAP_AESS_PORT_PINGPONG)
 			omap_aess_update_scheduling_table(aess, &aess->fw_info.ping_pong->task, 1);
 		break;
@@ -1614,7 +1602,7 @@ int omap_aess_set_ping_pong_buffer(struct omap_aess *aess, u32 port, u32 n_bytes
 	}
 	/* translates the number of bytes in samples */
 	/* data size in DMEM words */
-	datasize = omap_aess_dma_port_iter_factor(aess, (struct omap_aess_data_format *)&((abe_port[port]).format));
+	datasize = omap_aess_dma_port_iter_factor(aess, &abe_port[port].format);
 	/* data size in bytes */
 	datasize = datasize << 2;
 	n_samples = n_bytes / datasize;
@@ -1825,27 +1813,27 @@ int omap_aess_connect_irq_ping_pong_port(struct omap_aess *aess,
 	       sizeof(struct omap_aess_addr));
 
 	abe_port[id] = ((struct omap_aess_port *)aess->fw_info.port)[id];
-	(abe_port[id]).format = (*f);
-	(abe_port[id]).protocol.protocol_switch = OMAP_AESS_PORT_PINGPONG;
-	(abe_port[id]).protocol.p.prot_pingpong.buf_addr = addr.offset;
-	(abe_port[id]).protocol.p.prot_pingpong.buf_size = size;
-	(abe_port[id]).protocol.p.prot_pingpong.irq_data = (1);
+	abe_port[id].format = (*f);
+	abe_port[id].protocol.protocol_switch = OMAP_AESS_PORT_PINGPONG;
+	abe_port[id].protocol.p.prot_pingpong.buf_addr = addr.offset;
+	abe_port[id].protocol.p.prot_pingpong.buf_size = size;
+	abe_port[id].protocol.p.prot_pingpong.irq_data = (1);
 	omap_aess_init_ping_pong_buffer(aess, OMAP_ABE_MM_DL_PORT, size, 2, sink);
 	if (dsp_mcu_flag == PING_PONG_WITH_MCU_IRQ)
-		(abe_port[id]).protocol.p.prot_pingpong.irq_addr =
+		abe_port[id].protocol.p.prot_pingpong.irq_addr =
 			OMAP_AESS_MCU_IRQSTATUS_RAW;
 	if (dsp_mcu_flag == PING_PONG_WITH_DSP_IRQ)
-		(abe_port[id]).protocol.p.prot_pingpong.irq_addr =
+		abe_port[id].protocol.p.prot_pingpong.irq_addr =
 			OMAP_AESS_DSP_IRQSTATUS_RAW;
 	abe_port[id].status = OMAP_ABE_PORT_INITIALIZED;
 
 	/* load the ATC descriptors - disabled */
 	omap_aess_init_atc(aess, id);
 	/* load the micro-task parameters */
-	omap_aess_init_io_tasks(aess,  id, &((abe_port[id]).format),
-				&((abe_port[id]).protocol));
+	omap_aess_init_io_tasks(aess,  id, &abe_port[id].format,
+				&abe_port[id].protocol);
 
-	*sink = (abe_port[id]).protocol.p.prot_pingpong.buf_addr;
+	*sink = abe_port[id].protocol.p.prot_pingpong.buf_addr;
 	return 0;
 }
 EXPORT_SYMBOL(omap_aess_connect_irq_ping_pong_port);
