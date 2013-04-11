@@ -927,48 +927,6 @@ void abe_init_dma_t(u32 id, struct omap_aess_port_protocol *prot)
 }
 
 /**
- * omap_aess_enable_atc
- * @aess: Pointer on aess handle
- * @id: port name
- *
- * Enable ATC associated to the port ID
- */
-static void omap_aess_enable_atc(struct omap_aess *aess, u32 id)
-{
-	struct omap_abe_atc_desc atc_desc;
-
-	omap_aess_read(aess, OMAP_ABE_DMEM,
-		       abe_port[id].protocol.p.prot_dmareq.desc_addr,
-		       &atc_desc, sizeof(atc_desc));
-	atc_desc.desen = 1;
-	omap_aess_write(aess, OMAP_ABE_DMEM,
-			abe_port[id].protocol.p.prot_dmareq.desc_addr,
-			&atc_desc, sizeof(atc_desc));
-
-}
-
-/**
- * omap_aess_disable_atc
- * @aess: Pointer on aess handle
- * @id: port name
- *
- * Enable ATC associated to the port ID
- */
-static void omap_aess_disable_atc(struct omap_aess *aess, u32 id)
-{
-	struct omap_abe_atc_desc atc_desc;
-
-	omap_aess_read(aess, OMAP_ABE_DMEM,
-		       abe_port[id].protocol.p.prot_dmareq.desc_addr,
-		       &atc_desc, sizeof(atc_desc));
-	atc_desc.desen = 0;
-	omap_aess_write(aess, OMAP_ABE_DMEM,
-			abe_port[id].protocol.p.prot_dmareq.desc_addr,
-			&atc_desc, sizeof(atc_desc));
-
-}
-
-/**
  * omap_aess_init_io_tasks
  * @aess: Pointer on aess handle
  * @id: port name
