@@ -541,14 +541,14 @@ static void omap_aess_clean_temporary_buffers(struct omap_aess *aess, u32 id)
  */
 static void omap_aess_dma_request_set(struct omap_aess *aess, u32 id, u32 on)
 {
+	struct omap_aess_port_protocol *protocol = &abe_port[id].protocol;
 	struct omap_aess_addr addr;
 
-	if (abe_port[id].protocol.protocol_switch == OMAP_AESS_PORT_PINGPONG) {
+	if (protocol->protocol_switch == OMAP_AESS_PORT_PINGPONG) {
 		struct omap_aess_pingpong_desc desc_pp;
 		u8 irq_dmareq_field, desc_third_word[4];
 
-		irq_dmareq_field = (u8) (on *
-			      abe_port[id].protocol.p.prot_pingpong.irq_data);
+		irq_dmareq_field = on * protocol->p.prot_pingpong.irq_data;
 		memcpy(&addr, &aess->fw_info.map[OMAP_AESS_DMEM_PINGPONGDESC_ID],
 		       sizeof(struct omap_aess_addr));
 		addr.offset += (u32)&(desc_pp.data_size) - (u32)&(desc_pp);
@@ -566,10 +566,9 @@ static void omap_aess_dma_request_set(struct omap_aess *aess, u32 id, u32 on)
 		addr.bytes = sizeof(struct omap_aess_io_desc);
 		omap_aess_mem_read(aess, addr, &sio_desc);
 		if (on) {
-			if (abe_port[id].protocol.protocol_switch != OMAP_AESS_PORT_SERIAL)
+			if (protocol->protocol_switch != OMAP_AESS_PORT_SERIAL)
 				sio_desc.atc_irq_data =
-					(u8) abe_port[id].protocol.p.prot_dmareq.
-					dma_data;
+					       protocol->p.prot_dmareq.dma_data;
 			sio_desc.on_off = 0x80;
 		} else {
 			sio_desc.atc_irq_data = 0;
