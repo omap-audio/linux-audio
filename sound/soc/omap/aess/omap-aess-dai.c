@@ -395,9 +395,13 @@ static void disable_fe_port(struct snd_pcm_substream *substream,
 					      OMAP_ABE_FE_PORT_MM_UL1);
 		break;
 	case OMAP_ABE_FRONTEND_DAI_LP_MEDIA:
-		if (stream == SNDRV_PCM_STREAM_PLAYBACK)
+		if (stream == SNDRV_PCM_STREAM_PLAYBACK) {
 			omap_abe_port_disable(abe->aess,
 					      OMAP_ABE_FE_PORT_MM_DL_LP);
+			omap_abe_port_set_substream(abe->aess,
+						    OMAP_ABE_FE_PORT_MM_DL_LP,
+						    NULL);
+		}
 		break;
 	case OMAP_ABE_FRONTEND_DAI_MEDIA_CAPTURE:
 		if (stream == SNDRV_PCM_STREAM_CAPTURE)
