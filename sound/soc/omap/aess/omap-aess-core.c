@@ -56,7 +56,9 @@ static const char *abe_memory_bank[5] = {
 	"mpu"
 };
 
+#ifndef CONFIG_SND_OMAP_SOC_AESS_MODULE
 void driver_deferred_probe_trigger(void);
+#endif
 
 void omap_abe_pm_get(struct snd_soc_platform *platform)
 {
@@ -142,8 +144,9 @@ static void abe_fw_ready(const struct firmware *fw, void *context)
 		snd_soc_unregister_platform(&pdev->dev);
 		release_firmware(fw);
 	}
+#ifndef CONFIG_SND_OMAP_SOC_AESS_MODULE
 	driver_deferred_probe_trigger();
-
+#endif
 }
 
 static int abe_engine_probe(struct platform_device *pdev)
