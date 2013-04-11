@@ -167,7 +167,6 @@ struct omap_aess {
 	struct omap_aess_mapping fw_info;
 
 	/* List of open ABE logical ports */
-	struct omap_abe_port *port[OMAP_ABE_PORT_ID_LAST];
 	struct list_head ports;
 
 	/* spinlock */

@@ -114,31 +114,44 @@ static int get_physical_id(int logical_id)
 	return -EINVAL;
 }
 
+static struct omap_abe_port *find_logical_port(struct omap_aess *aess,
+					       int logical_id)
+{
+	struct omap_abe_port *p;
+
+	list_for_each_entry(p, &aess->ports, list) {
+		if (p->logical_id == logical_id)
+			return p;
+	}
+	return NULL;
+}
+
+static int port_is_open(struct omap_aess *aess, int logical_id)
+{
+	struct omap_abe_port *p = find_logical_port(aess, logical_id);
+
+	if (p && p->state == PORT_ENABLED)
+		return 1;
+
+	return 0;
+}
+
 /*
  * Get the number of enabled users of the physical port shared by this client.
  * Locks held by callers.
  */
-static int port_get_num_users(struct omap_aess *aess, struct omap_abe_port *port)
+static int port_get_num_users(struct omap_aess *aess,
+			      struct omap_abe_port *port)
 {
 	struct omap_abe_port *p;
 	int users = 0;
 
 	list_for_each_entry(p, &aess->ports, list) {
-		if (p->physical_id == port->physical_id && p->state == PORT_ENABLED)
+		if (p->physical_id == port->physical_id &&
+		    p->state == PORT_ENABLED)
 			users++;
 	}
 	return users;
-}
-
-static int port_is_open(struct omap_aess *aess, int logical_id)
-{
-	struct omap_abe_port *p;
-
-	list_for_each_entry(p, &aess->ports, list) {
-		if (p->logical_id == logical_id && p->state == PORT_ENABLED)
-			return 1;
-	}
-	return 0;
 }
 
 /*
@@ -147,7 +160,7 @@ static int port_is_open(struct omap_aess *aess, int logical_id)
  */
 int omap_abe_port_is_enabled(struct omap_aess *aess, int logical_id)
 {
-	struct omap_abe_port *port = aess->port[logical_id];
+	struct omap_abe_port *port = find_logical_port(aess, logical_id);
 	struct omap_abe_port *p;
 	unsigned long flags;
 
@@ -179,7 +192,7 @@ EXPORT_SYMBOL(omap_abe_port_is_enabled);
  */
 int omap_abe_port_enable(struct omap_aess *aess, int logical_id)
 {
-	struct omap_abe_port *port = aess->port[logical_id];
+	struct omap_abe_port *port = find_logical_port(aess, logical_id);
 	unsigned long flags;
 	int ret = 0;
 
@@ -217,7 +230,7 @@ EXPORT_SYMBOL(omap_abe_port_enable);
  */
 int omap_abe_port_disable(struct omap_aess *aess, int logical_id)
 {
-	struct omap_abe_port *port = aess->port[logical_id];
+	struct omap_abe_port *port = find_logical_port(aess, logical_id);
 	unsigned long flags;
 	int ret = 0;
 
@@ -273,7 +286,8 @@ int omap_abe_port_open(struct omap_aess *aess, int logical_id)
 		return -EBUSY;
 	}
 
-	if (aess->port[logical_id]) {
+	port = find_logical_port(aess, logical_id);
+	if (port) {
 		dev_info(aess->dev, "Port %s is already open\n",
 			 lport_name[logical_id]);
 		return 0;
@@ -287,7 +301,6 @@ int omap_abe_port_open(struct omap_aess *aess, int logical_id)
 	port->physical_id = get_physical_id(logical_id);
 	port->state = PORT_DISABLED;
 	port->aess = aess;
-	aess->port[logical_id] = port;
 
 	spin_lock_irqsave(&aess->lock, flags);
 	list_add(&port->list, &aess->ports);
@@ -318,7 +331,7 @@ EXPORT_SYMBOL(omap_abe_port_open);
  */
 void omap_abe_port_close(struct omap_aess *aess, int logical_id)
 {
-	struct omap_abe_port *port = aess->port[logical_id];
+	struct omap_abe_port *port = find_logical_port(aess, logical_id);
 	unsigned long flags;
 
 	if (!port) {
@@ -336,7 +349,6 @@ void omap_abe_port_close(struct omap_aess *aess, int logical_id)
 
 	pr_debug("closed port %s\n", lport_name[port->logical_id]);
 
-	aess->port[port->logical_id] = NULL;
 	kfree(port);
 	
 }
@@ -345,26 +357,30 @@ EXPORT_SYMBOL(omap_abe_port_close);
 void omap_abe_port_set_substream(struct omap_aess *aess, int logical_id,
 				 struct snd_pcm_substream *substream)
 {
-	if (!aess->port[logical_id]) {
+	struct omap_abe_port *port = find_logical_port(aess, logical_id);
+
+	if (!port) {
 		dev_err(aess->dev, "Port %s is not open.\n",
 			lport_name[logical_id]);
 		return;
 	}
 
-	aess->port[logical_id]->substream = substream;
+	port->substream = substream;
 }
 EXPORT_SYMBOL(omap_abe_port_set_substream);
 
 struct snd_pcm_substream *omap_abe_port_get_substream(struct omap_aess *aess,
 						      int logical_id)
 {
-	if (!aess->port[logical_id]) {
+	struct omap_abe_port *port = find_logical_port(aess, logical_id);
+
+	if (!port) {
 		dev_err(aess->dev, "Port %s is not open.\n",
 			lport_name[logical_id]);
 		return NULL;
 	}
 
-	return aess->port[logical_id]->substream;
+	return port->substream;
 }
 EXPORT_SYMBOL(omap_abe_port_get_substream);
 
