@@ -335,7 +335,7 @@ out:
 	return ret;
 }
 
-loff_t abe_llseek(struct file *file, loff_t off, int whence, int size)
+static loff_t abe_llseek(struct file *file, loff_t off, int whence, int size)
 {
 	loff_t newpos;
 
@@ -363,7 +363,7 @@ loff_t abe_llseek(struct file *file, loff_t off, int whence, int size)
 	return newpos;
 }
 
-loff_t abe_llseek_cmem(struct file *file, loff_t off, int whence)
+static loff_t abe_llseek_cmem(struct file *file, loff_t off, int whence)
 {
 	struct omap_abe *abe = file->private_data;
 
@@ -385,7 +385,7 @@ static const struct file_operations omap_abe_cmem_fops = {
 	.llseek = abe_llseek_cmem,
 };
 
-loff_t abe_llseek_pmem(struct file *file, loff_t off, int whence)
+static loff_t abe_llseek_pmem(struct file *file, loff_t off, int whence)
 {
 	struct omap_abe *abe = file->private_data;
 
@@ -407,7 +407,7 @@ static const struct file_operations omap_abe_pmem_fops = {
 	.llseek = abe_llseek_pmem,
 };
 
-loff_t abe_llseek_smem(struct file *file, loff_t off, int whence)
+static loff_t abe_llseek_smem(struct file *file, loff_t off, int whence)
 {
 	struct omap_abe *abe = file->private_data;
 
@@ -429,7 +429,7 @@ static const struct file_operations omap_abe_smem_fops = {
 	.llseek = abe_llseek_smem,
 };
 
-loff_t abe_llseek_dmem(struct file *file, loff_t off, int whence)
+static loff_t abe_llseek_dmem(struct file *file, loff_t off, int whence)
 {
 	struct omap_abe *abe = file->private_data;
 
