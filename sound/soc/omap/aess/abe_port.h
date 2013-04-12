@@ -60,7 +60,6 @@
 #define _ABE_PORT_H_
 
 int omap_aess_select_main_port(struct omap_aess *abe, u32 id);
-void omap_aess_build_scheduler_table(struct omap_aess *abe);
 int omap_aess_reset_port(struct omap_aess *abe, u32 id);
 void omap_aess_irq_ping_pong(struct omap_aess *abe);
 

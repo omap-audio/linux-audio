@@ -77,9 +77,6 @@
 #define ABE_ATC_MCPDMDL_DMA_REQ 2
 #define ABE_ATC_MCPDMUL_DMA_REQ 3
 
-/* nb of samples to route */
-#define NBROUTE_UL 16
-
 /* ATC REGISTERS SIZE in bytes */
 #define ABE_ATC_DESC_SIZE 512
 
@@ -207,9 +204,6 @@ static const u32 abe_atc_srcid[ABE_ATC_DESC_SIZE >> 3] = {
 
 static struct omap_aess_port abe_port[LAST_PORT_ID];	/* list of ABE ports */
 
-static u32 abe_dma_port_iter_factor(struct omap_aess_data_format *f);
-static u32 abe_dma_port_iteration(struct omap_aess_data_format *f);
-void omap_aess_decide_main_port(struct omap_aess *aess);
 int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 			     struct omap_aess_data_format *format,
 			     struct omap_aess_port_protocol *prot);
@@ -273,38 +267,179 @@ static u32 omap_aess_update_io_task(struct omap_aess *aess,
 }
 
 /**
- * omap_aess_build_scheduler_table
- * @aess: Pointer on aess handle
+ * abe_format_switch
+ * @f: port format
+ * @iter: port iteration
+ * @mulfac: multiplication factor
  *
- * Initialize Audio Engine scheduling table for ABE internal
- * processing. The content of the scheduling table is provided
- * by the firmware header. It can be changed according to the
- * ABE graph.
+ * translates the sampling and data length to ITER number for the DMA
+ * and the multiplier factor to apply during data move with DMEM
+ *
  */
-void omap_aess_build_scheduler_table(struct omap_aess *aess)
+static void abe_format_switch(struct omap_aess_data_format *f, u32 *iter, u32 *mulfac)
 {
-	struct omap_aess_task *task;
-	u16 aUplinkMuxing[NBROUTE_UL];
-	int i, n;
-
-	/* Initialize default scheduling table */
-	memset(aess->MultiFrame, 0, sizeof(aess->MultiFrame));
-
-	for (i = 0; i < aess->fw_info.nb_init_task; i++) {
-		task = &aess->fw_info.init_table[i];
-		aess->MultiFrame[task->frame][task->slot] = task->task;
+	u32 n_freq;
+	switch (f->f) {
+		/* nb of samples processed by scheduling loop */
+	case 8000:
+		n_freq = 2;
+		break;
+	case 16000:
+		n_freq = 4;
+		break;
+	case 24000:
+		n_freq = 6;
+		break;
+	case 44100:
+		n_freq = 12;
+		break;
+	case 96000:
+		n_freq = 24;
+		break;
+	default:
+		/*case 48000 */
+		n_freq = 12;
+		break;
 	}
 
-	omap_aess_write_map(aess, OMAP_AESS_DMEM_MULTIFRAME_ID,
-			    aess->MultiFrame);
+	switch (f->samp_format) {
+	case OMAP_AESS_FORMAT_MONO_MSB:
+	case OMAP_AESS_FORMAT_MONO_RSHIFTED_16:
+	case OMAP_AESS_FORMAT_STEREO_16_16:
+		*mulfac = 1;
+		break;
+	case OMAP_AESS_FORMAT_STEREO_MSB:
+	case OMAP_AESS_FORMAT_STEREO_RSHIFTED_16:
+		*mulfac = 2;
+		break;
+	case OMAP_AESS_FORMAT_THREE_MSB:
+		*mulfac = 3;
+		break;
+	case OMAP_AESS_FORMAT_FOUR_MSB:
+		*mulfac = 4;
+		break;
+	case OMAP_AESS_FORMAT_FIVE_MSB:
+		*mulfac = 5;
+		break;
+	case OMAP_AESS_FORMAT_SIX_MSB:
+		*mulfac = 6;
+		break;
+	case OMAP_AESS_FORMAT_SEVEN_MSB:
+		*mulfac = 7;
+		break;
+	case OMAP_AESS_FORMAT_EIGHT_MSB:
+		*mulfac = 8;
+		break;
+	case OMAP_AESS_FORMAT_NINE_MSB:
+		*mulfac = 9;
+		break;
+	default:
+		*mulfac = 1;
+		break;
+	}
+	*iter = (n_freq * (*mulfac));
+	if (f->samp_format == OMAP_AESS_FORMAT_MONO_16_16)
+		*iter /= 2;
+}
 
-	/* reset the uplink router */
-	n = aess->fw_info.map[OMAP_AESS_DMEM_AUPLINKROUTING_ID].bytes >> 1;
-	for (i = 0; i < n; i++)
-		aUplinkMuxing[i] = omap_aess_get_label_data(aess, OMAP_AESS_BUFFER_ZERO_ID);
+/**
+ * abe_dma_port_iteration
+ * @f: port format
+ *
+ * translates the sampling and data length to ITER number for the DMA
+ */
+static u32 abe_dma_port_iteration(struct omap_aess_data_format *f)
+{
+	u32 iter, mulfac;
 
-	omap_aess_write_map(aess, OMAP_AESS_DMEM_AUPLINKROUTING_ID,
-			    aUplinkMuxing);
+	abe_format_switch(f, &iter, &mulfac);
+	return iter;
+}
+
+/**
+ * abe_dma_port_iter_factor
+ * @f: port format
+ *
+ * returns the multiplier factor to apply during data move with DMEM
+ */
+static u32 abe_dma_port_iter_factor(struct omap_aess_data_format *f)
+{
+	u32 iter, mulfac;
+
+	abe_format_switch(f, &iter, &mulfac);
+	return mulfac;
+}
+
+/**
+ * omap_aess_select_main_port - Select stynchronization port for Event generator.
+ * @aess: Pointer on aess handle
+ * @id: port name
+ *
+ * tells the FW which is the reference stream for adjusting
+ * the processing on 23/24/25 slots
+ */
+int omap_aess_select_main_port(struct omap_aess *aess, u32 id)
+{
+	u32 selection;
+
+	/* flow control */
+	selection = aess->fw_info.map[OMAP_AESS_DMEM_IODESCR_ID].offset;
+	selection += id * sizeof(struct omap_aess_io_desc);
+	selection += offsetof(struct omap_aess_io_desc, flow_counter);
+	selection &= 0xFFFFL;
+
+	/* when the main port is a sink port from AESS point of view
+	   the sign the firmware task analysis must be changed  */
+	if (abe_port[id].protocol.direction == ABE_ATC_DIRECTION_IN)
+		selection |= 0x80000;
+
+	omap_aess_write_map(aess, OMAP_AESS_DMEM_SLOT23_CTRL_ID, &selection);
+	return 0;
+}
+
+/**
+ * abe_valid_port_for_synchro()  - Select stynchronization port for Event generator.
+ * @id: audio port name
+ *
+ * tells the FW which is the reference stream for adjusting
+ * the processing on 23/24/25 slots
+ *
+ * takes the first port in a list which is slave on the data interface
+ */
+static u32 abe_valid_port_for_synchro(u32 id)
+{
+	if ((abe_port[id].protocol.protocol_switch == OMAP_AESS_PORT_DMAREQ) ||
+	    (abe_port[id].protocol.protocol_switch == OMAP_AESS_PORT_PINGPONG) ||
+	    (abe_port[id].status != OMAP_ABE_PORT_ACTIVITY_RUNNING))
+		return 0;
+	else
+		return 1;
+}
+
+/**
+ * omap_aess_decide_main_port()  - Decide main port selection for synchronization.
+ * @aess: Pointer on aess handle
+ *
+ * Lock up on all ABE port in order to find out the correct port for the
+ * Audio Engine synchronization.
+ */
+static void omap_aess_decide_main_port(struct omap_aess *aess)
+{
+	u32 id, id_not_found;
+
+	id_not_found = 1;
+	for (id = 0; id < LAST_PORT_ID - 1; id++) {
+		if (abe_valid_port_for_synchro(abe_port_priority[id])) {
+			id_not_found = 0;
+			break;
+		}
+	}
+
+	/* if no port is currently activated, the default one is PDM_DL */
+	if (id_not_found)
+		omap_aess_select_main_port(aess, OMAP_ABE_PDM_DL_PORT);
+	else
+		omap_aess_select_main_port(aess, abe_port_priority[id]);
 }
 
 /**
@@ -529,13 +664,13 @@ static void omap_aess_dma_request_set(struct omap_aess *aess, u32 id, u32 on)
 	struct omap_aess_addr addr;
 
 	if (protocol->protocol_switch == OMAP_AESS_PORT_PINGPONG) {
-		struct omap_aess_pingpong_desc desc_pp;
 		u8 irq_dmareq_field, desc_third_word[4];
 
 		irq_dmareq_field = on * protocol->p.prot_pingpong.irq_data;
 		memcpy(&addr, &aess->fw_info.map[OMAP_AESS_DMEM_PINGPONGDESC_ID],
 		       sizeof(struct omap_aess_addr));
-		addr.offset += (u32)&(desc_pp.data_size) - (u32)&(desc_pp);
+		addr.offset += (u32)offsetof(struct omap_aess_pingpong_desc,
+					     data_size);
 		addr.bytes = 4;
 		omap_aess_mem_read(aess, addr, desc_third_word);
 		desc_third_word[2] = irq_dmareq_field;
@@ -1237,195 +1372,6 @@ int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 }
 
 /**
- * omap_aess_select_main_port - Select stynchronization port for Event generator.
- * @aess: Pointer on aess handle
- * @id: port name
- *
- * tells the FW which is the reference stream for adjusting
- * the processing on 23/24/25 slots
- */
-int omap_aess_select_main_port(struct omap_aess *aess, u32 id)
-{
-	u32 selection;
-
-	/* flow control */
-	selection = aess->fw_info.map[OMAP_AESS_DMEM_IODESCR_ID].offset + id * sizeof(struct omap_aess_io_desc) +
-		offsetof(struct omap_aess_io_desc, flow_counter);
-	/* when the main port is a sink port from AESS point of view
-	   the sign the firmware task analysis must be changed  */
-	selection &= 0xFFFFL;
-	if (abe_port[id].protocol.direction == ABE_ATC_DIRECTION_IN)
-		selection |= 0x80000;
-
-	omap_aess_write_map(aess, OMAP_AESS_DMEM_SLOT23_CTRL_ID, &selection);
-	return 0;
-}
-
-/**
- * omap_aess_decide_main_port()  - Select stynchronization port for Event generator.
- * @id: audio port name
- *
- * tells the FW which is the reference stream for adjusting
- * the processing on 23/24/25 slots
- *
- * takes the first port in a list which is slave on the data interface
- */
-static u32 abe_valid_port_for_synchro(u32 id)
-{
-	if ((abe_port[id].protocol.protocol_switch == OMAP_AESS_PORT_DMAREQ) ||
-	    (abe_port[id].protocol.protocol_switch == OMAP_AESS_PORT_PINGPONG) ||
-	    (abe_port[id].status != OMAP_ABE_PORT_ACTIVITY_RUNNING))
-		return 0;
-	else
-		return 1;
-}
-
-/**
- * omap_aess_decide_main_port()  - Decide main port selection for synchronization.
- * @aess: Pointer on aess handle
- *
- * Lock up on all ABE port in order to find out the correct port for the
- * Audio Engine synchronization.
- */
-void omap_aess_decide_main_port(struct omap_aess *aess)
-{
-	u32 id, id_not_found;
-
-	id_not_found = 1;
-	for (id = 0; id < LAST_PORT_ID - 1; id++) {
-		if (abe_valid_port_for_synchro(abe_port_priority[id])) {
-			id_not_found = 0;
-			break;
-		}
-	}
-
-	/* if no port is currently activated, the default one is PDM_DL */
-	if (id_not_found)
-		omap_aess_select_main_port(aess, OMAP_ABE_PDM_DL_PORT);
-	else
-		omap_aess_select_main_port(aess, abe_port_priority[id]);
-}
-
-/**
- * abe_format_switch
- * @f: port format
- * @iter: port iteration
- * @mulfac: multiplication factor
- *
- * translates the sampling and data length to ITER number for the DMA
- * and the multiplier factor to apply during data move with DMEM
- *
- */
-static void abe_format_switch(struct omap_aess_data_format *f, u32 *iter, u32 *mulfac)
-{
-	u32 n_freq;
-	switch (f->f) {
-		/* nb of samples processed by scheduling loop */
-	case 8000:
-		n_freq = 2;
-		break;
-	case 16000:
-		n_freq = 4;
-		break;
-	case 24000:
-		n_freq = 6;
-		break;
-	case 44100:
-		n_freq = 12;
-		break;
-	case 96000:
-		n_freq = 24;
-		break;
-	default:
-		/*case 48000 */
-		n_freq = 12;
-		break;
-	}
-
-	switch (f->samp_format) {
-	case OMAP_AESS_FORMAT_MONO_MSB:
-	case OMAP_AESS_FORMAT_MONO_RSHIFTED_16:
-	case OMAP_AESS_FORMAT_STEREO_16_16:
-		*mulfac = 1;
-		break;
-	case OMAP_AESS_FORMAT_STEREO_MSB:
-	case OMAP_AESS_FORMAT_STEREO_RSHIFTED_16:
-		*mulfac = 2;
-		break;
-	case OMAP_AESS_FORMAT_THREE_MSB:
-		*mulfac = 3;
-		break;
-	case OMAP_AESS_FORMAT_FOUR_MSB:
-		*mulfac = 4;
-		break;
-	case OMAP_AESS_FORMAT_FIVE_MSB:
-		*mulfac = 5;
-		break;
-	case OMAP_AESS_FORMAT_SIX_MSB:
-		*mulfac = 6;
-		break;
-	case OMAP_AESS_FORMAT_SEVEN_MSB:
-		*mulfac = 7;
-		break;
-	case OMAP_AESS_FORMAT_EIGHT_MSB:
-		*mulfac = 8;
-		break;
-	case OMAP_AESS_FORMAT_NINE_MSB:
-		*mulfac = 9;
-		break;
-	default:
-		*mulfac = 1;
-		break;
-	}
-	*iter = (n_freq * (*mulfac));
-	if (f->samp_format == OMAP_AESS_FORMAT_MONO_16_16)
-		*iter /= 2;
-}
-
-/**
- * abe_dma_port_iteration
- * @f: port format
- *
- * translates the sampling and data length to ITER number for the DMA
- */
-static u32 abe_dma_port_iteration(struct omap_aess_data_format *f)
-{
-	u32 iter, mulfac;
-
-	abe_format_switch(f, &iter, &mulfac);
-	return iter;
-}
-
-/**
- * abe_dma_port_iter_factor
- * @f: port format
- *
- * returns the multiplier factor to apply during data move with DMEM
- */
-static u32 abe_dma_port_iter_factor(struct omap_aess_data_format *f)
-{
-	u32 iter, mulfac;
-
-	abe_format_switch(f, &iter, &mulfac);
-	return mulfac;
-}
-
-/**
- * omap_aess_dma_port_iter_factor
- * @aess: Pointer on aess handle
- * @f: port format
- *
- * returns the multiplier factor to apply during data move with DMEM
- */
-static u32 omap_aess_dma_port_iter_factor(struct omap_aess *aess, struct omap_aess_data_format *f)
-{
-	u32 iter, mulfac;
-
-	abe_format_switch(f, &iter, &mulfac);
-	return mulfac;
-}
-
-/**
  * omap_aess_mono_mixer
  * @aess: Pointer on aess handle
  * @id: name of the mixer (MIXDL1, MIXDL2 or MIXAUDUL)
@@ -1539,7 +1485,7 @@ int omap_aess_set_ping_pong_buffer(struct omap_aess *aess, u32 port, u32 n_bytes
 	}
 	/* translates the number of bytes in samples */
 	/* data size in DMEM words */
-	datasize = omap_aess_dma_port_iter_factor(aess, &abe_port[port].format);
+	datasize = abe_dma_port_iter_factor(&abe_port[port].format);
 	/* data size in bytes */
 	datasize = datasize << 2;
 	n_samples = n_bytes / datasize;

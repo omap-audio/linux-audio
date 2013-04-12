@@ -69,6 +69,9 @@
 #include "abe_mem.h"
 #include "abe_port.h"
 
+/* nb of samples to route */
+#define NBROUTE_UL 16
+
 /**
  * omap_aess_reset_all_ports
  * @aess: Pointer on aess handle
@@ -290,6 +293,41 @@ static int omap_aess_load_fw_param(struct omap_aess *aess, const void *data)
 	omap_aess_write(aess, OMAP_ABE_DMEM, 0, dmem_ptr, dmem_size);
 
 	return 0;
+}
+
+/**
+ * omap_aess_build_scheduler_table
+ * @aess: Pointer on aess handle
+ *
+ * Initialize Audio Engine scheduling table for ABE internal
+ * processing. The content of the scheduling table is provided
+ * by the firmware header. It can be changed according to the
+ * ABE graph.
+ */
+static void omap_aess_build_scheduler_table(struct omap_aess *aess)
+{
+	struct omap_aess_task *task;
+	u16 uplink_mux[NBROUTE_UL];
+	int i, n;
+
+	/* Initialize default scheduling table */
+	memset(aess->MultiFrame, 0, sizeof(aess->MultiFrame));
+
+	for (i = 0; i < aess->fw_info.nb_init_task; i++) {
+		task = &aess->fw_info.init_table[i];
+		aess->MultiFrame[task->frame][task->slot] = task->task;
+	}
+
+	omap_aess_write_map(aess, OMAP_AESS_DMEM_MULTIFRAME_ID,
+			    aess->MultiFrame);
+
+	/* reset the uplink router */
+	n = aess->fw_info.map[OMAP_AESS_DMEM_AUPLINKROUTING_ID].bytes >> 1;
+	for (i = 0; i < n; i++)
+		uplink_mux[i] = omap_aess_get_label_data(aess,
+						OMAP_AESS_BUFFER_ZERO_ID);
+
+	omap_aess_write_map(aess, OMAP_AESS_DMEM_AUPLINKROUTING_ID, uplink_mux);
 }
 
 /**
