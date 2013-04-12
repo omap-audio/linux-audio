@@ -36,7 +36,6 @@ struct omap_abe_port {
 	/* logical and physical port IDs that correspond this port */
 	int logical_id;
 	int physical_id;
-	int physical_users;
 
 	/* enabled or disabled */
 	enum port_state state;
@@ -305,7 +304,6 @@ int omap_abe_port_open(struct omap_aess *aess, int logical_id)
 	spin_lock_irqsave(&aess->lock, flags);
 	list_add(&port->list, &aess->ports);
 	spin_unlock_irqrestore(&aess->lock, flags);
-	port->physical_users = port_get_num_users(aess, port);
 
 #ifdef CONFIG_DEBUG_FS
 	sprintf(debug_fs_name, "%s_state", lport_name[logical_id]);
