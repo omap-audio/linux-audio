@@ -1084,7 +1084,9 @@ int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 	struct omap_aess_addr addr;
 
 	if (prot->protocol_switch == OMAP_AESS_PORT_PINGPONG) {
+		struct omap_aess_pingppong *pp = &aess->pingpong;
 		struct omap_aess_pingpong_desc desc_pp;
+		u16 nextbuff_samples;
 
 		memset(&desc_pp, 0, sizeof(desc_pp));
 
@@ -1123,17 +1125,17 @@ int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 		desc_pp.x_io = (u8) iter_samples;
 		desc_pp.data_size = (u8) datasize;
 		/* address comunicated in Bytes */
-		desc_pp.workbuff_BaseAddr = (u16) aess->base_address_pingpong[1];
+		desc_pp.workbuff_BaseAddr = (u16) pp->base_address[1];
 
 		/* size comunicated in XIO sample */
 		desc_pp.workbuff_Samples = 0;
-		desc_pp.nextbuff0_BaseAddr = (u16) aess->base_address_pingpong[0];
-		desc_pp.nextbuff1_BaseAddr = (u16) aess->base_address_pingpong[1];
+		desc_pp.nextbuff0_BaseAddr = (u16) pp->base_address[0];
+		desc_pp.nextbuff1_BaseAddr = (u16) pp->base_address[1];
+
+		nextbuff_samples = (u16) ((pp->size >> 2) / datasize);
 		if (dmareq_addr == OMAP_AESS_DMASTATUS_RAW) {
-			desc_pp.nextbuff0_Samples =
-				(u16) ((aess->size_pingpong >> 2) / datasize);
-			desc_pp.nextbuff1_Samples =
-				(u16) ((aess->size_pingpong >> 2) / datasize);
+			desc_pp.nextbuff0_Samples = nextbuff_samples;
+			desc_pp.nextbuff1_Samples = nextbuff_samples;
 		} else {
 			desc_pp.nextbuff0_Samples = 0;
 			desc_pp.nextbuff1_Samples = 0;
@@ -1473,9 +1475,10 @@ EXPORT_SYMBOL(omap_aess_write_pdmdl_offset);
  */
 int omap_aess_set_ping_pong_buffer(struct omap_aess *aess, u32 port, u32 n_bytes)
 {
-	u32 struct_offset, n_samples, datasize, base_and_size;
+	struct omap_aess_pingppong *pp = &aess->pingpong;
 	struct omap_aess_pingpong_desc desc_pp;
 	struct omap_aess_addr addr;
+	u32 struct_offset, n_samples, datasize, base_and_size;
 
 	/* ping_pong is only supported on MM_DL */
 	if (port != OMAP_ABE_MM_DL_PORT) {
@@ -1506,8 +1509,8 @@ int omap_aess_set_ping_pong_buffer(struct omap_aess *aess, u32 port, u32 n_bytes
 		base_and_size = desc_pp.nextbuff1_BaseAddr;
 	}
 
-	base_and_size = aess->pp_buf_addr[aess->pp_buf_id_next];
-	aess->pp_buf_id_next = (aess->pp_buf_id_next + 1) & 0x03;
+	base_and_size = pp->buf_addr[pp->buf_id_next];
+	pp->buf_id_next = (pp->buf_id_next + 1) & 0x03;
 
 	base_and_size = (base_and_size & 0xFFFFL) + (n_samples << 16);
 
@@ -1540,6 +1543,8 @@ int omap_aess_read_offset_from_ping_buffer(struct omap_aess *aess,
 		aess_err("Only Ping-pong port supported");
 		return -EINVAL;
 	} else {
+		struct omap_aess_pingppong *pp = &aess->pingpong;
+
 		/* read the port SIO ping pong descriptor */
 		memcpy(&addr, &aess->fw_info.map[OMAP_AESS_DMEM_PINGPONGDESC_ID],
 		       sizeof(struct omap_aess_addr));
@@ -1556,15 +1561,16 @@ int omap_aess_read_offset_from_ping_buffer(struct omap_aess *aess,
 			*n = desc_pp.nextbuff0_Samples -
 				desc_pp.workbuff_Samples;
 		}
+
 		switch (abe_port[OMAP_ABE_MM_DL_PORT].format.samp_format) {
 		case OMAP_AESS_FORMAT_MONO_MSB:
 		case OMAP_AESS_FORMAT_MONO_RSHIFTED_16:
 		case OMAP_AESS_FORMAT_STEREO_16_16:
-			*n +=  aess->pp_buf_id * aess->size_pingpong / 4;
+			*n +=  pp->buf_id * pp->size / 4;
 			break;
 		case OMAP_AESS_FORMAT_STEREO_MSB:
 		case OMAP_AESS_FORMAT_STEREO_RSHIFTED_16:
-			*n += aess->pp_buf_id * aess->size_pingpong / 8;
+			*n += pp->buf_id * pp->size / 8;
 			break;
 		default:
 			aess_err("Bad data format for Ping-pong buffer");
@@ -1609,7 +1615,7 @@ int omap_aess_read_next_ping_pong_buffer(struct omap_aess *aess, u32 port,
 		*p = desc_pp.nextbuff1_BaseAddr;
 
 	/* translates the number of samples in bytes */
-	*n = aess->size_pingpong;
+	*n = aess->pingpong.size;
 
 	return 0;
 }
@@ -1646,17 +1652,17 @@ static int omap_aess_init_ping_pong_buffer(struct omap_aess *aess,
 	for (i = 0; i < n_buffers; i++) {
 		dmem_addr = addr.offset + (i * size_bytes);
 		/* base addresses of the ping pong buffers in U8 unit */
-		aess->base_address_pingpong[i] = dmem_addr;
+		aess->pingpong.base_address[i] = dmem_addr;
 	}
 
 	for (i = 0; i < 4; i++)
-		aess->pp_buf_addr[i] = addr.offset + (i * size_bytes);
-	aess->pp_buf_id = 0;
-	aess->pp_buf_id_next = 0;
-	aess->pp_first_irq = 1;
+		aess->pingpong.buf_addr[i] = addr.offset + (i * size_bytes);
+	aess->pingpong.buf_id = 0;
+	aess->pingpong.buf_id_next = 0;
+	aess->pingpong.first_irq = 1;
 
 	/* global data */
-	aess->size_pingpong = size_bytes;
+	aess->pingpong.size = size_bytes;
 	*p = (u32)addr.offset;
 	return 0;
 }

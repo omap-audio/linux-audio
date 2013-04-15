@@ -126,8 +126,17 @@ struct omap_aess_mapping {
 	int *asrc;
 };
 
-/* structure used for client port info */
-struct omap_abe_port;
+struct omap_aess_pingppong {
+	int buf_id;
+	int buf_id_next;
+	int buf_addr[4];
+	int first_irq;
+
+	/* size of each ping/pong buffers */
+	u32 size;
+	/* base addresses of the ping pong buffers in bytes addresses */
+	u32 base_address[MAX_PINGPONG_BUFFERS];
+};
 
 /* main ABE structure */
 struct omap_aess {
@@ -142,17 +151,9 @@ struct omap_aess {
 	u32 muted_gains_decibel[MAX_NBGAIN_CMEM];
 	u32 desired_gains_linear[MAX_NBGAIN_CMEM];
 	u32 desired_ramp_delay_ms[MAX_NBGAIN_CMEM];
-	int pp_buf_id;
-	int pp_buf_id_next;
-	int pp_buf_addr[4];
-	int pp_first_irq;
 
-	/* base addresses of the ping pong buffers in bytes addresses */
-	u32 base_address_pingpong[MAX_PINGPONG_BUFFERS];
-	/* size of each ping/pong buffers */
-	u32 size_pingpong;
-	/* number of ping/pong buffer being used */
-	u32 nb_pingpong;
+	/* Ping-Pong mode */
+	struct omap_aess_pingppong pingpong;
 
 	u32 irq_dbg_read_ptr;
 	struct omap_aess_mapping fw_info;

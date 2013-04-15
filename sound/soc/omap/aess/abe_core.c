@@ -308,6 +308,7 @@ EXPORT_SYMBOL(omap_aess_set_opp_processing);
 void omap_aess_pp_handler(struct omap_aess *aess, void (*callback)(void *data),
 			  void *cb_data)
 {
+	struct omap_aess_pingppong *pp = &aess->pingpong;
 	struct omap_aess_addr addr;
 	struct omap_aess_irq_data IRQ_data;
 	u32 abe_irq_dbg_write_ptr, i, cmem_src, sm_cm;
@@ -348,10 +349,10 @@ void omap_aess_pp_handler(struct omap_aess *aess, void (*callback)(void *data),
 			 * first IRQ doesn't represent a buffer transference
 			 * completion
 			 */
-			if (aess->pp_first_irq)
-				aess->pp_first_irq = 0;
+			if (pp->first_irq)
+				pp->first_irq = 0;
 			else
-				aess->pp_buf_id = (aess->pp_buf_id + 1) & 0x03;
+				pp->buf_id = (pp->buf_id + 1) & 0x03;
 
 			callback(cb_data);
 
