@@ -27,6 +27,7 @@
 #include <linux/debugfs.h>
 #include <linux/device.h>
 
+#include "omap-aess.h"
 #include "abe.h"
 #include "abe_port.h"
 
