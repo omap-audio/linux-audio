@@ -90,7 +90,7 @@ static int abe_save_context(struct omap_abe *abe)
 	return 0;
 }
 
-int abe_restore_context(struct omap_abe *abe)
+static int abe_restore_context(struct omap_abe *abe)
 {
 	int i, ret;
 
@@ -159,7 +159,7 @@ static void abe_irq_pingpong_subroutine(void *data)
 }
 
 
-irqreturn_t abe_irq_handler(int irq, void *dev_id)
+static irqreturn_t abe_irq_handler(int irq, void *dev_id)
 {
 	struct omap_abe *abe = dev_id;
 
