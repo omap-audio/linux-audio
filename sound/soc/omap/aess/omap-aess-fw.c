@@ -33,6 +33,7 @@
 #include <sound/soc-fw.h>
 
 #include "omap-aess-priv.h"
+#include "abe_mem.h"
 
 #define OMAP_ABE_HS_DC_OFFSET_STEP	(1800 / 8)
 #define OMAP_ABE_HF_DC_OFFSET_STEP	(4600 / 8)
@@ -44,6 +45,27 @@
 	((val + OMAP_ABE_MAX_GAIN) / OMAP_ABE_GAIN_SCALE)
 #define abe_val_to_gain(val) \
 	(-OMAP_ABE_MAX_GAIN + (val * OMAP_ABE_GAIN_SCALE))
+
+struct omap_aess_equ {
+	/* type of filter */
+	u32 equ_type;
+	/* filter length */
+	u32 equ_length;
+	union {
+		/* parameters are the direct and recursive coefficients in */
+		/* Q6.26 integer fixed-point format. */
+		s32 type1[NBEQ1];
+		struct {
+			/* center frequency of the band [Hz] */
+			s32 freq[NBEQ2];
+			/* gain of each band. [dB] */
+			s32 gain[NBEQ2];
+			/* Q factor of this band [dB] */
+			s32 q[NBEQ2];
+		} type2;
+	} coef;
+	s32 equ_param3;
+};
 
 void omap_abe_dc_set_hs_offset(struct snd_soc_platform *platform,
 	int left, int right, int step_mV)
@@ -350,6 +372,67 @@ static int volume_get_gain(struct snd_kcontrol *kcontrol,
 
 	return 0;
 }
+
+/**
+ * omap_aess_write_equalizer
+ * @aess: Pointer on aess handle
+ * @id: name of the equalizer
+ * @param: equalizer coefficients
+ *
+ * Load the coefficients in CMEM.
+ */
+static int omap_aess_write_equalizer(struct omap_aess *aess,
+			     u32 id, struct omap_aess_equ *param)
+{
+	struct omap_aess_addr equ_addr;
+	u32 length, *src;
+
+	switch (id) {
+	case OMAP_AESS_CMEM_DL1_COEFS_ID:
+		memcpy(&equ_addr,
+		       &aess->fw_info.map[OMAP_AESS_SMEM_DL1_M_EQ_DATA_ID],
+		       sizeof(struct omap_aess_addr));
+		break;
+	case OMAP_AESS_CMEM_DL2_L_COEFS_ID:
+	case OMAP_AESS_CMEM_DL2_R_COEFS_ID:
+		memcpy(&equ_addr,
+		       &aess->fw_info.map[OMAP_AESS_SMEM_DL2_M_LR_EQ_DATA_ID],
+		       sizeof(struct omap_aess_addr));
+		break;
+	case OMAP_AESS_CMEM_SDT_COEFS_ID:
+		memcpy(&equ_addr,
+		       &aess->fw_info.map[OMAP_AESS_SMEM_SDT_F_DATA_ID],
+		       sizeof(struct omap_aess_addr));
+		break;
+	case OMAP_AESS_CMEM_96_48_AMIC_COEFS_ID:
+		memcpy(&equ_addr,
+		       &aess->fw_info.map[OMAP_AESS_SMEM_AMIC_96_48_DATA_ID],
+		       sizeof(struct omap_aess_addr));
+		break;
+	case OMAP_AESS_CMEM_96_48_DMIC_COEFS_ID:
+		memcpy(&equ_addr,
+		       &aess->fw_info.map[OMAP_AESS_SMEM_DMIC0_96_48_DATA_ID],
+		       sizeof(struct omap_aess_addr));
+		/* three DMIC are clear at the same time DMIC0 DMIC1 DMIC2 */
+		equ_addr.bytes *= 3;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	/* reset SMEM buffers before the coefficients are loaded */
+	omap_aess_mem_reset(aess, equ_addr);
+
+	length = param->equ_length;
+	src = (u32 *)((param->coef).type1);
+	omap_aess_write_map(aess, id, src);
+
+	/* reset SMEM buffers after the coefficients are loaded */
+	omap_aess_mem_reset(aess, equ_addr);
+	return 0;
+}
+
+
 
 int abe_mixer_set_equ_profile(struct omap_abe *abe,
 		unsigned int id, unsigned int profile)

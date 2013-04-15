@@ -270,67 +270,6 @@ static const u32 abe_alpha_iir[64] = {
 };
 
 /**
- * omap_aess_write_equalizer
- * @aess: Pointer on aess handle
- * @id: name of the equalizer
- * @param: equalizer coefficients
- *
- * Load the coefficients in CMEM.
- */
-int omap_aess_write_equalizer(struct omap_aess *aess,
-			     u32 id, struct omap_aess_equ *param)
-{
-	struct omap_aess_addr equ_addr;
-	u32 length, *src;
-
-	switch (id) {
-	case OMAP_AESS_CMEM_DL1_COEFS_ID:
-		memcpy(&equ_addr,
-		       &aess->fw_info.map[OMAP_AESS_SMEM_DL1_M_EQ_DATA_ID],
-		       sizeof(struct omap_aess_addr));
-		break;
-	case OMAP_AESS_CMEM_DL2_L_COEFS_ID:
-	case OMAP_AESS_CMEM_DL2_R_COEFS_ID:
-		memcpy(&equ_addr,
-		       &aess->fw_info.map[OMAP_AESS_SMEM_DL2_M_LR_EQ_DATA_ID],
-		       sizeof(struct omap_aess_addr));
-		break;
-	case OMAP_AESS_CMEM_SDT_COEFS_ID:
-		memcpy(&equ_addr,
-		       &aess->fw_info.map[OMAP_AESS_SMEM_SDT_F_DATA_ID],
-		       sizeof(struct omap_aess_addr));
-		break;
-	case OMAP_AESS_CMEM_96_48_AMIC_COEFS_ID:
-		memcpy(&equ_addr,
-		       &aess->fw_info.map[OMAP_AESS_SMEM_AMIC_96_48_DATA_ID],
-		       sizeof(struct omap_aess_addr));
-		break;
-	case OMAP_AESS_CMEM_96_48_DMIC_COEFS_ID:
-		memcpy(&equ_addr,
-		       &aess->fw_info.map[OMAP_AESS_SMEM_DMIC0_96_48_DATA_ID],
-		       sizeof(struct omap_aess_addr));
-		/* three DMIC are clear at the same time DMIC0 DMIC1 DMIC2 */
-		equ_addr.bytes *= 3;
-		break;
-	default:
-		return -EINVAL;
-	}
-
-	/* reset SMEM buffers before the coefficients are loaded */
-	omap_aess_mem_reset(aess, equ_addr);
-
-	length = param->equ_length;
-	src = (u32 *)((param->coef).type1);
-	omap_aess_write_map(aess, id, src);
-
-	/* reset SMEM buffers after the coefficients are loaded */
-	omap_aess_mem_reset(aess, equ_addr);
-	return 0;
-}
-EXPORT_SYMBOL(omap_aess_write_equalizer);
-
-
-/**
  * omap_aess_disable_gain
  * @aess: Pointer on aess handle
  * @id: name of the gain

@@ -139,28 +139,6 @@ void omap_abe_port_set_substream(struct omap_aess *aess, int logical_id,
 				 struct snd_pcm_substream *substream);
 struct snd_pcm_substream *omap_abe_port_get_substream(struct omap_aess *aess,
 						      int logical_id);
-struct omap_aess_equ {
-	/* type of filter */
-	u32 equ_type;
-	/* filter length */
-	u32 equ_length;
-	union {
-		/* parameters are the direct and recursive coefficients in */
-		/* Q6.26 integer fixed-point format. */
-		s32 type1[NBEQ1];
-		struct {
-			/* center frequency of the band [Hz] */
-			s32 freq[NBEQ2];
-			/* gain of each band. [dB] */
-			s32 gain[NBEQ2];
-			/* Q factor of this band [dB] */
-			s32 q[NBEQ2];
-		} type2;
-	} coef;
-	s32 equ_param3;
-};
-
-
 struct omap_aess_dma {
 	void *data;
 	u32 iter;
@@ -172,8 +150,6 @@ int omap_aess_connect_debug_trace(struct omap_aess *aess,
 
 /* gain */
 int omap_aess_use_compensated_gain(struct omap_aess *aess, int on_off);
-int omap_aess_write_equalizer(struct omap_aess *aess, u32 id,
-			      struct omap_aess_equ *param);
 
 int omap_aess_disable_gain(struct omap_aess *aess, u32 id);
 int omap_aess_enable_gain(struct omap_aess *aess, u32 id);
