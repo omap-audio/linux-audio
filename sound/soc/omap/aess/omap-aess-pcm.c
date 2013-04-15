@@ -42,7 +42,7 @@ void abe_cleanup_debugfs(struct omap_abe *abe);
 int abe_opp_init_initial_opp(struct omap_abe *abe);
 
 /* Ping pong buffer DMEM offset - we should read this from future FWs */
-#define OMAP_ABE_DMEM_BASE_OFFSET_PING_PONG	0x4000
+#define OMAP_ABE_DMEM_BASE_OFFSET_PP	0x4000
 
 static const struct snd_pcm_hardware omap_abe_hardware = {
 	.info			= SNDRV_PCM_INFO_MMAP |
@@ -300,6 +300,8 @@ static int aess_mmap(struct snd_pcm_substream *substream,
 	struct vm_area_struct *vma)
 {
 	struct snd_soc_pcm_runtime  *rtd = substream->private_data;
+	struct snd_soc_platform *platform = rtd->platform;
+	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
 	struct snd_soc_dai *dai = rtd->cpu_dai;
 	int offset, size, err;
 
@@ -311,9 +313,8 @@ static int aess_mmap(struct snd_pcm_substream *substream,
 	size = vma->vm_end - vma->vm_start;
 	offset = vma->vm_pgoff << PAGE_SHIFT;
 
-	err = io_remap_pfn_range(vma, vma->vm_start,
-			(ABE_DEFAULT_BASE_ADDRESS_L4 + ABE_DMEM_BASE_OFFSET_MPU +
-			OMAP_ABE_DMEM_BASE_OFFSET_PING_PONG + offset) >> PAGE_SHIFT,
+	err = io_remap_pfn_range(vma, vma->vm_start, (abe->dmem_l4 +
+			OMAP_ABE_DMEM_BASE_OFFSET_PP + offset) >> PAGE_SHIFT,
 			size, vma->vm_page_prot);
 	if (err)
 		return -EAGAIN;
@@ -437,7 +438,8 @@ static int abe_probe(struct snd_soc_platform *platform)
 
 	/* lrg - rework for better init flow */
 	abe->aess = omap_abe_port_mgr_get();
-	omap_aess_init_mem(abe->aess, abe->dev, abe->io_base, abe->fw_config);
+	omap_aess_init_mem(abe->aess, abe->dev, abe->io_base, abe->fw_config,
+			   abe->dmem_l3, abe->aess_config_l3);
 
 	omap_aess_reset_hal(abe->aess);
 

@@ -119,7 +119,7 @@ static int abe_dbg_start_dma(struct omap_abe *abe, int circular)
 	dma_params.src_amode = OMAP_DMA_AMODE_DOUBLE_IDX;
 	dma_params.dst_amode = OMAP_DMA_AMODE_POST_INC;
 	dma_params.src_or_dst_synch = OMAP_DMA_SRC_SYNC;
-	dma_params.src_start = abe->aess->fw_info.map[OMAP_AESS_DMEM_DEBUG_FIFO_ID].offset + ABE_DEFAULT_BASE_ADDRESS_L3 + ABE_DMEM_BASE_OFFSET_MPU;
+	dma_params.src_start = abe->aess->fw_info.map[OMAP_AESS_DMEM_DEBUG_FIFO_ID].offset + abe->dmem_l3;
 	dma_params.dst_start = abe->debug->buffer_addr;
 	dma_params.src_port = OMAP_DMA_PORT_MPUI;
 	dma_params.src_ei = 1;

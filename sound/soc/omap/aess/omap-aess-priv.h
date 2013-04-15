@@ -277,6 +277,9 @@ struct omap_abe {
 
 	struct clk *clk;
 	void __iomem *io_base[OMAP_ABE_IO_RESOURCES];
+	u32 dmem_l4;
+	u32 dmem_l3;
+	u32 aess_config_l3;
 	int dma_lines[OMAP_ABE_DMA_RESOURCES];
 	int irq;
 	int active;

@@ -917,13 +917,12 @@ static void omap_aess_read_port_address(struct omap_aess *aess, u32 port,
 	switch (abe_port[port].protocol.protocol_switch) {
 	case OMAP_AESS_PORT_PINGPONG:
 		/* return the base address of the buffer in L3 and L4 spaces */
-		aess_dma->data = (void *)(dma_offset->data +
-			ABE_DEFAULT_BASE_ADDRESS_L3 + ABE_DMEM_BASE_OFFSET_MPU);
+		aess_dma->data = (void *)(dma_offset->data + aess->dmem_l3);
 		break;
 	case OMAP_AESS_PORT_DMAREQ:
 		/* return the CBPr(L3), DMEM(L3), DMEM(L4) address */
 		aess_dma->data = (void *)(dma_offset->data +
-			ABE_DEFAULT_BASE_ADDRESS_L3 + ABE_ATC_BASE_OFFSET_MPU);
+					  aess->aess_config_l3);
 		break;
 	default:
 		break;

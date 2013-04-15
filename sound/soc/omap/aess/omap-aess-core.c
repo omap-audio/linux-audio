@@ -163,7 +163,7 @@ static int abe_engine_probe(struct platform_device *pdev)
 		res = platform_get_resource_byname(pdev, IORESOURCE_MEM,
 						   abe_memory_bank[i]);
 		if (res == NULL) {
-			dev_err(&pdev->dev, "no resource %s\n",
+			dev_err(&pdev->dev, "no resource: %s\n",
 				abe_memory_bank[i]);
 			return -ENODEV;
 		}
@@ -175,7 +175,25 @@ static int abe_engine_probe(struct platform_device *pdev)
 					       resource_size(res));
 		if (!abe->io_base[i])
 			return -ENOMEM;
+
+		if (i == 0)
+			abe->dmem_l4 = res->start;
 	}
+
+	/* Get needed L3 I/O addresses */
+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "dmem_dma");
+	if (res == NULL) {
+		dev_err(&pdev->dev, "no L3 resource: dmem\n");
+		return -ENODEV;
+	}
+	abe->dmem_l3 = res->start;
+
+	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "dma");
+	if (res == NULL) {
+		dev_err(&pdev->dev, "no L3 resource: AESS configuration\n");
+		return -ENODEV;
+	}
+	abe->aess_config_l3 = res->start;
 
 	for (i = 0; i < OMAP_ABE_DMA_RESOURCES; i++) {
 		char name[8];

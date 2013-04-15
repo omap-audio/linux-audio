@@ -70,17 +70,6 @@
 
 #include <linux/debugfs.h>
 
-/*
- * OS DEPENDENT MMU CONFIGURATION
- */
-#define ABE_DMEM_BASE_OFFSET_MPU	0x80000
-#define ABE_ATC_BASE_OFFSET_MPU		0xF1000
-
-/* default base address for io_base */
-#define ABE_DEFAULT_BASE_ADDRESS_L3 0x49000000L
-#define ABE_DEFAULT_BASE_ADDRESS_L4 0x40100000L
-#define ABE_DEFAULT_BASE_ADDRESS_DEFAULT ABE_DEFAULT_BASE_ADDRESS_L3
-
 struct snd_pcm_substream;
 
 /*
@@ -144,6 +133,8 @@ struct omap_abe_port;
 struct omap_aess {
 	struct device *dev;
 	void __iomem *io_base[5];
+	u32 dmem_l3;
+	u32 aess_config_l3;
 	u32 firmware_version_number;
 	u16 MultiFrame[25][8];
 	u8  muted_gains_indicator[MAX_NBGAIN_CMEM];
@@ -286,7 +277,8 @@ int omap_aess_read_gain(struct omap_aess *aess, u32 id, u32 *f_g);
 #define omap_aess_read_mixer(aess, id, f_g) omap_aess_read_gain(aess, id, f_g)
 
 int omap_aess_init_mem(struct omap_aess *aess, struct device *dev,
-	void __iomem **_io_base, const void *fw_config);
+	void __iomem **_io_base, const void *fw_config, u32 dmem_l3,
+	u32 aess_config_l3);
 int omap_aess_reset_hal(struct omap_aess *aess);
 int omap_aess_load_fw(struct omap_aess *aess, const void *firmware);
 int omap_aess_reload_fw(struct omap_aess *aess, const void *firmware);

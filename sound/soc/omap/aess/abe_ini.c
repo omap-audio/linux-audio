@@ -181,7 +181,8 @@ static void omap_aess_init_gain_ramp(struct omap_aess *aess)
  * Memory map of ABE memory space for PMEM/DMEM/SMEM/DMEM
  */
 int omap_aess_init_mem(struct omap_aess *aess, struct device *dev,
-	void __iomem **_io_base, const void *fw_config)
+	void __iomem **_io_base, const void *fw_config, u32 dmem_l3,
+	u32 aess_config_l3)
 {
 	u32 *fw_header = (u32*) fw_config;
 	struct omap_aess_mapping *fw_info = &aess->fw_info;
@@ -192,6 +193,9 @@ int omap_aess_init_mem(struct omap_aess *aess, struct device *dev,
 
 	for (i = 0; i < 5; i++)
 		aess->io_base[i] = _io_base[i];
+
+	aess->dmem_l3 = dmem_l3;
+	aess->aess_config_l3 = aess_config_l3;
 
 	dev_dbg(aess->dev, "DMEM bank at 0x%p\n", aess->io_base[OMAP_ABE_DMEM]);
 	dev_dbg(aess->dev, "CMEM bank at 0x%p\n", aess->io_base[OMAP_ABE_CMEM]);
