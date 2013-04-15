@@ -103,9 +103,6 @@ enum port_id {
 	OMAP_ABE_PORT_ID_LAST,
 };
 
-
-#define OMAP_ABE_D_MCUIRQFIFO_SIZE	0x40
-
 /* ports can either be enabled or disabled */
 enum port_state {
 	PORT_DISABLED = 0,

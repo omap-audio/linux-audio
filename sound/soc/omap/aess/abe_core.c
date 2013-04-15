@@ -301,9 +301,10 @@ int omap_aess_set_opp_processing(struct omap_aess *aess, u32 opp)
 }
 EXPORT_SYMBOL(omap_aess_set_opp_processing);
 
-#define OMAP_ABE_IRQTAG_COUNT	0x000c
-#define OMAP_ABE_IRQTAG_PP	0x000d
-#define OMAP_ABE_IRQ_FIFO_MASK	((OMAP_ABE_D_MCUIRQFIFO_SIZE >> 2) - 1)
+#define OMAP_ABE_IRQTAG_COUNT		0x000c
+#define OMAP_ABE_IRQTAG_PP		0x000d
+#define OMAP_ABE_D_MCUIRQFIFO_SIZE	0x40
+#define OMAP_ABE_IRQ_FIFO_MASK		((OMAP_ABE_D_MCUIRQFIFO_SIZE >> 2) - 1)
 
 void omap_aess_pp_handler(struct omap_aess *aess, void (*callback)(void *data),
 			  void *cb_data)
