@@ -46,7 +46,7 @@
 #define abe_val_to_gain(val) \
 	(-OMAP_ABE_MAX_GAIN + (val * OMAP_ABE_GAIN_SCALE))
 
-struct omap_aess_equ {
+struct omap_aess_filter {
 	/* type of filter */
 	u32 equ_type;
 	/* filter length */
@@ -374,15 +374,15 @@ static int volume_get_gain(struct snd_kcontrol *kcontrol,
 }
 
 /**
- * omap_aess_write_equalizer
+ * omap_aess_write_filter
  * @aess: Pointer on aess handle
  * @id: name of the equalizer
  * @param: equalizer coefficients
  *
  * Load the coefficients in CMEM.
  */
-static int omap_aess_write_equalizer(struct omap_aess *aess,
-			     u32 id, struct omap_aess_equ *param)
+static int omap_aess_write_filter(struct omap_aess *aess, u32 id,
+				     struct omap_aess_filter *param)
 {
 	struct omap_aess_addr equ_addr;
 	u32 length, *src;
@@ -437,7 +437,7 @@ static int omap_aess_write_equalizer(struct omap_aess *aess,
 int abe_mixer_set_equ_profile(struct omap_abe *abe,
 		unsigned int id, unsigned int profile)
 {
-	struct omap_aess_equ params;
+	struct omap_aess_filter params;
 	void *src_coeff;
 
 	switch (id) {
@@ -478,8 +478,7 @@ int abe_mixer_set_equ_profile(struct omap_abe *abe,
 	src_coeff += profile * params.equ_length;
 	memcpy(params.coef.type1, src_coeff, params.equ_length);
 
-	omap_aess_write_equalizer(abe->aess, id,
-		(struct omap_aess_equ *)&params); //align types on this API
+	omap_aess_write_filter(abe->aess, id, &params);
 
 	return 0;
 }
