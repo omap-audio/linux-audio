@@ -43,7 +43,7 @@
 
 #ifdef CONFIG_DEBUG_FS
 
-struct omap_abe_debug {
+struct omap_aess_debug {
 	/* its intended we can switch on/off individual debug items */
 	u32 format1; /* TODO: match flag names here to debug format flags */
 	u32 format2;
@@ -453,7 +453,7 @@ static const struct file_operations omap_abe_dmem_fops = {
 
 void abe_init_debugfs(struct omap_abe *abe)
 {
-	abe->debug = devm_kzalloc(abe->dev, sizeof(struct omap_abe_debug),
+	abe->debug = devm_kzalloc(abe->dev, sizeof(struct omap_aess_debug),
 				  GFP_KERNEL);
 	if (!abe->debug) {
 		dev_err(abe->dev, "Failed to allocate memory for debug\n");

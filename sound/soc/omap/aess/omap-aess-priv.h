@@ -212,7 +212,7 @@ struct fw_header {
 	u32 smem_size;
 };
 
-struct omap_abe_dc_offset {
+struct omap_aess_dc_offset {
 	/* DC offset cancellation */
 	int power_mode;
 	u32 hsl;
@@ -221,7 +221,7 @@ struct omap_abe_dc_offset {
 	u32 hfr;
 };
 
-struct omap_abe_opp {
+struct omap_aess_opp {
 	struct mutex mutex;
 	struct mutex req_mutex;
 	int level;
@@ -231,42 +231,42 @@ struct omap_abe_opp {
 	int req_count;
 };
 
-struct omap_abe_modem {
+struct omap_aess_modem {
 	struct snd_pcm_substream *substream[2];
 	struct snd_soc_dai *dai;
 };
 
-struct omap_abe_mmap {
+struct omap_aess_mmap {
 	int first_irq;
 };
 
-struct omap_abe_coeff {
+struct omap_aess_coeff {
 	int profile; /* current enabled profile */
 	int num_profiles;
 	int profile_size;
 	void *coeff_data;
 };
 
-struct omap_abe_equ {
-	struct omap_abe_coeff dl1;
-	struct omap_abe_coeff dl2l;
-	struct omap_abe_coeff dl2r;
-	struct omap_abe_coeff sdt;
-	struct omap_abe_coeff amic;
-	struct omap_abe_coeff dmic;
+struct omap_aess_equ {
+	struct omap_aess_coeff dl1;
+	struct omap_aess_coeff dl2l;
+	struct omap_aess_coeff dl2r;
+	struct omap_aess_coeff sdt;
+	struct omap_aess_coeff amic;
+	struct omap_aess_coeff dmic;
 };
 
-struct omap_abe_dai {
+struct omap_aess_dai {
 	int num_active;
 	int num_suspended;
 };
 
-struct omap_abe_mixer {
+struct omap_aess_mixer {
 	int mono[OMAP_ABE_NUM_MONO_MIXERS];
 	u16 route_ul[16];
 };
 
-struct omap_abe_debug;
+struct omap_aess_debug;
 
 /*
  * ABE private data.
@@ -290,13 +290,13 @@ struct omap_abe {
 			    unsigned long rate);
 	u32 context_lost;
 
-	struct omap_abe_opp opp;
-	struct omap_abe_dc_offset dc_offset;
-	struct omap_abe_modem modem;
-	struct omap_abe_mmap mmap;
-	struct omap_abe_equ equ;
-	struct omap_abe_dai dai;
-	struct omap_abe_mixer mixer;
+	struct omap_aess_opp opp;
+	struct omap_aess_dc_offset dc_offset;
+	struct omap_aess_modem modem;
+	struct omap_aess_mmap mmap;	// could use omap_aess->pingpong...
+	struct omap_aess_equ equ;
+	struct omap_aess_dai dai;
+	struct omap_aess_mixer mixer;
 
 	/* firmware */
 	struct fw_header hdr;
@@ -305,7 +305,7 @@ struct omap_abe {
 	const struct firmware *fw;
 
 #ifdef CONFIG_DEBUG_FS
-	struct omap_abe_debug *debug;
+	struct omap_aess_debug *debug;
 #endif
 };
 
