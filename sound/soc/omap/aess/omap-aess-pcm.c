@@ -148,8 +148,8 @@ static void abe_irq_pingpong_subroutine(void *data)
 	omap_aess_set_ping_pong_buffer(aess, OMAP_ABE_MM_DL_PORT, n_bytes);
 
 	/* 1st IRQ does not signal completed period */
-	if (aess->mmap.first_irq) {
-		aess->mmap.first_irq = 0;
+	if (aess->pingpong.first_irq) {
+		aess->pingpong.first_irq = 0;
 	} else {
 		substream = omap_abe_port_get_substream(aess,
 						OMAP_ABE_FE_PORT_MM_DL_LP);
@@ -239,8 +239,6 @@ static int aess_hw_params(struct snd_pcm_substream *substream,
 	/* Need to set the first buffer in order to get interrupt */
 	omap_aess_set_ping_pong_buffer(aess, OMAP_ABE_MM_DL_PORT,
 				       period_size);
-	aess->mmap.first_irq = 1;
-
 out:
 	mutex_unlock(&aess->mutex);
 	return ret;
@@ -330,7 +328,7 @@ static snd_pcm_uframes_t aess_pointer(struct snd_pcm_substream *substream)
 	snd_pcm_uframes_t offset = 0;
 	u32 pingpong;
 
-	if (!aess->mmap.first_irq) {
+	if (!aess->pingpong.first_irq) {
 		omap_aess_read_offset_from_ping_buffer(aess,
 						       OMAP_ABE_MM_DL_PORT,
 						       &pingpong);

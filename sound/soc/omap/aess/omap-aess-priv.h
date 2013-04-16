@@ -237,10 +237,6 @@ struct omap_aess_modem {
 	struct snd_soc_dai *dai;
 };
 
-struct omap_aess_mmap {
-	int first_irq;
-};
-
 struct omap_aess_coeff {
 	int profile; /* current enabled profile */
 	int num_profiles;
@@ -327,7 +323,6 @@ struct omap_aess {
 	struct omap_aess_opp opp;
 	struct omap_aess_dc_offset dc_offset;
 	struct omap_aess_modem modem;
-	struct omap_aess_mmap mmap;	// could use omap_aess->pingpong...
 	struct omap_aess_equ equ;
 	struct omap_aess_dai dai;
 	struct omap_aess_mixer mixer;

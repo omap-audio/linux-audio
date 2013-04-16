@@ -352,9 +352,7 @@ void omap_aess_pp_handler(struct omap_aess *aess, void (*callback)(void *data),
 			 * first IRQ doesn't represent a buffer transference
 			 * completion
 			 */
-			if (pp->first_irq)
-				pp->first_irq = 0;
-			else
+			if (!pp->first_irq)
 				pp->buf_id = (pp->buf_id + 1) & 0x03;
 
 			callback(cb_data);
