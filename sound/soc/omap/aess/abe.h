@@ -72,12 +72,6 @@
 
 struct snd_pcm_substream;
 
-/* ports can either be enabled or disabled */
-enum port_state {
-	PORT_DISABLED = 0,
-	PORT_ENABLED,
-};
-
 struct omap_aess_mapping {
 	struct omap_aess_addr *map;
 	int *fct_id;

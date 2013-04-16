@@ -31,6 +31,12 @@
 #include "abe.h"
 #include "abe_port.h"
 
+/* ports can either be enabled or disabled */
+enum port_state {
+	PORT_DISABLED = 0,
+	PORT_ENABLED,
+};
+
 /* structure used for client port info */
 struct omap_abe_port {
 
