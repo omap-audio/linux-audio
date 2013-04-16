@@ -80,16 +80,16 @@ struct omap_aess_debug {
 	struct dentry *d_dmem;
 };
 
-static int abe_dbg_get_dma_pos(struct omap_abe *abe)
+static int abe_dbg_get_dma_pos(struct omap_aess *aess)
 {
-	return omap_get_dma_dst_pos(abe->debug->dma_ch) - abe->debug->buffer_addr;
+	return omap_get_dma_dst_pos(aess->debug->dma_ch) - aess->debug->buffer_addr;
 }
 
 static void abe_dbg_dma_irq(int ch, u16 stat, void *data)
 {
 }
 
-static int abe_dbg_start_dma(struct omap_abe *abe, int circular)
+static int abe_dbg_start_dma(struct omap_aess *aess, int circular)
 {
 	struct omap_dma_channel_params dma_params;
 	int err;
@@ -101,135 +101,135 @@ static int abe_dbg_start_dma(struct omap_abe *abe, int circular)
 	 * 2) default mode, where DMA stops at the end of the buffer.
 	 */
 
-	abe->debug->dma_req = OMAP44XX_DMA_ABE_REQ_7;
-	err = omap_request_dma(abe->debug->dma_req, "ABE debug",
-			       abe_dbg_dma_irq, abe, &abe->debug->dma_ch);
-	if (abe->debug->circular) {
+	aess->debug->dma_req = OMAP44XX_DMA_ABE_REQ_7;
+	err = omap_request_dma(aess->debug->dma_req, "ABE debug",
+			       abe_dbg_dma_irq, aess, &aess->debug->dma_ch);
+	if (aess->debug->circular) {
 		/*
 		 * Link channel with itself so DMA doesn't need any
 		 * reprogramming while looping the buffer
 		 */
-		omap_dma_link_lch(abe->debug->dma_ch, abe->debug->dma_ch);
+		omap_dma_link_lch(aess->debug->dma_ch, aess->debug->dma_ch);
 	}
 
 	memset(&dma_params, 0, sizeof(dma_params));
 	dma_params.data_type = OMAP_DMA_DATA_TYPE_S32;
-	dma_params.trigger = abe->debug->dma_req;
+	dma_params.trigger = aess->debug->dma_req;
 	dma_params.sync_mode = OMAP_DMA_SYNC_FRAME;
 	dma_params.src_amode = OMAP_DMA_AMODE_DOUBLE_IDX;
 	dma_params.dst_amode = OMAP_DMA_AMODE_POST_INC;
 	dma_params.src_or_dst_synch = OMAP_DMA_SRC_SYNC;
-	dma_params.src_start = abe->aess->fw_info.map[OMAP_AESS_DMEM_DEBUG_FIFO_ID].offset + abe->dmem_l3;
-	dma_params.dst_start = abe->debug->buffer_addr;
+	dma_params.src_start = aess->fw_info.map[OMAP_AESS_DMEM_DEBUG_FIFO_ID].offset + aess->dmem_l3;
+	dma_params.dst_start = aess->debug->buffer_addr;
 	dma_params.src_port = OMAP_DMA_PORT_MPUI;
 	dma_params.src_ei = 1;
-	dma_params.src_fi = 1 - abe->debug->elem_bytes;
+	dma_params.src_fi = 1 - aess->debug->elem_bytes;
 
 	 /* 128 bytes shifted into words */
-	dma_params.elem_count = abe->debug->elem_bytes >> 2;
+	dma_params.elem_count = aess->debug->elem_bytes >> 2;
 	dma_params.frame_count =
-			abe->debug->buffer_bytes / abe->debug->elem_bytes;
-	omap_set_dma_params(abe->debug->dma_ch, &dma_params);
+			aess->debug->buffer_bytes / aess->debug->elem_bytes;
+	omap_set_dma_params(aess->debug->dma_ch, &dma_params);
 
-	omap_enable_dma_irq(abe->debug->dma_ch, OMAP_DMA_FRAME_IRQ);
-	omap_set_dma_src_burst_mode(abe->debug->dma_ch, OMAP_DMA_DATA_BURST_16);
-	omap_set_dma_dest_burst_mode(abe->debug->dma_ch, OMAP_DMA_DATA_BURST_16);
+	omap_enable_dma_irq(aess->debug->dma_ch, OMAP_DMA_FRAME_IRQ);
+	omap_set_dma_src_burst_mode(aess->debug->dma_ch, OMAP_DMA_DATA_BURST_16);
+	omap_set_dma_dest_burst_mode(aess->debug->dma_ch, OMAP_DMA_DATA_BURST_16);
 
-	abe->debug->reader_offset = 0;
+	aess->debug->reader_offset = 0;
 
-	pm_runtime_get_sync(abe->dev);
-	omap_start_dma(abe->debug->dma_ch);
+	pm_runtime_get_sync(aess->dev);
+	omap_start_dma(aess->debug->dma_ch);
 	return 0;
 }
 
-static void abe_dbg_stop_dma(struct omap_abe *abe)
+static void abe_dbg_stop_dma(struct omap_aess *aess)
 {
 	/* Since we are using self linking, there is a
 	chance that the DMA as re-enabled the channel just after disabling it */
-	while (omap_get_dma_active_status(abe->debug->dma_ch))
-		omap_stop_dma(abe->debug->dma_ch);
+	while (omap_get_dma_active_status(aess->debug->dma_ch))
+		omap_stop_dma(aess->debug->dma_ch);
 
-	if (abe->debug->circular)
-		omap_dma_unlink_lch(abe->debug->dma_ch, abe->debug->dma_ch);
+	if (aess->debug->circular)
+		omap_dma_unlink_lch(aess->debug->dma_ch, aess->debug->dma_ch);
 
-	omap_free_dma(abe->debug->dma_ch);
-	pm_runtime_put_sync(abe->dev);
+	omap_free_dma(aess->debug->dma_ch);
+	pm_runtime_put_sync(aess->dev);
 }
 
 static int abe_open_data(struct inode *inode, struct file *file)
 {
-	struct omap_abe *abe = inode->i_private;
+	struct omap_aess *aess = inode->i_private;
 
 	/* adjust debug word size based on any user params */
-	if (abe->debug->format1)
-		abe->debug->elem_bytes += OMAP_ABE_DBG_FLAG1_SIZE;
-	if (abe->debug->format2)
-		abe->debug->elem_bytes += OMAP_ABE_DBG_FLAG2_SIZE;
-	if (abe->debug->format3)
-		abe->debug->elem_bytes += OMAP_ABE_DBG_FLAG3_SIZE;
+	if (aess->debug->format1)
+		aess->debug->elem_bytes += OMAP_ABE_DBG_FLAG1_SIZE;
+	if (aess->debug->format2)
+		aess->debug->elem_bytes += OMAP_ABE_DBG_FLAG2_SIZE;
+	if (aess->debug->format3)
+		aess->debug->elem_bytes += OMAP_ABE_DBG_FLAG3_SIZE;
 
-	abe->debug->buffer_bytes = abe->debug->elem_bytes * 4 *
-							abe->debug->buffer_msecs;
+	aess->debug->buffer_bytes = aess->debug->elem_bytes * 4 *
+							aess->debug->buffer_msecs;
 
-	abe->debug->buffer = dma_alloc_writecombine(abe->dev,
-			abe->debug->buffer_bytes, &abe->debug->buffer_addr, GFP_KERNEL);
-	if (abe->debug->buffer == NULL) {
-		dev_err(abe->dev, "can't alloc %d bytes for trace DMA buffer\n",
-				abe->debug->buffer_bytes);
+	aess->debug->buffer = dma_alloc_writecombine(aess->dev,
+			aess->debug->buffer_bytes, &aess->debug->buffer_addr, GFP_KERNEL);
+	if (aess->debug->buffer == NULL) {
+		dev_err(aess->dev, "can't alloc %d bytes for trace DMA buffer\n",
+				aess->debug->buffer_bytes);
 		return -ENOMEM;
 	}
 
 	file->private_data = inode->i_private;
-	abe->debug->complete = 0;
-	abe_dbg_start_dma(abe, abe->debug->circular);
+	aess->debug->complete = 0;
+	abe_dbg_start_dma(aess, aess->debug->circular);
 
 	return 0;
 }
 
 static int abe_release_data(struct inode *inode, struct file *file)
 {
-	struct omap_abe *abe = inode->i_private;
+	struct omap_aess *aess = inode->i_private;
 
-	abe_dbg_stop_dma(abe);
+	abe_dbg_stop_dma(aess);
 
-	dma_free_writecombine(abe->dev, abe->debug->buffer_bytes,
-				      abe->debug->buffer, abe->debug->buffer_addr);
+	dma_free_writecombine(aess->dev, aess->debug->buffer_bytes,
+				      aess->debug->buffer, aess->debug->buffer_addr);
 	return 0;
 }
 
-static ssize_t abe_copy_to_user(struct omap_abe *abe, char __user *user_buf,
+static ssize_t abe_copy_to_user(struct omap_aess *aess, char __user *user_buf,
 			       size_t count)
 {
 	/* check for reader buffer wrap */
-	if (abe->debug->reader_offset + count > abe->debug->buffer_bytes) {
-		size_t size = abe->debug->buffer_bytes - abe->debug->reader_offset;
+	if (aess->debug->reader_offset + count > aess->debug->buffer_bytes) {
+		size_t size = aess->debug->buffer_bytes - aess->debug->reader_offset;
 
 		/* wrap */
 		if (copy_to_user(user_buf,
-			abe->debug->buffer + abe->debug->reader_offset, size))
+			aess->debug->buffer + aess->debug->reader_offset, size))
 			return -EFAULT;
 
 		/* need to just return if non circular */
-		if (!abe->debug->circular) {
-			abe->debug->complete = 1;
+		if (!aess->debug->circular) {
+			aess->debug->complete = 1;
 			return count;
 		}
 
 		if (copy_to_user(user_buf + size,
-			abe->debug->buffer, count - size))
+			aess->debug->buffer, count - size))
 			return -EFAULT;
-		abe->debug->reader_offset = count - size;
+		aess->debug->reader_offset = count - size;
 		return count;
 	} else {
 		/* no wrap */
 		if (copy_to_user(user_buf,
-			abe->debug->buffer + abe->debug->reader_offset, count))
+			aess->debug->buffer + aess->debug->reader_offset, count))
 			return -EFAULT;
-		abe->debug->reader_offset += count;
+		aess->debug->reader_offset += count;
 
-		if (!abe->debug->circular &&
-				abe->debug->reader_offset == abe->debug->buffer_bytes)
-			abe->debug->complete = 1;
+		if (!aess->debug->circular &&
+				aess->debug->reader_offset == aess->debug->buffer_bytes)
+			aess->debug->complete = 1;
 
 		return count;
 	}
@@ -239,11 +239,11 @@ static ssize_t abe_read_data(struct file *file, char __user *user_buf,
 			       size_t count, loff_t *ppos)
 {
 	ssize_t ret = 0;
-	struct omap_abe *abe = file->private_data;
+	struct omap_aess *aess = file->private_data;
 	DECLARE_WAITQUEUE(wait, current);
 	int dma_offset, bytes;
 
-	add_wait_queue(&abe->debug->wait, &wait);
+	add_wait_queue(&aess->debug->wait, &wait);
 	do {
 		set_current_state(TASK_INTERRUPTIBLE);
 		/* TODO: Check if really needed. Or adjust sleep delay
@@ -251,27 +251,27 @@ static ssize_t abe_read_data(struct file *file, char __user *user_buf,
 		msleep_interruptible(1);
 
 		/* is DMA finished ? */
-		if (abe->debug->complete)
+		if (aess->debug->complete)
 			break;
 
-		dma_offset = abe_dbg_get_dma_pos(abe);
+		dma_offset = abe_dbg_get_dma_pos(aess);
 
 
 		/* get maximum amount of debug bytes we can read */
-		if (dma_offset >= abe->debug->reader_offset) {
+		if (dma_offset >= aess->debug->reader_offset) {
 			/* dma ptr is ahead of reader */
-			bytes = dma_offset - abe->debug->reader_offset;
+			bytes = dma_offset - aess->debug->reader_offset;
 		} else {
 			/* dma ptr is behind reader */
-			bytes = dma_offset + abe->debug->buffer_bytes -
-				abe->debug->reader_offset;
+			bytes = dma_offset + aess->debug->buffer_bytes -
+				aess->debug->reader_offset;
 		}
 
 		if (count > bytes)
 			count = bytes;
 
 		if (count > 0) {
-			ret = abe_copy_to_user(abe, user_buf, count);
+			ret = abe_copy_to_user(aess, user_buf, count);
 			break;
 		}
 
@@ -290,7 +290,7 @@ static ssize_t abe_read_data(struct file *file, char __user *user_buf,
 	} while (1);
 
 	__set_current_state(TASK_RUNNING);
-	remove_wait_queue(&abe->debug->wait, &wait);
+	remove_wait_queue(&aess->debug->wait, &wait);
 
 	return ret;
 }
@@ -311,10 +311,10 @@ static int abe_open_mem(struct inode *inode, struct file *file)
 static ssize_t abe_read_mem(struct file *file, char __user *user_buf,
 			       size_t count, loff_t *ppos, void *mem, int size)
 {
-	struct omap_abe *abe = file->private_data;
+	struct omap_aess *aess = file->private_data;
 	ssize_t ret = 0;
 
-	pm_runtime_get_sync(abe->dev);
+	pm_runtime_get_sync(aess->dev);
 	set_current_state(TASK_INTERRUPTIBLE);
 
 	if (*ppos >= size)
@@ -331,7 +331,7 @@ static ssize_t abe_read_mem(struct file *file, char __user *user_buf,
 	ret = count;
 out:
 	__set_current_state(TASK_RUNNING);
-	pm_runtime_put_sync(abe->dev);
+	pm_runtime_put_sync(aess->dev);
 	return ret;
 }
 
@@ -365,18 +365,18 @@ static loff_t abe_llseek(struct file *file, loff_t off, int whence, int size)
 
 static loff_t abe_llseek_cmem(struct file *file, loff_t off, int whence)
 {
-	struct omap_abe *abe = file->private_data;
+	struct omap_aess *aess = file->private_data;
 
-	return abe_llseek(file, off, whence, abe->hdr.cmem_size);
+	return abe_llseek(file, off, whence, aess->hdr.cmem_size);
 }
 
 static ssize_t abe_read_cmem(struct file *file, char __user *user_buf,
 			       size_t count, loff_t *ppos)
 {
-	struct omap_abe *abe = file->private_data;
+	struct omap_aess *aess = file->private_data;
 
 	return abe_read_mem(file, user_buf, count, ppos,
-		abe->io_base[OMAP_ABE_IO_CMEM], abe->hdr.cmem_size);
+		aess->io_base[OMAP_ABE_IO_CMEM], aess->hdr.cmem_size);
 }
 
 static const struct file_operations omap_abe_cmem_fops = {
@@ -387,18 +387,18 @@ static const struct file_operations omap_abe_cmem_fops = {
 
 static loff_t abe_llseek_pmem(struct file *file, loff_t off, int whence)
 {
-	struct omap_abe *abe = file->private_data;
+	struct omap_aess *aess = file->private_data;
 
-	return abe_llseek(file, off, whence, abe->hdr.pmem_size);
+	return abe_llseek(file, off, whence, aess->hdr.pmem_size);
 }
 
 static ssize_t abe_read_pmem(struct file *file, char __user *user_buf,
 			       size_t count, loff_t *ppos)
 {
-	struct omap_abe *abe = file->private_data;
+	struct omap_aess *aess = file->private_data;
 
 	return abe_read_mem(file, user_buf, count, ppos,
-		abe->io_base[OMAP_ABE_IO_PMEM], abe->hdr.pmem_size);
+		aess->io_base[OMAP_ABE_IO_PMEM], aess->hdr.pmem_size);
 }
 
 static const struct file_operations omap_abe_pmem_fops = {
@@ -409,18 +409,18 @@ static const struct file_operations omap_abe_pmem_fops = {
 
 static loff_t abe_llseek_smem(struct file *file, loff_t off, int whence)
 {
-	struct omap_abe *abe = file->private_data;
+	struct omap_aess *aess = file->private_data;
 
-	return abe_llseek(file, off, whence, abe->hdr.smem_size);
+	return abe_llseek(file, off, whence, aess->hdr.smem_size);
 }
 
 static ssize_t abe_read_smem(struct file *file, char __user *user_buf,
 			       size_t count, loff_t *ppos)
 {
-	struct omap_abe *abe = file->private_data;
+	struct omap_aess *aess = file->private_data;
 
 	return abe_read_mem(file, user_buf, count, ppos,
-		abe->io_base[OMAP_ABE_IO_SMEM], abe->hdr.smem_size);
+		aess->io_base[OMAP_ABE_IO_SMEM], aess->hdr.smem_size);
 }
 
 static const struct file_operations omap_abe_smem_fops = {
@@ -431,18 +431,18 @@ static const struct file_operations omap_abe_smem_fops = {
 
 static loff_t abe_llseek_dmem(struct file *file, loff_t off, int whence)
 {
-	struct omap_abe *abe = file->private_data;
+	struct omap_aess *aess = file->private_data;
 
-	return abe_llseek(file, off, whence, abe->hdr.dmem_size);
+	return abe_llseek(file, off, whence, aess->hdr.dmem_size);
 }
 
 static ssize_t abe_read_dmem(struct file *file, char __user *user_buf,
 			       size_t count, loff_t *ppos)
 {
-	struct omap_abe *abe = file->private_data;
+	struct omap_aess *aess = file->private_data;
 
 	return abe_read_mem(file, user_buf, count, ppos,
-		abe->io_base[OMAP_ABE_IO_DMEM], abe->hdr.dmem_size);
+		aess->io_base[OMAP_ABE_IO_DMEM], aess->hdr.dmem_size);
 }
 
 static const struct file_operations omap_abe_dmem_fops = {
@@ -451,109 +451,109 @@ static const struct file_operations omap_abe_dmem_fops = {
 	.llseek = abe_llseek_dmem,
 };
 
-void abe_init_debugfs(struct omap_abe *abe)
+void abe_init_debugfs(struct omap_aess *aess)
 {
-	abe->debug = devm_kzalloc(abe->dev, sizeof(struct omap_aess_debug),
+	aess->debug = devm_kzalloc(aess->dev, sizeof(struct omap_aess_debug),
 				  GFP_KERNEL);
-	if (!abe->debug) {
-		dev_err(abe->dev, "Failed to allocate memory for debug\n");
+	if (!aess->debug) {
+		dev_err(aess->dev, "Failed to allocate memory for debug\n");
 		return;
 	}
 
-	abe->debug->d_root = debugfs_create_dir("omap-abe", NULL);
-	if (!abe->debug->d_root) {
-		dev_err(abe->dev, "Failed to create debugfs directory\n");
+	aess->debug->d_root = debugfs_create_dir("omap-abe", NULL);
+	if (!aess->debug->d_root) {
+		dev_err(aess->dev, "Failed to create debugfs directory\n");
 		return;
 	}
 
-	abe->debug->d_fmt1 = debugfs_create_bool("format1", 0644,
-						 abe->debug->d_root,
-						 &abe->debug->format1);
-	if (!abe->debug->d_fmt1)
-		dev_err(abe->dev, "Failed to create format1 debugfs file\n");
+	aess->debug->d_fmt1 = debugfs_create_bool("format1", 0644,
+						 aess->debug->d_root,
+						 &aess->debug->format1);
+	if (!aess->debug->d_fmt1)
+		dev_err(aess->dev, "Failed to create format1 debugfs file\n");
 
-	abe->debug->d_fmt2 = debugfs_create_bool("format2", 0644,
-						 abe->debug->d_root,
-						 &abe->debug->format2);
-	if (!abe->debug->d_fmt2)
-		dev_err(abe->dev, "Failed to create format2 debugfs file\n");
+	aess->debug->d_fmt2 = debugfs_create_bool("format2", 0644,
+						 aess->debug->d_root,
+						 &aess->debug->format2);
+	if (!aess->debug->d_fmt2)
+		dev_err(aess->dev, "Failed to create format2 debugfs file\n");
 
-	abe->debug->d_fmt3 = debugfs_create_bool("format3", 0644,
-						 abe->debug->d_root,
-						 &abe->debug->format3);
-	if (!abe->debug->d_fmt3)
-		dev_err(abe->dev, "Failed to create format3 debugfs file\n");
+	aess->debug->d_fmt3 = debugfs_create_bool("format3", 0644,
+						 aess->debug->d_root,
+						 &aess->debug->format3);
+	if (!aess->debug->d_fmt3)
+		dev_err(aess->dev, "Failed to create format3 debugfs file\n");
 
-	abe->debug->d_elem_bytes = debugfs_create_u32("element_bytes", 0604,
-						 abe->debug->d_root,
-						 &abe->debug->elem_bytes);
-	if (!abe->debug->d_elem_bytes)
-		dev_err(abe->dev, "Failed to create element size debugfs file\n");
+	aess->debug->d_elem_bytes = debugfs_create_u32("element_bytes", 0604,
+						 aess->debug->d_root,
+						 &aess->debug->elem_bytes);
+	if (!aess->debug->d_elem_bytes)
+		dev_err(aess->dev, "Failed to create element size debugfs file\n");
 
-	abe->debug->d_size = debugfs_create_u32("msecs", 0644,
-						 abe->debug->d_root,
-						 &abe->debug->buffer_msecs);
-	if (!abe->debug->d_size)
-		dev_err(abe->dev, "Failed to create buffer size debugfs file\n");
+	aess->debug->d_size = debugfs_create_u32("msecs", 0644,
+						 aess->debug->d_root,
+						 &aess->debug->buffer_msecs);
+	if (!aess->debug->d_size)
+		dev_err(aess->dev, "Failed to create buffer size debugfs file\n");
 
-	abe->debug->d_circ = debugfs_create_bool("circular", 0644,
-						 abe->debug->d_root,
-						 &abe->debug->circular);
-	if (!abe->debug->d_size)
-		dev_err(abe->dev, "Failed to create circular mode debugfs file\n");
+	aess->debug->d_circ = debugfs_create_bool("circular", 0644,
+						 aess->debug->d_root,
+						 &aess->debug->circular);
+	if (!aess->debug->d_size)
+		dev_err(aess->dev, "Failed to create circular mode debugfs file\n");
 
-	abe->debug->d_data = debugfs_create_file("debug", 0644,
-						 abe->debug->d_root,
-						 abe, &omap_abe_fops);
-	if (!abe->debug->d_data)
-		dev_err(abe->dev, "Failed to create data debugfs file\n");
+	aess->debug->d_data = debugfs_create_file("debug", 0644,
+						 aess->debug->d_root,
+						 aess, &omap_abe_fops);
+	if (!aess->debug->d_data)
+		dev_err(aess->dev, "Failed to create data debugfs file\n");
 
-	abe->debug->d_opp = debugfs_create_u32("opp_level", 0604,
-						 abe->debug->d_root,
-						 &abe->opp.level);
-	if (!abe->debug->d_opp)
-		dev_err(abe->dev, "Failed to create OPP level debugfs file\n");
+	aess->debug->d_opp = debugfs_create_u32("opp_level", 0604,
+						 aess->debug->d_root,
+						 &aess->opp.level);
+	if (!aess->debug->d_opp)
+		dev_err(aess->dev, "Failed to create OPP level debugfs file\n");
 
-	abe->debug->d_pmem = debugfs_create_file("pmem", 0644,
-						 abe->debug->d_root,
-						 abe, &omap_abe_pmem_fops);
-	if (!abe->debug->d_pmem)
-		dev_err(abe->dev, "Failed to create PMEM debugfs file\n");
+	aess->debug->d_pmem = debugfs_create_file("pmem", 0644,
+						 aess->debug->d_root,
+						 aess, &omap_abe_pmem_fops);
+	if (!aess->debug->d_pmem)
+		dev_err(aess->dev, "Failed to create PMEM debugfs file\n");
 
-	abe->debug->d_smem = debugfs_create_file("smem", 0644,
-						 abe->debug->d_root,
-						 abe, &omap_abe_smem_fops);
-	if (!abe->debug->d_smem)
-		dev_err(abe->dev, "Failed to create SMEM debugfs file\n");
+	aess->debug->d_smem = debugfs_create_file("smem", 0644,
+						 aess->debug->d_root,
+						 aess, &omap_abe_smem_fops);
+	if (!aess->debug->d_smem)
+		dev_err(aess->dev, "Failed to create SMEM debugfs file\n");
 
-	abe->debug->d_dmem = debugfs_create_file("dmem", 0644,
-						 abe->debug->d_root,
-						 abe, &omap_abe_dmem_fops);
-	if (!abe->debug->d_dmem)
-		dev_err(abe->dev, "Failed to create DMEM debugfs file\n");
+	aess->debug->d_dmem = debugfs_create_file("dmem", 0644,
+						 aess->debug->d_root,
+						 aess, &omap_abe_dmem_fops);
+	if (!aess->debug->d_dmem)
+		dev_err(aess->dev, "Failed to create DMEM debugfs file\n");
 
-	abe->debug->d_cmem = debugfs_create_file("cmem", 0644,
-						 abe->debug->d_root,
-						 abe, &omap_abe_cmem_fops);
-	if (!abe->debug->d_cmem)
-		dev_err(abe->dev, "Failed to create CMEM debugfs file\n");
+	aess->debug->d_cmem = debugfs_create_file("cmem", 0644,
+						 aess->debug->d_root,
+						 aess, &omap_abe_cmem_fops);
+	if (!aess->debug->d_cmem)
+		dev_err(aess->dev, "Failed to create CMEM debugfs file\n");
 
-	init_waitqueue_head(&abe->debug->wait);
+	init_waitqueue_head(&aess->debug->wait);
 }
 
-void abe_cleanup_debugfs(struct omap_abe *abe)
+void abe_cleanup_debugfs(struct omap_aess *aess)
 {
-	if (abe->debug)
-		debugfs_remove_recursive(abe->debug->d_root);
+	if (aess->debug)
+		debugfs_remove_recursive(aess->debug->d_root);
 }
 
 #else
 
-inline void abe_init_debugfs(struct omap_abe *abe)
+inline void abe_init_debugfs(struct omap_aess *aess)
 {
 }
 
-inline void abe_cleanup_debugfs(struct omap_abe *abe)
+inline void abe_cleanup_debugfs(struct omap_aess *aess)
 {
 }
 #endif

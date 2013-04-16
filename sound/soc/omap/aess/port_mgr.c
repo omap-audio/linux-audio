@@ -27,8 +27,7 @@
 #include <linux/debugfs.h>
 #include <linux/device.h>
 
-#include "omap-aess.h"
-#include "abe.h"
+#include "omap-aess-priv.h"
 #include "abe_port.h"
 
 /* ports can either be enabled or disabled */
@@ -389,50 +388,41 @@ struct snd_pcm_substream *omap_abe_port_get_substream(struct omap_aess *aess,
 }
 EXPORT_SYMBOL(omap_abe_port_get_substream);
 
-static struct omap_aess *omap_abe_port_mgr_init(void)
+void omap_abe_port_mgr_init(struct omap_aess *aess)
 {
-	struct omap_aess *aess;
-
-	aess = kzalloc(sizeof(struct omap_aess), GFP_KERNEL);
-	if (aess == NULL)
-		return NULL;
-
-	spin_lock_init(&aess->lock);
-
-	INIT_LIST_HEAD(&aess->ports);
 	the_aess = aess;
 
 #ifdef CONFIG_DEBUG_FS
 	aess->debugfs_root = debugfs_create_dir("abe_port", NULL);
 	if (!aess->debugfs_root)
-		pr_debug("Failed to create port manager debugfs directory\n");
+		dev_warn(aess->dev, "Failed to create debugfs directory\n");
 #endif
-	return aess;
 }
 
-static void omap_abe_port_mgr_free(struct omap_aess *aess)
+void omap_abe_port_mgr_cleanup(struct omap_aess *aess)
 {
+	the_aess = NULL;
+
+	if (users != 0)
+		dev_warn(aess->dev, "Port manager use count is not 0 (%d)\n",
+			users);
+
 #ifdef CONFIG_DEBUG_FS
 	debugfs_remove_recursive(aess->debugfs_root);
 #endif
-	kfree(aess);
-	the_aess = NULL;
 }
 
 struct omap_aess *omap_abe_port_mgr_get(void)
 {
-	struct omap_aess *aess;
-
 	mutex_lock(&port_mgr_mutex);
 
-	if (the_aess)
-		aess = the_aess;
+	if (!the_aess)
+		pr_err("%s: AESS has not been initialized!\n", __func__);
 	else
-		aess = omap_abe_port_mgr_init();
+		users++;
 
-	users++;
 	mutex_unlock(&port_mgr_mutex);
-	return aess;
+	return the_aess;
 }
 EXPORT_SYMBOL(omap_abe_port_mgr_get);
 
@@ -443,9 +433,7 @@ void omap_abe_port_mgr_put(struct omap_aess *aess)
 	if (users == 0)
 		goto out;
 
-	if (--users == 0)
-		omap_abe_port_mgr_free(aess);
-
+	users--;
 out:
 	mutex_unlock(&port_mgr_mutex);
 }

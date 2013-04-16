@@ -25,6 +25,7 @@
 
 #include <linux/module.h>
 #include <linux/init.h>
+#include <linux/io.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/delay.h>
@@ -62,51 +63,51 @@ void driver_deferred_probe_trigger(void);
 
 void omap_abe_pm_get(struct snd_soc_platform *platform)
 {
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
-	pm_runtime_get_sync(abe->dev);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
+	pm_runtime_get_sync(aess->dev);
 }
 EXPORT_SYMBOL_GPL(omap_abe_pm_get);
 
 void omap_abe_pm_put(struct snd_soc_platform *platform)
 {
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
-	pm_runtime_put_sync(abe->dev);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
+	pm_runtime_put_sync(aess->dev);
 }
 EXPORT_SYMBOL_GPL(omap_abe_pm_put);
 
 void omap_abe_pm_shutdown(struct snd_soc_platform *platform)
 {
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
 	int ret;
 
-	if (abe->active && omap_aess_check_activity(abe->aess))
+	if (aess->active && omap_aess_check_activity(aess))
 		return;
 
-	omap_aess_set_opp_processing(abe->aess, ABE_OPP25);
-	abe->opp.level = 25;
+	omap_aess_set_opp_processing(aess, ABE_OPP25);
+	aess->opp.level = 25;
 
-	omap_aess_write_event_generator(abe->aess, EVENT_STOP);
+	omap_aess_write_event_generator(aess, EVENT_STOP);
 	udelay(250);
-	if (abe->device_scale) {
-		ret = abe->device_scale(abe->dev, abe->dev, abe->opp.freqs[0]);
+	if (aess->device_scale) {
+		ret = aess->device_scale(aess->dev, aess->dev, aess->opp.freqs[0]);
 		if (ret)
-			dev_err(abe->dev, "failed to scale to lowest OPP\n");
+			dev_err(aess->dev, "failed to scale to lowest OPP\n");
 	}
 }
 EXPORT_SYMBOL_GPL(omap_abe_pm_shutdown);
 
 void omap_abe_pm_set_mode(struct snd_soc_platform *platform, int mode)
 {
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
 
-	abe->dc_offset.power_mode = mode;
+	aess->dc_offset.power_mode = mode;
 }
 EXPORT_SYMBOL(omap_abe_pm_set_mode);
 
 static void abe_fw_ready(const struct firmware *fw, void *context)
 {
 	struct platform_device *pdev = (struct platform_device *)context;
-	struct omap_abe *abe = dev_get_drvdata(&pdev->dev);
+	struct omap_aess *aess = dev_get_drvdata(&pdev->dev);
 	int ret;
 
 	if (unlikely(!fw)) {
@@ -128,7 +129,7 @@ static void abe_fw_ready(const struct firmware *fw, void *context)
 		return;
 	}
 
-	abe->fw = fw;
+	aess->fw = fw;
 
 	ret = snd_soc_register_platform(&pdev->dev, &omap_aess_platform);
 	if (ret < 0) {
@@ -152,11 +153,11 @@ static void abe_fw_ready(const struct firmware *fw, void *context)
 static int abe_engine_probe(struct platform_device *pdev)
 {
 	struct resource *res;
-	struct omap_abe *abe;
+	struct omap_aess *aess;
 	int ret, i;
 
-	abe = devm_kzalloc(&pdev->dev, sizeof(struct omap_abe), GFP_KERNEL);
-	if (abe == NULL)
+	aess = devm_kzalloc(&pdev->dev, sizeof(struct omap_aess), GFP_KERNEL);
+	if (aess == NULL)
 		return -ENOMEM;
 
 	for (i = 0; i < OMAP_ABE_IO_RESOURCES; i++) {
@@ -171,13 +172,13 @@ static int abe_engine_probe(struct platform_device *pdev)
 					resource_size(res), abe_memory_bank[i]))
 			return -EBUSY;
 
-		abe->io_base[i] = devm_ioremap(&pdev->dev, res->start,
+		aess->io_base[i] = devm_ioremap(&pdev->dev, res->start,
 					       resource_size(res));
-		if (!abe->io_base[i])
+		if (!aess->io_base[i])
 			return -ENOMEM;
 
 		if (i == 0)
-			abe->dmem_l4 = res->start;
+			aess->dmem_l4 = res->start;
 	}
 
 	/* Get needed L3 I/O addresses */
@@ -186,14 +187,14 @@ static int abe_engine_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "no L3 resource: dmem\n");
 		return -ENODEV;
 	}
-	abe->dmem_l3 = res->start;
+	aess->dmem_l3 = res->start;
 
 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, "dma");
 	if (res == NULL) {
 		dev_err(&pdev->dev, "no L3 resource: AESS configuration\n");
 		return -ENODEV;
 	}
-	abe->aess_config_l3 = res->start;
+	aess->aess_config_l3 = res->start;
 
 	for (i = 0; i < OMAP_ABE_DMA_RESOURCES; i++) {
 		char name[8];
@@ -204,35 +205,40 @@ static int abe_engine_probe(struct platform_device *pdev)
 			dev_err(&pdev->dev, "no resource %s\n", name);
 			return -ENODEV;
 		}
-		abe->dma_lines[i] = res->start;
+		aess->dma_lines[i] = res->start;
 	}
 
-	abe->irq = platform_get_irq(pdev, 0);
-	if (abe->irq < 0)
-		return abe->irq;
+	aess->irq = platform_get_irq(pdev, 0);
+	if (aess->irq < 0)
+		return aess->irq;
 
-	dev_set_drvdata(&pdev->dev, abe);
+	dev_set_drvdata(&pdev->dev, aess);
 
 #ifdef CONFIG_PM
-	abe->get_context_lost_count = omap_pm_get_dev_context_loss_count;
-	abe->device_scale = NULL;
+	aess->get_context_lost_count = omap_pm_get_dev_context_loss_count;
+	aess->device_scale = NULL;
 #endif
-	abe->dev = &pdev->dev;
+	aess->dev = &pdev->dev;
 
-	mutex_init(&abe->mutex);
-	mutex_init(&abe->opp.mutex);
-	mutex_init(&abe->opp.req_mutex);
-	INIT_LIST_HEAD(&abe->opp.req);
+	mutex_init(&aess->mutex);
+	mutex_init(&aess->opp.mutex);
+	mutex_init(&aess->opp.req_mutex);
+	INIT_LIST_HEAD(&aess->opp.req);
 
-	get_device(abe->dev);
-	abe->dev->dma_mask = &omap_abe_dmamask;
-	abe->dev->coherent_dma_mask = omap_abe_dmamask;
-	put_device(abe->dev);
+	spin_lock_init(&aess->lock);
+	INIT_LIST_HEAD(&aess->ports);
 
-	ret = request_firmware_nowait(THIS_MODULE, 1, ABE_FW_NAME, abe->dev,
+	omap_abe_port_mgr_init(aess);
+
+	get_device(aess->dev);
+	aess->dev->dma_mask = &omap_abe_dmamask;
+	aess->dev->coherent_dma_mask = omap_abe_dmamask;
+	put_device(aess->dev);
+
+	ret = request_firmware_nowait(THIS_MODULE, 1, ABE_FW_NAME, aess->dev,
 				      GFP_KERNEL, pdev, abe_fw_ready);
 	if (ret)
-		dev_err(abe->dev, "Failed to load firmware %s: %d\n",
+		dev_err(aess->dev, "Failed to load firmware %s: %d\n",
 			ABE_FW_NAME, ret);
 
 	return ret;
@@ -240,14 +246,15 @@ static int abe_engine_probe(struct platform_device *pdev)
 
 static int abe_engine_remove(struct platform_device *pdev)
 {
-	struct omap_abe *abe = dev_get_drvdata(&pdev->dev);
+	struct omap_aess *aess = dev_get_drvdata(&pdev->dev);
 
 	snd_soc_unregister_dais(&pdev->dev, ARRAY_SIZE(omap_abe_dai));
 	snd_soc_unregister_platform(&pdev->dev);
 
-	abe->fw_data = NULL;
-	abe->fw_config = NULL;
-	release_firmware(abe->fw);
+	aess->fw_data = NULL;
+	aess->fw_config = NULL;
+	release_firmware(aess->fw);
+	omap_abe_port_mgr_cleanup(aess);
 
 	return 0;
 }

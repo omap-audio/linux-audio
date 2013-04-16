@@ -1,5 +1,5 @@
 /*
- * omap-abe.h
+ * omap-aess-priv.h
  *
  * Copyright (C) 2010 Texas Instruments
  *
@@ -26,10 +26,11 @@
 
 #ifdef __KERNEL__
 
+#include <sound/soc.h>
 #include <sound/soc-fw.h>
 
-#include "abe.h"
 #include "omap-aess.h"
+#include "aess-fw.h"
 
 #endif
 
@@ -266,14 +267,47 @@ struct omap_aess_mixer {
 	u16 route_ul[16];
 };
 
+struct omap_aess_mapping {
+	struct omap_aess_addr *map;
+	int *fct_id;
+	u32 *label_id;
+	int nb_init_task;
+	struct omap_aess_task *init_table;
+	struct omap_aess_port *port;
+	struct omap_aess_port *ping_pong;
+	struct omap_aess_task *dl1_mono_mixer;
+	struct omap_aess_task *dl2_mono_mixer;
+	struct omap_aess_task *audul_mono_mixer;
+	int *asrc;
+};
+
+struct omap_aess_pingppong {
+	int buf_id;
+	int buf_id_next;
+	int buf_addr[4];
+	int first_irq;
+
+	/* size of each ping/pong buffers */
+	u32 size;
+	/* base addresses of the ping pong buffers in bytes addresses */
+	u32 base_address[MAX_PINGPONG_BUFFERS];
+};
+
+struct omap_aess_gain {
+	u8  muted_indicator;
+	u32 desired_decibel;
+	u32 muted_decibel;
+	u32 desired_linear;
+	u32 desired_ramp_delay_ms;
+};
+
 struct omap_aess_debug;
 
 /*
  * ABE private data.
  */
-struct omap_abe {
+struct omap_aess {
 	struct device *dev;
-	struct omap_aess *aess;
 
 	struct clk *clk;
 	void __iomem *io_base[OMAP_ABE_IO_RESOURCES];
@@ -304,16 +338,108 @@ struct omap_abe {
 	const void *fw_data;
 	const struct firmware *fw;
 
+	/* from former omap_aess struct */
+	u32 firmware_version_number;
+	u16 MultiFrame[25][8];
+
+	/* Housekeeping for gains */
+	struct omap_aess_gain gains[MAX_NBGAIN_CMEM];
+
+	/* Ping-Pong mode */
+	struct omap_aess_pingppong pingpong;
+
+	u32 irq_dbg_read_ptr;
+	struct omap_aess_mapping fw_info;
+
+	/* List of open ABE logical ports */
+	struct list_head ports;
+
+	/* spinlock */
+	spinlock_t lock;
+
 #ifdef CONFIG_DEBUG_FS
 	struct omap_aess_debug *debug;
+	struct dentry *debugfs_root;
 #endif
 };
 
 extern struct snd_soc_fw_platform_ops soc_fw_ops;
 
-extern int abe_mixer_enable_mono(struct omap_abe *abe, int id, int enable);
-extern int abe_mixer_set_equ_profile(struct omap_abe *abe, unsigned int id,
+extern int abe_mixer_enable_mono(struct omap_aess *aess, int id, int enable);
+extern int abe_mixer_set_equ_profile(struct omap_aess *aess, unsigned int id,
 				     unsigned int profile);
+
+
+/* From former abe.h file */
+void omap_abe_port_mgr_init(struct omap_aess *aess);
+void omap_abe_port_mgr_cleanup(struct omap_aess *aess);
+void omap_abe_port_set_substream(struct omap_aess *aess, int logical_id,
+				 struct snd_pcm_substream *substream);
+struct snd_pcm_substream *omap_abe_port_get_substream(struct omap_aess *aess,
+						      int logical_id);
+struct omap_aess_dma {
+	void *data;
+	u32 iter;
+};
+
+int omap_aess_set_opp_processing(struct omap_aess *aess, u32 opp);
+int omap_aess_connect_debug_trace(struct omap_aess *aess,
+				  struct omap_aess_dma *dma2);
+
+/* gain */
+int omap_aess_use_compensated_gain(struct omap_aess *aess, int on_off);
+
+int omap_aess_disable_gain(struct omap_aess *aess, u32 id);
+int omap_aess_enable_gain(struct omap_aess *aess, u32 id);
+int omap_aess_mute_gain(struct omap_aess *aess, u32 id);
+int omap_aess_unmute_gain(struct omap_aess *aess, u32 id);
+
+int omap_aess_write_gain(struct omap_aess *aess, u32 id, s32 f_g);
+int omap_aess_read_gain(struct omap_aess *aess, u32 id, u32 *f_g);
+#define omap_aess_write_mixer(aess, id, f_g) omap_aess_write_gain(aess, id, f_g)
+#define omap_aess_read_mixer(aess, id, f_g) omap_aess_read_gain(aess, id, f_g)
+
+int omap_aess_init_mem(struct omap_aess *aess, const void *fw_config);
+int omap_aess_reset_hal(struct omap_aess *aess);
+int omap_aess_load_fw(struct omap_aess *aess, const void *firmware);
+int omap_aess_reload_fw(struct omap_aess *aess, const void *firmware);
+
+/* port */
+int omap_aess_mono_mixer(struct omap_aess *aess, u32 id, u32 on_off);
+void omap_aess_connect_serial_port(struct omap_aess *aess, u32 id,
+				  struct omap_aess_data_format *f,
+				  u32 mcbsp_id, struct omap_aess_dma *aess_dma);
+void omap_aess_connect_cbpr_dmareq_port(struct omap_aess *aess, u32 id,
+				       struct omap_aess_data_format *f, u32 d,
+				       struct omap_aess_dma *aess_dma);
+int omap_aess_connect_irq_ping_pong_port(struct omap_aess *aess, u32 id,
+					 struct omap_aess_data_format *f,
+					 u32 subroutine_id, u32 size,
+					 u32 *sink, u32 dsp_mcu_flag);
+void omap_aess_write_pdmdl_offset(struct omap_aess *aess, u32 path,
+				  u32 offset_left, u32 offset_right);
+int omap_aess_enable_data_transfer(struct omap_aess *aess, u32 id);
+int omap_aess_disable_data_transfer(struct omap_aess *aess, u32 id);
+
+/* core */
+int omap_aess_check_activity(struct omap_aess *aess);
+int omap_aess_wakeup(struct omap_aess *aess);
+int omap_aess_set_router_configuration(struct omap_aess *aess, u32 *param);
+int omap_abe_read_next_ping_pong_buffer(struct omap_aess *aess,
+					u32 port, u32 *p, u32 *n);
+int omap_aess_read_next_ping_pong_buffer(struct omap_aess *aess,
+					 u32 port, u32 *p, u32 *n);
+int omap_aess_irq_processing(struct omap_aess *aess);
+int omap_aess_set_ping_pong_buffer(struct omap_aess *aess,
+				   u32 port, u32 n_bytes);
+int omap_aess_read_offset_from_ping_buffer(struct omap_aess *aess,
+					   u32 id, u32 *n);
+
+int omap_aess_disable_irq(struct omap_aess *aess);
+u32 omap_aess_get_label_data(struct omap_aess *aess, int index);
+void omap_aess_pp_handler(struct omap_aess *aess, void (*callback)(void *data),
+			  void *cb_data);
+int omap_aess_write_event_generator(struct omap_aess *aess, u32 e);
 
 #endif  /* __kernel__ */
 #endif	/* End of __OMAP_AESS_PRIV_H__ */

@@ -26,6 +26,7 @@
 
 #include <linux/export.h>
 #include <linux/opp.h>
+#include <linux/slab.h>
 
 #include <sound/soc.h>
 #include <sound/soc-dapm.h>
@@ -70,40 +71,40 @@ struct omap_aess_filter {
 void omap_abe_dc_set_hs_offset(struct snd_soc_platform *platform,
 	int left, int right, int step_mV)
 {
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
 
 	if (left >= 8)
 		left -= 16;
-	abe->dc_offset.hsl = OMAP_ABE_HS_DC_OFFSET_STEP * left * step_mV;
+	aess->dc_offset.hsl = OMAP_ABE_HS_DC_OFFSET_STEP * left * step_mV;
 
 	if (right >= 8)
 		right -= 16;
-	abe->dc_offset.hsr = OMAP_ABE_HS_DC_OFFSET_STEP * right * step_mV;
+	aess->dc_offset.hsr = OMAP_ABE_HS_DC_OFFSET_STEP * right * step_mV;
 }
 EXPORT_SYMBOL(omap_abe_dc_set_hs_offset);
 
 void omap_abe_dc_set_hf_offset(struct snd_soc_platform *platform,
 	int left, int right)
 {
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
 
 	if (left >= 8)
 		left -= 16;
-	abe->dc_offset.hfl = OMAP_ABE_HF_DC_OFFSET_STEP * left;
+	aess->dc_offset.hfl = OMAP_ABE_HF_DC_OFFSET_STEP * left;
 
 	if (right >= 8)
 		right -= 16;
-	abe->dc_offset.hfr = OMAP_ABE_HF_DC_OFFSET_STEP * right;
+	aess->dc_offset.hfr = OMAP_ABE_HF_DC_OFFSET_STEP * right;
 }
 EXPORT_SYMBOL(omap_abe_dc_set_hf_offset);
 
 void omap_abe_set_dl1_gains(struct snd_soc_platform *platform,
 	int left, int right)
 {
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
 
-	omap_aess_write_gain(abe->aess, OMAP_AESS_GAIN_DL1_LEFT, left);
-	omap_aess_write_gain(abe->aess, OMAP_AESS_GAIN_DL1_RIGHT, right);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_DL1_LEFT, left);
+	omap_aess_write_gain(aess, OMAP_AESS_GAIN_DL1_RIGHT, right);
 }
 EXPORT_SYMBOL(omap_abe_set_dl1_gains);
 
@@ -117,18 +118,18 @@ static int abe_put_mixer(struct snd_kcontrol *kcontrol,
 	struct snd_soc_dapm_widget_list *wlist = snd_kcontrol_chip(kcontrol);
 	struct snd_soc_dapm_widget *widget = wlist->widgets[0];
 	struct snd_soc_platform *platform = widget->platform;
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
 	struct soc_mixer_control *mc =
 		(struct soc_mixer_control *)kcontrol->private_value;
 
 	if (ucontrol->value.integer.value[0]) {
-		abe->opp.widget[mc->reg] |= ucontrol->value.integer.value[0]<<mc->shift;
+		aess->opp.widget[mc->reg] |= ucontrol->value.integer.value[0]<<mc->shift;
 		snd_soc_dapm_mixer_update_power(widget, kcontrol, 1);
-		omap_aess_enable_gain(abe->aess, mc->reg);
+		omap_aess_enable_gain(aess, mc->reg);
 	} else {
-		abe->opp.widget[mc->reg] &= ~(0x1<<mc->shift);
+		aess->opp.widget[mc->reg] &= ~(0x1<<mc->shift);
 		snd_soc_dapm_mixer_update_power(widget, kcontrol, 0);
-		omap_aess_disable_gain(abe->aess, mc->reg);
+		omap_aess_disable_gain(aess, mc->reg);
 	}
 
 	return 1;
@@ -142,14 +143,14 @@ static int abe_get_mixer(struct snd_kcontrol *kcontrol,
 	struct soc_mixer_control *mc =
 		(struct soc_mixer_control *)kcontrol->private_value;
 	struct snd_soc_platform *platform = widget->platform;
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
 
-	ucontrol->value.integer.value[0] = (abe->opp.widget[mc->reg]>>mc->shift) & 0x1;
+	ucontrol->value.integer.value[0] = (aess->opp.widget[mc->reg]>>mc->shift) & 0x1;
 
 	return 0;
 }
 
-int abe_mixer_enable_mono(struct omap_abe *abe, int id, int enable)
+int abe_mixer_enable_mono(struct omap_aess *aess, int id, int enable)
 {
 	int mixer;
 
@@ -167,7 +168,7 @@ int abe_mixer_enable_mono(struct omap_abe *abe, int id, int enable)
 		return -EINVAL;
 	}
 
-	omap_aess_mono_mixer(abe->aess, mixer, enable);
+	omap_aess_mono_mixer(aess, mixer, enable);
 
 	return 0;
 }
@@ -176,13 +177,13 @@ static int abe_put_mono_mixer(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_platform *platform = snd_kcontrol_chip(kcontrol);
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
 	struct soc_mixer_control *mc =
 		(struct soc_mixer_control *)kcontrol->private_value;
 	int id = mc->shift - MIX_DL1_MONO;
 
-	abe->mixer.mono[id] = ucontrol->value.integer.value[0];
-	abe_mixer_enable_mono(abe, mc->shift, abe->mixer.mono[id]);
+	aess->mixer.mono[id] = ucontrol->value.integer.value[0];
+	abe_mixer_enable_mono(aess, mc->shift, aess->mixer.mono[id]);
 
 	return 1;
 }
@@ -191,12 +192,12 @@ static int abe_get_mono_mixer(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_platform *platform = snd_kcontrol_chip(kcontrol);
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
 	struct soc_mixer_control *mc =
 		(struct soc_mixer_control *)kcontrol->private_value;
 	int id = mc->shift - MIX_DL1_MONO;
 
-	ucontrol->value.integer.value[0] = abe->mixer.mono[id];
+	ucontrol->value.integer.value[0] = aess->mixer.mono[id];
 	return 0;
 }
 
@@ -225,7 +226,7 @@ static int ul_mux_put_route(struct snd_kcontrol *kcontrol,
 	struct snd_soc_dapm_widget_list *wlist = snd_kcontrol_chip(kcontrol);
 	struct snd_soc_dapm_widget *widget = wlist->widgets[0];
 	struct snd_soc_platform *platform = widget->platform;
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
 	struct soc_enum *e = (struct soc_enum *)kcontrol->private_value;
 	int mux = ucontrol->value.enumerated.item[0];
 	int reg = e->reg - OMAP_ABE_MUX(0);
@@ -238,19 +239,19 @@ static int ul_mux_put_route(struct snd_kcontrol *kcontrol,
 	/* TODO: remove the gap */
 	if (reg < 6) {
 		/* 0  .. 5   = MM_UL */
-		abe->mixer.route_ul[reg] = omap_aess_get_label_data(abe->aess, router[mux]);
+		aess->mixer.route_ul[reg] = omap_aess_get_label_data(aess, router[mux]);
 	} else if (reg < 10) {
 		/* 10 .. 11  = MM_UL2 */
 		/* 12 .. 13  = VX_UL */
-		abe->mixer.route_ul[reg + 4] = omap_aess_get_label_data(abe->aess, router[mux]);
+		aess->mixer.route_ul[reg + 4] = omap_aess_get_label_data(aess, router[mux]);
 	}
 
-	omap_aess_set_router_configuration(abe->aess, (u32 *)abe->mixer.route_ul);
+	omap_aess_set_router_configuration(aess, (u32 *)aess->mixer.route_ul);
 
 	if (router[mux] != OMAP_AESS_BUFFER_ZERO_ID)
-		abe->opp.widget[e->reg] = e->shift_l;
+		aess->opp.widget[e->reg] = e->shift_l;
 	else
-		abe->opp.widget[e->reg] = 0;
+		aess->opp.widget[e->reg] = 0;
 
 	snd_soc_dapm_mux_update_power(widget, kcontrol, mux, e);
 
@@ -263,7 +264,7 @@ static int ul_mux_get_route(struct snd_kcontrol *kcontrol,
 	struct snd_soc_dapm_widget_list *wlist = snd_kcontrol_chip(kcontrol);
 	struct snd_soc_dapm_widget *widget = wlist->widgets[0];
 	struct snd_soc_platform *platform = widget->platform;
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
 	struct soc_enum *e =
 		(struct soc_enum *)kcontrol->private_value;
 	int reg = e->reg - OMAP_ABE_MUX(0), i, rval = 0;
@@ -271,15 +272,15 @@ static int ul_mux_get_route(struct snd_kcontrol *kcontrol,
 	/* TODO: remove the gap */
 	if (reg < 6) {
 		/* 0  .. 5   = MM_UL */
-		rval = abe->mixer.route_ul[reg];
+		rval = aess->mixer.route_ul[reg];
 	} else if (reg < 10) {
 		/* 10 .. 11  = MM_UL2 */
 		/* 12 .. 13  = VX_UL */
-		rval = abe->mixer.route_ul[reg + 4];
+		rval = aess->mixer.route_ul[reg + 4];
 	}
 
 	for (i = 0; i < ARRAY_SIZE(router); i++) {
-		if (omap_aess_get_label_data(abe->aess, router[i]) == rval) {
+		if (omap_aess_get_label_data(aess, router[i]) == rval) {
 			ucontrol->value.integer.value[0] = i;
 			return 0;
 		}
@@ -295,15 +296,15 @@ static int abe_put_switch(struct snd_kcontrol *kcontrol,
 	struct snd_soc_dapm_widget_list *wlist = snd_kcontrol_chip(kcontrol);
 	struct snd_soc_dapm_widget *widget = wlist->widgets[0];
 	struct snd_soc_platform *platform = widget->platform;
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
 	struct soc_mixer_control *mc =
 		(struct soc_mixer_control *)kcontrol->private_value;
 
 	if (ucontrol->value.integer.value[0]) {
-		abe->opp.widget[mc->reg] |= ucontrol->value.integer.value[0]<<mc->shift;
+		aess->opp.widget[mc->reg] |= ucontrol->value.integer.value[0]<<mc->shift;
 		snd_soc_dapm_mixer_update_power(widget, kcontrol, 1);
 	} else {
-		abe->opp.widget[mc->reg] &= ~(0x1<<mc->shift);
+		aess->opp.widget[mc->reg] &= ~(0x1<<mc->shift);
 		snd_soc_dapm_mixer_update_power(widget, kcontrol, 0);
 	}
 
@@ -315,11 +316,11 @@ static int volume_put_mixer(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_platform *platform = snd_kcontrol_chip(kcontrol);
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
 	struct soc_mixer_control *mc =
 		(struct soc_mixer_control *)kcontrol->private_value;
 
-	omap_aess_write_mixer(abe->aess, mc->reg, abe_val_to_gain(ucontrol->value.integer.value[0]));
+	omap_aess_write_mixer(aess, mc->reg, abe_val_to_gain(ucontrol->value.integer.value[0]));
 
 	return 1;
 }
@@ -328,13 +329,13 @@ static int volume_put_gain(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_platform *platform = snd_kcontrol_chip(kcontrol);
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
 	struct soc_mixer_control *mc =
 		(struct soc_mixer_control *)kcontrol->private_value;
 
-	omap_aess_write_gain(abe->aess, mc->shift,
+	omap_aess_write_gain(aess, mc->shift,
 		       abe_val_to_gain(ucontrol->value.integer.value[0]));
-	omap_aess_write_gain(abe->aess, mc->rshift,
+	omap_aess_write_gain(aess, mc->rshift,
 		       abe_val_to_gain(ucontrol->value.integer.value[1]));
 
 	return 1;
@@ -344,12 +345,12 @@ static int volume_get_mixer(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_platform *platform = snd_kcontrol_chip(kcontrol);
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
 	struct soc_mixer_control *mc =
 		(struct soc_mixer_control *)kcontrol->private_value;
 	u32 val;
 
-	omap_aess_read_mixer(abe->aess, mc->reg, &val);
+	omap_aess_read_mixer(aess, mc->reg, &val);
 	ucontrol->value.integer.value[0] = abe_gain_to_val(val);
 
 	return 0;
@@ -360,14 +361,14 @@ static int volume_get_gain(struct snd_kcontrol *kcontrol,
 	struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_platform *platform = snd_kcontrol_chip(kcontrol);
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
 	struct soc_mixer_control *mc =
 		(struct soc_mixer_control *)kcontrol->private_value;
 	u32 val;
 
-	omap_aess_read_gain(abe->aess, mc->shift, &val);
+	omap_aess_read_gain(aess, mc->shift, &val);
 	ucontrol->value.integer.value[0] = abe_gain_to_val(val);
-	omap_aess_read_gain(abe->aess, mc->rshift, &val);
+	omap_aess_read_gain(aess, mc->rshift, &val);
 	ucontrol->value.integer.value[1] = abe_gain_to_val(val);
 
 	return 0;
@@ -434,7 +435,7 @@ static int omap_aess_write_filter(struct omap_aess *aess, u32 id,
 
 
 
-int abe_mixer_set_equ_profile(struct omap_abe *abe,
+int abe_mixer_set_equ_profile(struct omap_aess *aess,
 		unsigned int id, unsigned int profile)
 {
 	struct omap_aess_filter params;
@@ -442,34 +443,34 @@ int abe_mixer_set_equ_profile(struct omap_abe *abe,
 
 	switch (id) {
 	case OMAP_AESS_CMEM_DL1_COEFS_ID:
-		abe->equ.dl1.profile = profile;
-		params.equ_length = abe->equ.dl1.profile_size;
-		src_coeff = abe->equ.dl1.coeff_data;
+		aess->equ.dl1.profile = profile;
+		params.equ_length = aess->equ.dl1.profile_size;
+		src_coeff = aess->equ.dl1.coeff_data;
 		break;
 	case OMAP_AESS_CMEM_DL2_L_COEFS_ID:
-		abe->equ.dl2l.profile = profile;
-		params.equ_length = abe->equ.dl2l.profile_size;
-		src_coeff = abe->equ.dl2l.coeff_data;
+		aess->equ.dl2l.profile = profile;
+		params.equ_length = aess->equ.dl2l.profile_size;
+		src_coeff = aess->equ.dl2l.coeff_data;
 		break;
 	case OMAP_AESS_CMEM_DL2_R_COEFS_ID:
-		abe->equ.dl2r.profile = profile;
-		params.equ_length = abe->equ.dl2r.profile_size;
-		src_coeff = abe->equ.dl2r.coeff_data;
+		aess->equ.dl2r.profile = profile;
+		params.equ_length = aess->equ.dl2r.profile_size;
+		src_coeff = aess->equ.dl2r.coeff_data;
 		break;
 	case OMAP_AESS_CMEM_SDT_COEFS_ID:
-		abe->equ.sdt.profile = profile;
-		params.equ_length = abe->equ.sdt.profile_size;
-		src_coeff = abe->equ.sdt.coeff_data;
+		aess->equ.sdt.profile = profile;
+		params.equ_length = aess->equ.sdt.profile_size;
+		src_coeff = aess->equ.sdt.coeff_data;
 		break;
 	case OMAP_AESS_CMEM_96_48_AMIC_COEFS_ID:
-		abe->equ.amic.profile = profile;
-		params.equ_length = abe->equ.amic.profile_size;
-		src_coeff = abe->equ.amic.coeff_data;
+		aess->equ.amic.profile = profile;
+		params.equ_length = aess->equ.amic.profile_size;
+		src_coeff = aess->equ.amic.coeff_data;
 		break;
 	case OMAP_AESS_CMEM_96_48_DMIC_COEFS_ID:
-		abe->equ.dmic.profile = profile;
-		params.equ_length = abe->equ.dmic.profile_size;
-		src_coeff = abe->equ.dmic.coeff_data;
+		aess->equ.dmic.profile = profile;
+		params.equ_length = aess->equ.dmic.profile_size;
+		src_coeff = aess->equ.dmic.coeff_data;
 		break;
 	default:
 		return -EINVAL;
@@ -478,7 +479,7 @@ int abe_mixer_set_equ_profile(struct omap_abe *abe,
 	src_coeff += profile * params.equ_length;
 	memcpy(params.coef.type1, src_coeff, params.equ_length);
 
-	omap_aess_write_filter(abe->aess, id, &params);
+	omap_aess_write_filter(aess, id, &params);
 
 	return 0;
 }
@@ -487,27 +488,27 @@ static int abe_get_equalizer(struct snd_kcontrol *kcontrol,
 			struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_platform *platform = snd_kcontrol_chip(kcontrol);
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
 	struct soc_enum *eqc = (struct soc_enum *)kcontrol->private_value;
 
 	switch (eqc->reg) {
 	case OMAP_AESS_CMEM_DL1_COEFS_ID:
-		ucontrol->value.integer.value[0] = abe->equ.dl1.profile;
+		ucontrol->value.integer.value[0] = aess->equ.dl1.profile;
 		break;
 	case OMAP_AESS_CMEM_DL2_L_COEFS_ID:
-		ucontrol->value.integer.value[0] = abe->equ.dl2l.profile;
+		ucontrol->value.integer.value[0] = aess->equ.dl2l.profile;
 		break;
 	case OMAP_AESS_CMEM_DL2_R_COEFS_ID:
-		ucontrol->value.integer.value[0] = abe->equ.dl2r.profile;
+		ucontrol->value.integer.value[0] = aess->equ.dl2r.profile;
 		break;
 	case OMAP_AESS_CMEM_SDT_COEFS_ID:
-		ucontrol->value.integer.value[0] = abe->equ.sdt.profile;
+		ucontrol->value.integer.value[0] = aess->equ.sdt.profile;
 		break;
 	case OMAP_AESS_CMEM_96_48_AMIC_COEFS_ID:
-		ucontrol->value.integer.value[0] = abe->equ.amic.profile;
+		ucontrol->value.integer.value[0] = aess->equ.amic.profile;
 		break;
 	case OMAP_AESS_CMEM_96_48_DMIC_COEFS_ID:
-		ucontrol->value.integer.value[0] = abe->equ.dmic.profile;
+		ucontrol->value.integer.value[0] = aess->equ.dmic.profile;
 		break;
 	default:
 		return -EINVAL;
@@ -520,12 +521,12 @@ static int abe_put_equalizer(struct snd_kcontrol *kcontrol,
 			struct snd_ctl_elem_value *ucontrol)
 {
 	struct snd_soc_platform *platform = snd_kcontrol_chip(kcontrol);
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
 	struct soc_enum *eqc = (struct soc_enum *)kcontrol->private_value;
 	u16 val = ucontrol->value.enumerated.item[0];
 	int ret;
 
-	ret = abe_mixer_set_equ_profile(abe, eqc->reg, val);
+	ret = abe_mixer_set_equ_profile(aess, eqc->reg, val);
 	if (ret < 0)
 		return ret;
 
@@ -545,7 +546,7 @@ static const struct snd_soc_fw_kcontrol_ops abe_ops[] = {
 static int abe_load_coeffs(struct snd_soc_platform *platform,
 	struct snd_soc_fw_hdr *hdr)
 {
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
 	const struct snd_soc_file_coeff_data *cd = snd_soc_fw_get_data(hdr);
 	const void *coeff_data = cd + 1;
 
@@ -554,52 +555,52 @@ static int abe_load_coeffs(struct snd_soc_platform *platform,
 
 	switch (cd->id) {
 	case OMAP_AESS_CMEM_DL1_COEFS_ID:
-		abe->equ.dl1.profile_size = cd->size / cd->count;
-		abe->equ.dl1.num_profiles = cd->count;
-		abe->equ.dl1.coeff_data = kmalloc(cd->size, GFP_KERNEL);
-		if (abe->equ.dl1.coeff_data == NULL)
+		aess->equ.dl1.profile_size = cd->size / cd->count;
+		aess->equ.dl1.num_profiles = cd->count;
+		aess->equ.dl1.coeff_data = kmalloc(cd->size, GFP_KERNEL);
+		if (aess->equ.dl1.coeff_data == NULL)
 			return -ENOMEM;
-		memcpy(abe->equ.dl1.coeff_data, coeff_data, cd->size);
+		memcpy(aess->equ.dl1.coeff_data, coeff_data, cd->size);
 		break;
 	case OMAP_AESS_CMEM_DL2_L_COEFS_ID:
-		abe->equ.dl2l.profile_size = cd->size / cd->count;
-		abe->equ.dl2l.num_profiles = cd->count;
-		abe->equ.dl2l.coeff_data = kmalloc(cd->size, GFP_KERNEL);
-		if (abe->equ.dl2l.coeff_data == NULL)
+		aess->equ.dl2l.profile_size = cd->size / cd->count;
+		aess->equ.dl2l.num_profiles = cd->count;
+		aess->equ.dl2l.coeff_data = kmalloc(cd->size, GFP_KERNEL);
+		if (aess->equ.dl2l.coeff_data == NULL)
 			return -ENOMEM;
-		memcpy(abe->equ.dl2l.coeff_data, coeff_data, cd->size);
+		memcpy(aess->equ.dl2l.coeff_data, coeff_data, cd->size);
 		break;
 	case OMAP_AESS_CMEM_DL2_R_COEFS_ID:
-		abe->equ.dl2r.profile_size = cd->size / cd->count;
-		abe->equ.dl2r.num_profiles = cd->count;
-		abe->equ.dl2r.coeff_data = kmalloc(cd->size, GFP_KERNEL);
-		if (abe->equ.dl2r.coeff_data == NULL)
+		aess->equ.dl2r.profile_size = cd->size / cd->count;
+		aess->equ.dl2r.num_profiles = cd->count;
+		aess->equ.dl2r.coeff_data = kmalloc(cd->size, GFP_KERNEL);
+		if (aess->equ.dl2r.coeff_data == NULL)
 			return -ENOMEM;
-		memcpy(abe->equ.dl2r.coeff_data, coeff_data, cd->size);
+		memcpy(aess->equ.dl2r.coeff_data, coeff_data, cd->size);
 		break;
 	case OMAP_AESS_CMEM_SDT_COEFS_ID:
-		abe->equ.sdt.profile_size = cd->size / cd->count;
-		abe->equ.sdt.num_profiles = cd->count;
-		abe->equ.sdt.coeff_data = kmalloc(cd->size, GFP_KERNEL);
-		if (abe->equ.sdt.coeff_data == NULL)
+		aess->equ.sdt.profile_size = cd->size / cd->count;
+		aess->equ.sdt.num_profiles = cd->count;
+		aess->equ.sdt.coeff_data = kmalloc(cd->size, GFP_KERNEL);
+		if (aess->equ.sdt.coeff_data == NULL)
 			return -ENOMEM;
-		memcpy(abe->equ.sdt.coeff_data, coeff_data, cd->size);
+		memcpy(aess->equ.sdt.coeff_data, coeff_data, cd->size);
 		break;
 	case OMAP_AESS_CMEM_96_48_AMIC_COEFS_ID:
-		abe->equ.amic.profile_size = cd->size / cd->count;
-		abe->equ.amic.num_profiles = cd->count;
-		abe->equ.amic.coeff_data = kmalloc(cd->size, GFP_KERNEL);
-		if (abe->equ.amic.coeff_data == NULL)
+		aess->equ.amic.profile_size = cd->size / cd->count;
+		aess->equ.amic.num_profiles = cd->count;
+		aess->equ.amic.coeff_data = kmalloc(cd->size, GFP_KERNEL);
+		if (aess->equ.amic.coeff_data == NULL)
 			return -ENOMEM;
-		memcpy(abe->equ.amic.coeff_data, coeff_data, cd->size);
+		memcpy(aess->equ.amic.coeff_data, coeff_data, cd->size);
 		break;
 	case OMAP_AESS_CMEM_96_48_DMIC_COEFS_ID:
-		abe->equ.dmic.profile_size = cd->size / cd->count;
-		abe->equ.dmic.num_profiles = cd->count;
-		abe->equ.dmic.coeff_data = kmalloc(cd->size, GFP_KERNEL);
-		if (abe->equ.dmic.coeff_data == NULL)
+		aess->equ.dmic.profile_size = cd->size / cd->count;
+		aess->equ.dmic.num_profiles = cd->count;
+		aess->equ.dmic.coeff_data = kmalloc(cd->size, GFP_KERNEL);
+		if (aess->equ.dmic.coeff_data == NULL)
 			return -ENOMEM;
-		memcpy(abe->equ.dmic.coeff_data, coeff_data, cd->size);
+		memcpy(aess->equ.dmic.coeff_data, coeff_data, cd->size);
 		break;
 	default:
 		dev_err(platform->dev, "invalid coefficient ID %d\n", cd->id);
@@ -612,25 +613,25 @@ static int abe_load_coeffs(struct snd_soc_platform *platform,
 static int abe_load_fw(struct snd_soc_platform *platform,
 	struct snd_soc_fw_hdr *hdr)
 {
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
 	const void *fw_data = snd_soc_fw_get_data(hdr);
 
 	/* get firmware and coefficients header info */
-	memcpy(&abe->hdr, fw_data, sizeof(struct fw_header));
+	memcpy(&aess->hdr, fw_data, sizeof(struct fw_header));
 	if (hdr->size > OMAP_ABE_MAX_FW_SIZE) {
-		dev_err(abe->dev, "Firmware too large at %d bytes\n",
+		dev_err(aess->dev, "Firmware too large at %d bytes\n",
 			hdr->size);
 		return -ENOMEM;
 	}
-	dev_info(abe->dev, "ABE firmware size %d bytes\n", hdr->size);
-	dev_info(abe->dev, "ABE mem P %d C %d D %d S %d bytes\n",
-		abe->hdr.pmem_size, abe->hdr.cmem_size,
-		abe->hdr.dmem_size, abe->hdr.smem_size);
+	dev_info(aess->dev, "ABE firmware size %d bytes\n", hdr->size);
+	dev_info(aess->dev, "ABE mem P %d C %d D %d S %d bytes\n",
+		aess->hdr.pmem_size, aess->hdr.cmem_size,
+		aess->hdr.dmem_size, aess->hdr.smem_size);
 
-	dev_info(abe->dev, "ABE Firmware version %x\n", abe->hdr.version);
+	dev_info(aess->dev, "ABE Firmware version %x\n", aess->hdr.version);
 
 	/* store ABE firmware for later context restore */
-	abe->fw_data = fw_data;
+	aess->fw_data = fw_data;
 
 	return 0;
 }
@@ -638,13 +639,13 @@ static int abe_load_fw(struct snd_soc_platform *platform,
 static int abe_load_config(struct snd_soc_platform *platform,
 	struct snd_soc_fw_hdr *hdr)
 {
-	struct omap_abe *abe = snd_soc_platform_get_drvdata(platform);
+	struct omap_aess *aess = snd_soc_platform_get_drvdata(platform);
 	const void *fw_data = snd_soc_fw_get_data(hdr);
 
 	/* store ABE config for later context restore */
-	dev_info(abe->dev, "ABE Config size %d bytes\n", hdr->size);
+	dev_info(aess->dev, "ABE Config size %d bytes\n", hdr->size);
 
-	abe->fw_config = fw_data;
+	aess->fw_config = fw_data;
 
 	return 0;
 }

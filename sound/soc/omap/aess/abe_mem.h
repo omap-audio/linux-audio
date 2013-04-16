@@ -61,7 +61,7 @@
 
 #include <asm/io.h>
 
-#include "abe.h"
+#include "omap-aess-priv.h"
 
 static inline void omap_aess_write(struct omap_aess *aess, int bank, u32 offset,
 				   void *src, size_t bytes)

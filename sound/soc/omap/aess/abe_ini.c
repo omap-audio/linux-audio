@@ -64,7 +64,7 @@
 #include <linux/slab.h>
 #include <linux/device.h>
 
-#include "abe.h"
+#include "omap-aess-priv.h"
 #include "abe_gain.h"
 #include "abe_mem.h"
 #include "abe_port.h"
@@ -174,28 +174,16 @@ static void omap_aess_init_gain_ramp(struct omap_aess *aess)
 /**
  * omap_aess_init_mem - Allocate Kernel space memory map for ABE
  * @aess: Pointer on aess handle
- * @dev: Pointer on device handle
- * @_io_base: Pointer on the different AESS memory banks (DT or HW data)
  * @fw_header: Pointer on the firmware header commit from the FS.
  *
  * Memory map of ABE memory space for PMEM/DMEM/SMEM/DMEM
  */
-int omap_aess_init_mem(struct omap_aess *aess, struct device *dev,
-	void __iomem **_io_base, const void *fw_config, u32 dmem_l3,
-	u32 aess_config_l3)
+int omap_aess_init_mem(struct omap_aess *aess, const void *fw_config)
 {
 	u32 *fw_header = (u32*) fw_config;
 	struct omap_aess_mapping *fw_info = &aess->fw_info;
-	int i, offset = 0;
+	int offset = 0;
 	u32 count;
-
-	aess->dev = dev;
-
-	for (i = 0; i < 5; i++)
-		aess->io_base[i] = _io_base[i];
-
-	aess->dmem_l3 = dmem_l3;
-	aess->aess_config_l3 = aess_config_l3;
 
 	dev_dbg(aess->dev, "DMEM bank at 0x%p\n", aess->io_base[OMAP_ABE_DMEM]);
 	dev_dbg(aess->dev, "CMEM bank at 0x%p\n", aess->io_base[OMAP_ABE_CMEM]);

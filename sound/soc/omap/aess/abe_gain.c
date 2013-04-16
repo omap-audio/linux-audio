@@ -62,7 +62,7 @@
 #include <linux/err.h>
 #include <linux/slab.h>
 
-#include "abe.h"
+#include "omap-aess-priv.h"
 #include "abe_gain.h"
 #include "abe_mem.h"
 #include "abe_dbg.h"

@@ -63,7 +63,7 @@
 #include <linux/slab.h>
 
 #include "aess-fw.h"
-#include "abe.h"
+#include "omap-aess-priv.h"
 #include "abe_port.h"
 #include "abe_dbg.h"
 #include "abe_mem.h"
