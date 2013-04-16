@@ -154,11 +154,13 @@ int omap_aess_reset_hal(struct omap_aess *aess)
 
 	/* reset the default gain values */
 	for (i = 0; i < MAX_NBGAIN_CMEM; i++) {
-		aess->muted_gains_indicator[i] = 0;
-		aess->desired_gains_decibel[i] = (u32) GAIN_MUTE;
-		aess->desired_gains_linear[i] = 0;
-		aess->desired_ramp_delay_ms[i] = 0;
-		aess->muted_gains_decibel[i] = (u32) GAIN_TOOLOW;
+		struct omap_aess_gain *gain = &aess->gains[i];
+
+		gain->muted_indicator = 0;
+		gain->desired_decibel = (u32) GAIN_MUTE;
+		gain->desired_linear = 0;
+		gain->desired_ramp_delay_ms = 0;
+		gain->muted_decibel = (u32) GAIN_TOOLOW;
 	}
 	omap_aess_hw_configuration(aess);
 	return 0;

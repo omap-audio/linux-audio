@@ -104,6 +104,14 @@ struct omap_aess_pingppong {
 	u32 base_address[MAX_PINGPONG_BUFFERS];
 };
 
+struct omap_aess_gain {
+	u8  muted_indicator;
+	u32 desired_decibel;
+	u32 muted_decibel;
+	u32 desired_linear;
+	u32 desired_ramp_delay_ms;
+};
+
 /* main ABE structure */
 struct omap_aess {
 	struct device *dev;
@@ -112,11 +120,9 @@ struct omap_aess {
 	u32 aess_config_l3;
 	u32 firmware_version_number;
 	u16 MultiFrame[25][8];
-	u8  muted_gains_indicator[MAX_NBGAIN_CMEM];
-	u32 desired_gains_decibel[MAX_NBGAIN_CMEM];
-	u32 muted_gains_decibel[MAX_NBGAIN_CMEM];
-	u32 desired_gains_linear[MAX_NBGAIN_CMEM];
-	u32 desired_ramp_delay_ms[MAX_NBGAIN_CMEM];
+
+	/* Housekeeping for gains */
+	struct omap_aess_gain gains[MAX_NBGAIN_CMEM];
 
 	/* Ping-Pong mode */
 	struct omap_aess_pingppong pingpong;

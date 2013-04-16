@@ -278,15 +278,16 @@ static const u32 abe_alpha_iir[64] = {
  */
 int omap_aess_disable_gain(struct omap_aess *aess, u32 id)
 {
-	if (!(aess->muted_gains_indicator[id] & OMAP_AESS_GAIN_DISABLED)) {
+	struct omap_aess_gain *gain = &aess->gains[id];
+
+	if (!(gain->muted_indicator & OMAP_AESS_GAIN_DISABLED)) {
 		/* Check if we are in mute */
-		if (!(aess->muted_gains_indicator[id] & OMAP_AESS_GAIN_MUTED)) {
-			aess->muted_gains_decibel[id] =
-						aess->desired_gains_decibel[id];
+		if (!(gain->muted_indicator & OMAP_AESS_GAIN_MUTED)) {
+			gain->muted_decibel = gain->desired_decibel;
 			/* mute the gain */
 			omap_aess_write_gain(aess, id, GAIN_MUTE);
 		}
-		aess->muted_gains_indicator[id] |= OMAP_AESS_GAIN_DISABLED;
+		gain->muted_indicator |= OMAP_AESS_GAIN_DISABLED;
 	}
 	return 0;
 }
@@ -301,13 +302,13 @@ EXPORT_SYMBOL(omap_aess_disable_gain);
  */
 int omap_aess_enable_gain(struct omap_aess *aess, u32 id)
 {
-	if ((aess->muted_gains_indicator[id] & OMAP_AESS_GAIN_DISABLED)) {
-		/* restore the input parameters for mute/unmute */
-		u32 f_g = aess->muted_gains_decibel[id];
+	struct omap_aess_gain *gain = &aess->gains[id];
 
-		aess->muted_gains_indicator[id] &= ~OMAP_AESS_GAIN_DISABLED;
+	if ((gain->muted_indicator & OMAP_AESS_GAIN_DISABLED)) {
+		/* restore the input parameters for mute/unmute */
+		gain->muted_indicator &= ~OMAP_AESS_GAIN_DISABLED;
 		/* unmute the gain */
-		omap_aess_write_gain(aess, id, f_g);
+		omap_aess_write_gain(aess, id, gain->muted_decibel);
 	}
 	return 0;
 }
@@ -322,12 +323,14 @@ EXPORT_SYMBOL(omap_aess_enable_gain);
  */
 int omap_aess_mute_gain(struct omap_aess *aess, u32 id)
 {
-	if (!aess->muted_gains_indicator[id]) {
-		aess->muted_gains_decibel[id] = aess->desired_gains_decibel[id];
+	struct omap_aess_gain *gain = &aess->gains[id];
+
+	if (!gain->muted_indicator) {
+		gain->muted_decibel = gain->desired_decibel;
 		/* mute the gain */
 		omap_aess_write_gain(aess, id, GAIN_MUTE);
 	}
-	aess->muted_gains_indicator[id] |= OMAP_AESS_GAIN_MUTED;
+	gain->muted_indicator |= OMAP_AESS_GAIN_MUTED;
 	return 0;
 }
 EXPORT_SYMBOL(omap_aess_mute_gain);
@@ -340,11 +343,13 @@ EXPORT_SYMBOL(omap_aess_mute_gain);
  */
 int omap_aess_unmute_gain(struct omap_aess *aess, u32 id)
 {
-	if ((aess->muted_gains_indicator[id] & OMAP_AESS_GAIN_MUTED)) {
-		/* restore the input parameters for mute/unmute */
-		u32 f_g = aess->muted_gains_decibel[id];
+	struct omap_aess_gain *gain = &aess->gains[id];
 
-		aess->muted_gains_indicator[id] &= ~OMAP_AESS_GAIN_MUTED;
+	if ((gain->muted_indicator & OMAP_AESS_GAIN_MUTED)) {
+		/* restore the input parameters for mute/unmute */
+		u32 f_g = gain->muted_decibel;
+
+		gain->muted_indicator &= ~OMAP_AESS_GAIN_MUTED;
 		/* unmute the gain */
 		omap_aess_write_gain(aess, id, f_g);
 	}
@@ -364,9 +369,9 @@ EXPORT_SYMBOL(omap_aess_unmute_gain);
  * in mute state". A mixer is disabled with a network reconfiguration
  * corresponding to an OPP value.
  */
-int omap_aess_write_gain(struct omap_aess *aess,
-			u32 id, s32 f_g)
+int omap_aess_write_gain(struct omap_aess *aess, u32 id, s32 f_g)
 {
+	struct omap_aess_gain *gain = &aess->gains[id];
 	u32 lin_g, mixer_target;
 	s32 gain_index;
 
@@ -375,20 +380,20 @@ int omap_aess_write_gain(struct omap_aess *aess,
 	gain_index = min(gain_index, (s32)OMAP_AESS_GAIN_DB2LIN_SIZE);
 	lin_g = abe_db2lin_table[gain_index];
 	/* save the input parameters for mute/unmute */
-	aess->desired_gains_linear[id] = lin_g;
-	aess->desired_gains_decibel[id] = f_g;
+	gain->desired_linear = lin_g;
+	gain->desired_decibel = f_g;
 
 	/* SMEM address in bytes */
 	mixer_target = aess->fw_info.map[OMAP_AESS_SMEM_GTARGET1_ID].offset;
 	mixer_target += (id<<2);
 
-	if (!aess->muted_gains_indicator[id])
+	if (!gain->muted_indicator)
 		/* load the S_G_Target SMEM table */
 		omap_aess_write(aess, OMAP_ABE_SMEM, mixer_target, &lin_g,
 				sizeof(lin_g));
 	else
 		/* update muted gain with new value */
-		aess->muted_gains_decibel[id] = f_g;
+		gain->muted_decibel = f_g;
 
 	return 0;
 }
@@ -408,7 +413,7 @@ int omap_aess_write_gain_ramp(struct omap_aess *aess, u32 id, u32 ramp)
 	u32 alpha, beta;
 	u32 ramp_index;
 
-	aess->desired_ramp_delay_ms[id] = ramp;
+	aess->gains[id].desired_ramp_delay_ms = ramp;
 
 	/* SMEM address in bytes */
 	mixer_target = aess->fw_info.map[OMAP_AESS_SMEM_GTARGET1_ID].offset;
@@ -462,7 +467,7 @@ int omap_aess_read_gain(struct omap_aess *aess, u32 id, u32 *f_g)
 	/* SMEM bytes address */
 	mixer_target = aess->fw_info.map[OMAP_AESS_SMEM_GTARGET1_ID].offset;
 	mixer_target += (id<<2);
-	if (!aess->muted_gains_indicator[id]) {
+	if (!aess->gains[id].muted_indicator) {
 		/* load the S_G_Target SMEM table */
 		omap_aess_read(aess, OMAP_ABE_SMEM, mixer_target, f_g,
 			       sizeof(*f_g));
@@ -476,7 +481,7 @@ found:
 		*f_g = (i * 100) + OMAP_AESS_GAIN_MIN_MDB;
 	} else {
 		/* update muted gain with new value */
-		*f_g = aess->muted_gains_decibel[id];
+		*f_g = aess->gains[id].muted_decibel;
 	}
 	return 0;
 }
