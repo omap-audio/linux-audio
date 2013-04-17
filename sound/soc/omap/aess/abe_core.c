@@ -67,7 +67,6 @@
 #include "aess-priv.h"
 #include "abe_port.h"
 #include "abe_mem.h"
-#include "abe_dbg.h"
 
 /* AESS_MCU_IRQENABLE_SET/CLR (0x3c/0x40) bit field */
 #define INT_MASK			0x01
@@ -183,7 +182,7 @@ int omap_aess_write_event_generator(struct omap_aess *aess, u32 e)
 		event = 0;
 		break;
 	default:
-		aess_err("Bad event generator selection (%u)", e);
+		dev_err(aess->dev, "Bad event generator selection (%u)\n", e);
 		return -EINVAL;
 	}
 	omap_aess_reg_write(aess, OMAP_AESS_EVENT_GENERATOR_COUNTER, counter);
@@ -270,7 +269,7 @@ int omap_aess_set_opp_processing(struct omap_aess *aess, u32 opp)
 		dOppMode32 = DOPPMODE32_OPP50;
 		break;
 	default:
-		aess_warm("Bad OPP value requested");
+		dev_warn(aess->dev, "Bad OPP value requested\n");
 	case ABE_OPP100:
 		/* OPP100% */
 		dOppMode32 = DOPPMODE32_OPP100;

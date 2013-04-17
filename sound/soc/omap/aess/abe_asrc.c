@@ -63,7 +63,6 @@
 #include <linux/slab.h>
 
 #include "omap-aess-priv.h"
-#include "abe_dbg.h"
 #include "abe_mem.h"
 
 /**
@@ -90,7 +89,7 @@ static void omap_aess_write_fifo(struct omap_aess *abe, u32 memory_bank,
 
 	/* WRITE ptr < FIFO start address */
 	if ((fifo_addr[1] < fifo_addr[2]) || (fifo_addr[1] > fifo_addr[3]))
-		aess_err("FIFO write pointer Error");
+		dev_err(abe->dev, "FIFO write pointer Error\n");
 
 	switch (memory_bank) {
 	case OMAP_ABE_DMEM:
@@ -102,7 +101,7 @@ static void omap_aess_write_fifo(struct omap_aess *abe, u32 memory_bank,
 			if (fifo_addr[1] > fifo_addr[3])
 				fifo_addr[1] = fifo_addr[2];
 			if (fifo_addr[1] == fifo_addr[0])
-				aess_err("FIFO write pointer Error");
+				dev_err(abe->dev, "FIFO write pointer Error\n");
 		}
 		/* update WRITE pointer in DMEM */
 		omap_aess_write(abe, OMAP_ABE_DMEM, descr_addr + sizeof(u32),

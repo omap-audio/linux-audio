@@ -65,7 +65,6 @@
 #include "aess-fw.h"
 #include "omap-aess-priv.h"
 #include "abe_port.h"
-#include "abe_dbg.h"
 #include "abe_mem.h"
 #include "abe_gain.h"
 #include "aess-priv.h"
@@ -1092,7 +1091,7 @@ int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 
 		/* ping_pong is only supported on MM_DL */
 		if (OMAP_ABE_MM_DL_PORT != id) {
-			aess_err("Only Ping-pong port supported");
+			dev_err(aess->dev, "Only Ping-pong port supported\n");
 			return -EINVAL;
 		}
 		if (abe_port[id].format.f == 44100)
@@ -1482,7 +1481,7 @@ int omap_aess_set_ping_pong_buffer(struct omap_aess *aess, u32 port, u32 n_bytes
 
 	/* ping_pong is only supported on MM_DL */
 	if (port != OMAP_ABE_MM_DL_PORT) {
-		aess_err("Only Ping-pong port supported");
+		dev_err(aess->dev, "Only Ping-pong port supported\n");
 		return -EINVAL;
 	}
 	/* translates the number of bytes in samples */
@@ -1540,7 +1539,7 @@ int omap_aess_read_offset_from_ping_buffer(struct omap_aess *aess,
 
 	/* ping_pong is only supported on MM_DL */
 	if (OMAP_ABE_MM_DL_PORT != id) {
-		aess_err("Only Ping-pong port supported");
+		dev_err(aess->dev, "Only Ping-pong port supported\n");
 		return -EINVAL;
 	} else {
 		struct omap_aess_pingppong *pp = &aess->pingpong;
@@ -1573,7 +1572,7 @@ int omap_aess_read_offset_from_ping_buffer(struct omap_aess *aess,
 			*n += pp->buf_id * pp->size / 8;
 			break;
 		default:
-			aess_err("Bad data format for Ping-pong buffer");
+			dev_err(aess->dev, "Bad format for Ping-pong buffer\n");
 			return -EINVAL;
 		}
 	}
@@ -1599,7 +1598,7 @@ int omap_aess_read_next_ping_pong_buffer(struct omap_aess *aess, u32 port,
 
 	/* ping_pong is only supported on MM_DL */
 	if (port != OMAP_ABE_MM_DL_PORT) {
-		aess_err("Only Ping-pong port supported");
+		dev_err(aess->dev, "Only Ping-pong port supported\n");
 		return -EINVAL;
 	}
 	/* read the port SIO descriptor and extract the current pointer
@@ -1642,7 +1641,7 @@ static int omap_aess_init_ping_pong_buffer(struct omap_aess *aess,
 	/* ping_pong is supported in 2 buffers configuration right now but FW
 	   is ready for ping/pong/pung/pang... */
 	if (id != OMAP_ABE_MM_DL_PORT || n_buffers > MAX_PINGPONG_BUFFERS) {
-		aess_err("Too Many Ping-pong buffers requested");
+		dev_err(aess->dev, "Too Many Ping-pong buffers requested\n");
 		return -EINVAL;
 	}
 
@@ -1693,7 +1692,7 @@ int omap_aess_connect_irq_ping_pong_port(struct omap_aess *aess,
 
 	/* ping_pong is only supported on MM_DL */
 	if (id != OMAP_ABE_MM_DL_PORT) {
-		aess_err("Only Ping-pong port supported");
+		dev_err(aess->dev, "Only Ping-pong port supported\n");
 		return -EINVAL;
 	}
 
