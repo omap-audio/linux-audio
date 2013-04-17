@@ -67,7 +67,7 @@
 
 /**
  * omap_aess_write_fifo
- * @abe: Pointer on aess handle
+ * @aess: Pointer on aess handle
  * @memory_bank: currently only ABE_DMEM supported
  * @descr_addr: FIFO descriptor address (descriptor fields: READ ptr, WRITE ptr,
  * FIFO START_ADDR, FIFO END_ADDR)
@@ -77,34 +77,34 @@
  * write DMEM FIFO and update FIFO descriptor,
  * it is assumed that FIFO descriptor is located in DMEM
  */
-static void omap_aess_write_fifo(struct omap_aess *abe, u32 memory_bank,
+static void omap_aess_write_fifo(struct omap_aess *aess, u32 memory_bank,
 				 u32 descr_addr, u32 *data, u32 nb_data32)
 {
 	u32 fifo_addr[4];
 	u32 i;
 
 	/* read FIFO descriptor from DMEM */
-	omap_aess_read(abe, OMAP_ABE_DMEM, descr_addr, &fifo_addr[0],
+	omap_aess_read(aess, OMAP_ABE_DMEM, descr_addr, &fifo_addr[0],
 		       4 * sizeof(u32));
 
 	/* WRITE ptr < FIFO start address */
 	if ((fifo_addr[1] < fifo_addr[2]) || (fifo_addr[1] > fifo_addr[3]))
-		dev_err(abe->dev, "FIFO write pointer Error\n");
+		dev_err(aess->dev, "FIFO write pointer Error\n");
 
 	switch (memory_bank) {
 	case OMAP_ABE_DMEM:
 		for (i = 0; i < nb_data32; i++) {
-			omap_aess_write(abe, OMAP_ABE_DMEM, (s32)fifo_addr[1],
+			omap_aess_write(aess, OMAP_ABE_DMEM, (s32)fifo_addr[1],
 					data + i, 4);
 			/* increment WRITE pointer */
 			fifo_addr[1] = fifo_addr[1] + 4;
 			if (fifo_addr[1] > fifo_addr[3])
 				fifo_addr[1] = fifo_addr[2];
 			if (fifo_addr[1] == fifo_addr[0])
-				dev_err(abe->dev, "FIFO write pointer Error\n");
+				dev_err(aess->dev, "FIFO write pointer Error\n");
 		}
 		/* update WRITE pointer in DMEM */
-		omap_aess_write(abe, OMAP_ABE_DMEM, descr_addr + sizeof(u32),
+		omap_aess_write(aess, OMAP_ABE_DMEM, descr_addr + sizeof(u32),
 				&fifo_addr[1], 4);
 		break;
 	default:
@@ -113,8 +113,8 @@ static void omap_aess_write_fifo(struct omap_aess *abe, u32 memory_bank,
 }
 
 /**
- * abe_init_asrc_vx_dl
- * @abe: Pointer on aess handle
+ * omap_aess_init_asrc_vx_dl
+ * @aess: Pointer on aess handle
  * @dppm: PPM drift value
  *
  * Initialize the following ASRC VX_DL parameters :
@@ -142,7 +142,7 @@ static void omap_aess_write_fifo(struct omap_aess *abe, u32 memory_bank,
  *	S_XinASRC_DL_VX_ADDR/S_XinASRC_DL_VX_sizeof/
  *	ASRC_DL_VX_FIR_L+ASRC_margin/1/0/0/0/0
  */
-void omap_aess_init_asrc_vx_dl(struct omap_aess *abe, s32 dppm)
+void omap_aess_init_asrc_vx_dl(struct omap_aess *aess, s32 dppm)
 {
 	int offset, n_fifo_el;
 
@@ -152,13 +152,13 @@ void omap_aess_init_asrc_vx_dl(struct omap_aess *abe, s32 dppm)
 	else
 		offset = 48 * 2;
 
-	omap_aess_write_fifo(abe, OMAP_ABE_DMEM,
-			     abe->fw_info.map[OMAP_AESS_DMEM_FWMEMINITDESCR_ID].offset,
-			     &abe->fw_info.asrc[offset], n_fifo_el);
+	omap_aess_write_fifo(aess, OMAP_ABE_DMEM,
+			     aess->fw_info.map[OMAP_AESS_DMEM_FWMEMINITDESCR_ID].offset,
+			     &aess->fw_info.asrc[offset], n_fifo_el);
 }
 /**
- * abe_init_asrc_vx_ul
- * @abe: Pointer on aess handle
+ * omap_aess_init_asrc_vx_ul
+ * @aess: Pointer on aess handle
  * @dppm: PPM drift value
  *
  * Initialize the following ASRC VX_UL parameters :
@@ -189,7 +189,7 @@ void omap_aess_init_asrc_vx_dl(struct omap_aess *abe, s32 dppm)
  * UL_48_16_DEC = S_XinASRC_UL_VX_ADDR/S_XinASRC_UL_VX_sizeof/
  *	ASRC_UL_VX_FIR_L+ASRC_margin/1/0/0/0/0
  */
-void omap_aess_init_asrc_vx_ul(struct omap_aess *abe, s32 dppm)
+void omap_aess_init_asrc_vx_ul(struct omap_aess *aess, s32 dppm)
 {
 	int offset, n_fifo_el;
 
@@ -199,7 +199,7 @@ void omap_aess_init_asrc_vx_ul(struct omap_aess *abe, s32 dppm)
 	else
 		offset = 0;
 
-	omap_aess_write_fifo(abe, OMAP_ABE_DMEM,
-			     abe->fw_info.map[OMAP_AESS_DMEM_FWMEMINITDESCR_ID].offset,
-			     &abe->fw_info.asrc[offset], n_fifo_el);
+	omap_aess_write_fifo(aess, OMAP_ABE_DMEM,
+			     aess->fw_info.map[OMAP_AESS_DMEM_FWMEMINITDESCR_ID].offset,
+			     &aess->fw_info.asrc[offset], n_fifo_el);
 }
