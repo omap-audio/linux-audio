@@ -32,6 +32,7 @@
 #include <sound/soc.h>
 
 #include "omap-aess-priv.h"
+#include "abe_mem.h"
 
 struct abe_opp_req {
 	struct device *dev;
@@ -107,6 +108,50 @@ int abe_opp_init_initial_opp(struct omap_aess *aess)
 out:
 	rcu_read_unlock();
 	return ret;
+}
+
+/**
+ * abe_set_opp_processing - Set OPP mode for ABE Firmware
+ * @aess: Pointer on aess handle
+ * @opp: OOPP mode
+ *
+ * New processing network and OPP:
+ * 0: Ultra Lowest power consumption audio player (no post-processing, no mixer)
+ * 1: OPP 25% (simple multimedia features, including low-power player)
+ * 2: OPP 50% (multimedia and voice calls)
+ * 3: OPP100% ( multimedia complex use-cases)
+ *
+ * Rearranges the FW task network to the corresponding OPP list of features.
+ * The corresponding AE ports are supposed to be set/reset accordingly before
+ * this switch.
+ *
+ */
+int omap_aess_set_opp_processing(struct omap_aess *aess, u32 opp)
+{
+	u32 dOppMode32;
+
+	switch (opp) {
+	case ABE_OPP25:
+		/* OPP25% */
+		dOppMode32 = DOPPMODE32_OPP25;
+		break;
+	case ABE_OPP50:
+		/* OPP50% */
+		dOppMode32 = DOPPMODE32_OPP50;
+		break;
+	default:
+		dev_warn(aess->dev, "Bad OPP value requested\n");
+	case ABE_OPP100:
+		/* OPP100% */
+		dOppMode32 = DOPPMODE32_OPP100;
+		break;
+	}
+	/* Write Multiframe inside DMEM */
+	omap_aess_write_map(aess, OMAP_AESS_DMEM_MAXTASKBYTESINSLOT_ID,
+			    &dOppMode32);
+
+	return 0;
+
 }
 
 int abe_opp_set_level(struct omap_aess *aess, int opp)
