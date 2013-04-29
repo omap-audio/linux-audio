@@ -394,19 +394,6 @@ struct omap_aess_io_desc {
 };
 
 /*
- *	OPP TYPE
- *
- *		0: Ultra Lowest power consumption audio player
- *		1: OPP 25% (simple multimedia features)
- *		2: OPP 50% (multimedia and voice calls)
- *		3: OPP100% (multimedia complex use-cases)
- */
-#define ABE_OPP0 0
-#define ABE_OPP25 1
-#define ABE_OPP50 2
-#define ABE_OPP100 3
-
-/*
  *	SAMPLES TYPE
  *
  *	mono 16 bit sample LSB aligned, 16 MSB bits are unused;

@@ -113,7 +113,7 @@ out:
 /**
  * abe_set_opp_processing - Set OPP mode for ABE Firmware
  * @aess: Pointer on aess handle
- * @opp: OOPP mode
+ * @level: OOPP level
  *
  * New processing network and OPP:
  * 0: Ultra Lowest power consumption audio player (no post-processing, no mixer)
@@ -126,22 +126,22 @@ out:
  * this switch.
  *
  */
-int omap_aess_set_opp_processing(struct omap_aess *aess, u32 opp)
+int omap_aess_set_opp_processing(struct omap_aess *aess, enum opp_level level)
 {
 	u32 dOppMode32;
 
-	switch (opp) {
-	case ABE_OPP25:
+	switch (level) {
+	case OMAP_ABE_OPP_25:
 		/* OPP25% */
 		dOppMode32 = DOPPMODE32_OPP25;
 		break;
-	case ABE_OPP50:
+	case OMAP_ABE_OPP_50:
 		/* OPP50% */
 		dOppMode32 = DOPPMODE32_OPP50;
 		break;
 	default:
-		dev_warn(aess->dev, "Bad OPP value requested\n");
-	case ABE_OPP100:
+		dev_warn(aess->dev, "Bad OPP value requested (%d)\n", level);
+	case OMAP_ABE_OPP_100:
 		/* OPP100% */
 		dOppMode32 = DOPPMODE32_OPP100;
 		break;
@@ -162,7 +162,7 @@ int abe_opp_set_level(struct omap_aess *aess, int opp)
 		/* Decrease OPP mode - no need of OPP100% */
 		switch (opp) {
 		case 25:
-			omap_aess_set_opp_processing(aess, ABE_OPP25);
+			omap_aess_set_opp_processing(aess, OMAP_ABE_OPP_25);
 			udelay(250);
 			if (aess->device_scale) {
 				ret = aess->device_scale(aess->dev, aess->dev,
@@ -174,7 +174,7 @@ int abe_opp_set_level(struct omap_aess *aess, int opp)
 			break;
 		case 50:
 		default:
-			omap_aess_set_opp_processing(aess, ABE_OPP50);
+			omap_aess_set_opp_processing(aess, OMAP_ABE_OPP_50);
 			udelay(250);
 			if (aess->device_scale) {
 				ret = aess->device_scale(aess->dev, aess->dev,
@@ -196,7 +196,7 @@ int abe_opp_set_level(struct omap_aess *aess, int opp)
 					goto err_up_scale;
 			}
 
-			omap_aess_set_opp_processing(aess, ABE_OPP25);
+			omap_aess_set_opp_processing(aess, OMAP_ABE_OPP_25);
 			break;
 		case 50:
 			if (aess->device_scale) {
@@ -205,7 +205,7 @@ int abe_opp_set_level(struct omap_aess *aess, int opp)
 				if (ret)
 					goto err_up_scale;
 			}
-			omap_aess_set_opp_processing(aess, ABE_OPP50);
+			omap_aess_set_opp_processing(aess, OMAP_ABE_OPP_50);
 			break;
 		case 100:
 		default:
@@ -215,7 +215,7 @@ int abe_opp_set_level(struct omap_aess *aess, int opp)
 				if (ret)
 					goto err_up_scale;
 			}
-			omap_aess_set_opp_processing(aess, ABE_OPP100);
+			omap_aess_set_opp_processing(aess, OMAP_ABE_OPP_100);
 			break;
 		}
 	}
@@ -230,13 +230,13 @@ err_down_scale:
 			aess->opp.level);
 	switch (aess->opp.level) {
 	case 25:
-		omap_aess_set_opp_processing(aess, ABE_OPP25);
+		omap_aess_set_opp_processing(aess, OMAP_ABE_OPP_25);
 		break;
 	case 50:
-		omap_aess_set_opp_processing(aess, ABE_OPP50);
+		omap_aess_set_opp_processing(aess, OMAP_ABE_OPP_50);
 		break;
 	case 100:
-		omap_aess_set_opp_processing(aess, ABE_OPP100);
+		omap_aess_set_opp_processing(aess, OMAP_ABE_OPP_100);
 		break;
 	}
 	udelay(250);

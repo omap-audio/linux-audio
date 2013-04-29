@@ -988,7 +988,7 @@ static void omap_abe_dai_shutdown(struct snd_pcm_substream *substream,
 	mutex_lock(&aess->mutex);
 	/* shutdown the ABE if last user */
 	if (!aess->active && !omap_aess_check_activity(aess)) {
-		omap_aess_set_opp_processing(aess, ABE_OPP25);
+		omap_aess_set_opp_processing(aess, OMAP_ABE_OPP_25);
 		aess->opp.level = 25;
 		omap_aess_write_event_generator(aess, EVENT_STOP);
 		udelay(250);

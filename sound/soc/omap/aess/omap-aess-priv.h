@@ -379,7 +379,7 @@ struct omap_aess_dma {
 	u32 iter;
 };
 
-int omap_aess_set_opp_processing(struct omap_aess *aess, u32 opp);
+int omap_aess_set_opp_processing(struct omap_aess *aess, enum opp_level level);
 int omap_aess_connect_debug_trace(struct omap_aess *aess,
 				  struct omap_aess_dma *dma2);
 

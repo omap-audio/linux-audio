@@ -83,7 +83,7 @@ void omap_abe_pm_shutdown(struct snd_soc_platform *platform)
 	if (aess->active && omap_aess_check_activity(aess))
 		return;
 
-	omap_aess_set_opp_processing(aess, ABE_OPP25);
+	omap_aess_set_opp_processing(aess, OMAP_ABE_OPP_25);
 	aess->opp.level = 25;
 
 	omap_aess_write_event_generator(aess, EVENT_STOP);
