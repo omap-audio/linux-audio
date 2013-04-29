@@ -138,11 +138,6 @@
 #define OMAP_ABE_MAX_EQU		10
 #define OMAP_ABE_MAX_PROFILES	30
 
-#define OMAP_ABE_OPP_25		0
-#define OMAP_ABE_OPP_50		1
-#define OMAP_ABE_OPP_100		2
-#define OMAP_ABE_OPP_COUNT	3
-
 /* TODO: we need the names for each array memeber */
 #define OMAP_ABE_IO_RESOURCES	5
 #define OMAP_ABE_IO_DMEM 0
@@ -220,6 +215,13 @@ struct omap_aess_dc_offset {
 	u32 hsr;
 	u32 hfl;
 	u32 hfr;
+};
+
+enum opp_level {
+	OMAP_ABE_OPP_25 = 0,
+	OMAP_ABE_OPP_50,
+	OMAP_ABE_OPP_100,
+	OMAP_ABE_OPP_COUNT,
 };
 
 struct omap_aess_opp {
