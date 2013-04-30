@@ -261,18 +261,64 @@ static u32 omap_aess_update_io_task(struct omap_aess *aess,
 }
 
 /**
- * abe_format_switch
+ * abe_dma_port_iter_factor
  * @f: port format
- * @iter: port iteration
- * @mulfac: multiplication factor
+ *
+ * returns the multiplier factor to apply during data move with DMEM
+ */
+static u32 abe_dma_port_iter_factor(struct omap_aess_data_format *f)
+{
+	u32 mulfac;
+
+	switch (f->samp_format) {
+	case OMAP_AESS_FORMAT_MONO_MSB:
+	case OMAP_AESS_FORMAT_MONO_RSHIFTED_16:
+	case OMAP_AESS_FORMAT_STEREO_16_16:
+		mulfac = 1;
+		break;
+	case OMAP_AESS_FORMAT_STEREO_MSB:
+	case OMAP_AESS_FORMAT_STEREO_RSHIFTED_16:
+		mulfac = 2;
+		break;
+	case OMAP_AESS_FORMAT_THREE_MSB:
+		mulfac = 3;
+		break;
+	case OMAP_AESS_FORMAT_FOUR_MSB:
+		mulfac = 4;
+		break;
+	case OMAP_AESS_FORMAT_FIVE_MSB:
+		mulfac = 5;
+		break;
+	case OMAP_AESS_FORMAT_SIX_MSB:
+		mulfac = 6;
+		break;
+	case OMAP_AESS_FORMAT_SEVEN_MSB:
+		mulfac = 7;
+		break;
+	case OMAP_AESS_FORMAT_EIGHT_MSB:
+		mulfac = 8;
+		break;
+	case OMAP_AESS_FORMAT_NINE_MSB:
+		mulfac = 9;
+		break;
+	default:
+		mulfac = 1;
+		break;
+	}
+
+	return mulfac;
+}
+
+/**
+ * abe_dma_port_iteration
+ * @f: port format
  *
  * translates the sampling and data length to ITER number for the DMA
- * and the multiplier factor to apply during data move with DMEM
- *
  */
-static void abe_format_switch(struct omap_aess_data_format *f, u32 *iter, u32 *mulfac)
+static u32 abe_dma_port_iteration(struct omap_aess_data_format *f)
 {
-	u32 n_freq;
+	u32 n_freq, iter, mulfac;
+
 	switch (f->f) {
 		/* nb of samples processed by scheduling loop */
 	case 8000:
@@ -296,72 +342,13 @@ static void abe_format_switch(struct omap_aess_data_format *f, u32 *iter, u32 *m
 		break;
 	}
 
-	switch (f->samp_format) {
-	case OMAP_AESS_FORMAT_MONO_MSB:
-	case OMAP_AESS_FORMAT_MONO_RSHIFTED_16:
-	case OMAP_AESS_FORMAT_STEREO_16_16:
-		*mulfac = 1;
-		break;
-	case OMAP_AESS_FORMAT_STEREO_MSB:
-	case OMAP_AESS_FORMAT_STEREO_RSHIFTED_16:
-		*mulfac = 2;
-		break;
-	case OMAP_AESS_FORMAT_THREE_MSB:
-		*mulfac = 3;
-		break;
-	case OMAP_AESS_FORMAT_FOUR_MSB:
-		*mulfac = 4;
-		break;
-	case OMAP_AESS_FORMAT_FIVE_MSB:
-		*mulfac = 5;
-		break;
-	case OMAP_AESS_FORMAT_SIX_MSB:
-		*mulfac = 6;
-		break;
-	case OMAP_AESS_FORMAT_SEVEN_MSB:
-		*mulfac = 7;
-		break;
-	case OMAP_AESS_FORMAT_EIGHT_MSB:
-		*mulfac = 8;
-		break;
-	case OMAP_AESS_FORMAT_NINE_MSB:
-		*mulfac = 9;
-		break;
-	default:
-		*mulfac = 1;
-		break;
-	}
-	*iter = (n_freq * (*mulfac));
+	mulfac = abe_dma_port_iter_factor(f);
+
+	iter = n_freq * mulfac;
 	if (f->samp_format == OMAP_AESS_FORMAT_MONO_16_16)
-		*iter /= 2;
-}
+		iter /= 2;
 
-/**
- * abe_dma_port_iteration
- * @f: port format
- *
- * translates the sampling and data length to ITER number for the DMA
- */
-static u32 abe_dma_port_iteration(struct omap_aess_data_format *f)
-{
-	u32 iter, mulfac;
-
-	abe_format_switch(f, &iter, &mulfac);
 	return iter;
-}
-
-/**
- * abe_dma_port_iter_factor
- * @f: port format
- *
- * returns the multiplier factor to apply during data move with DMEM
- */
-static u32 abe_dma_port_iter_factor(struct omap_aess_data_format *f)
-{
-	u32 iter, mulfac;
-
-	abe_format_switch(f, &iter, &mulfac);
-	return mulfac;
 }
 
 /**
