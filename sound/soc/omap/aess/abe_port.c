@@ -500,7 +500,7 @@ static int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 		/* able  interrupt to be generated at the first frame */
 		desc_pp.split_addr1 = 1;
 
-		copy_func_index = (u8) abe_dma_port_copy_subroutine_id(aess, id);
+		copy_func_index = abe_dma_port_copy_subroutine_id(aess, id);
 		dmareq_addr = abe_port[id].protocol.p.prot_pingpong.irq_addr;
 		dmareq_field = abe_port[id].protocol.p.prot_pingpong.irq_data;
 		datasize = abe_dma_port_iter_factor(format);
@@ -586,7 +586,7 @@ static int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 		smem1 = abe_port[id].smem_buffer1;
 		smem2 = abe_port[id].smem_buffer2;
 		smem3 = abe_port[id].smem_buffer2;
-		copy_func_index1 = (u8) abe_dma_port_copy_subroutine_id(aess, id);
+		copy_func_index1 = abe_dma_port_copy_subroutine_id(aess, id);
 
 		before_func_index = fct_id[OMAP_AESS_COPY_FCT_NULL_ID];
 		after_func_index = fct_id[OMAP_AESS_COPY_FCT_NULL_ID];
