@@ -267,7 +267,7 @@ struct omap_aess_mixer {
 
 struct omap_aess_mapping {
 	struct omap_aess_addr *map;
-	int *fct_id;
+	u32 *fct_id;
 	u32 *label_id;
 	int nb_init_task;
 	struct omap_aess_task *init_table;

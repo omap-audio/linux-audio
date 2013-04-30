@@ -373,7 +373,7 @@ static u32 abe_dma_port_iter_factor(struct omap_aess_data_format *f)
  */
 static u32 abe_dma_port_copy_subroutine_id(struct omap_aess *aess, u32 port_id)
 {
-	int *fct_id = aess->fw_info.fct_id;
+	u32 *fct_id = aess->fw_info.fct_id;
 	u32 sub_id;
 
 	if (abe_port[port_id].protocol.direction == ABE_ATC_DIRECTION_IN) {
@@ -547,7 +547,7 @@ static int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 		addr.bytes = sizeof(desc_pp);
 		omap_aess_mem_write(aess, addr, &desc_pp);
 	} else {
-		int *fct_id = aess->fw_info.fct_id;
+		u32 *fct_id = aess->fw_info.fct_id;
 		struct omap_aess_io_desc sio_desc;
 		int idx;
 
