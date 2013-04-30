@@ -373,65 +373,64 @@ static u32 abe_dma_port_iter_factor(struct omap_aess_data_format *f)
  */
 static u32 abe_dma_port_copy_subroutine_id(struct omap_aess *aess, u32 port_id)
 {
-	u32 *fct_id = aess->fw_info.fct_id;
 	u32 sub_id;
 
 	if (abe_port[port_id].protocol.direction == ABE_ATC_DIRECTION_IN) {
 		switch (abe_port[port_id].format.samp_format) {
 		case OMAP_AESS_FORMAT_MONO_MSB:
-			sub_id = fct_id[OMAP_AESS_COPY_FCT_D2S_MONO_MSB_ID];
+			sub_id = OMAP_AESS_COPY_FCT_D2S_MONO_MSB_ID;
 			break;
 		case OMAP_AESS_FORMAT_MONO_RSHIFTED_16:
-			sub_id = fct_id[OMAP_AESS_COPY_FCT_D2S_MONO_RSHIFTED_16_ID];
+			sub_id = OMAP_AESS_COPY_FCT_D2S_MONO_RSHIFTED_16_ID;
 			break;
 		case OMAP_AESS_FORMAT_STEREO_RSHIFTED_16:
-			sub_id = fct_id[OMAP_AESS_COPY_FCT_D2S_STEREO_RSHIFTED_16_ID];
+			sub_id = OMAP_AESS_COPY_FCT_D2S_STEREO_RSHIFTED_16_ID;
 			break;
 		case OMAP_AESS_FORMAT_STEREO_16_16:
-			sub_id = fct_id[OMAP_AESS_COPY_FCT_D2S_STEREO_16_16_ID];
+			sub_id = OMAP_AESS_COPY_FCT_D2S_STEREO_16_16_ID;
 			break;
 		case OMAP_AESS_FORMAT_MONO_16_16:
-			sub_id = fct_id[OMAP_AESS_COPY_FCT_D2S_MONO_16_16_ID];
+			sub_id = OMAP_AESS_COPY_FCT_D2S_MONO_16_16_ID;
 			break;
 		case OMAP_AESS_FORMAT_STEREO_MSB:
-			sub_id = fct_id[OMAP_AESS_COPY_FCT_D2S_STEREO_MSB_ID];
+			sub_id = OMAP_AESS_COPY_FCT_D2S_STEREO_MSB_ID;
 			break;
 		case OMAP_AESS_FORMAT_SIX_MSB:
 			if (port_id == OMAP_ABE_DMIC_PORT) {
-				sub_id = fct_id[OMAP_AESS_COPY_FCT_DMIC_ID];
+				sub_id = OMAP_AESS_COPY_FCT_DMIC_ID;
 				break;
 			}
 		default:
-			sub_id = fct_id[OMAP_AESS_COPY_FCT_NULL_ID];
+			sub_id = OMAP_AESS_COPY_FCT_NULL_ID;
 			break;
 		}
 	} else {
 		switch (abe_port[port_id].format.samp_format) {
 		case OMAP_AESS_FORMAT_MONO_MSB:
-			sub_id = fct_id[OMAP_AESS_COPY_FCT_S2D_MONO_MSB_ID];
+			sub_id = OMAP_AESS_COPY_FCT_S2D_MONO_MSB_ID;
 			break;
 		case OMAP_AESS_FORMAT_MONO_RSHIFTED_16:
-			sub_id = fct_id[OMAP_AESS_COPY_FCT_S2D_MONO_RSHIFTED_16_ID];
+			sub_id = OMAP_AESS_COPY_FCT_S2D_MONO_RSHIFTED_16_ID;
 			break;
 		case OMAP_AESS_FORMAT_STEREO_RSHIFTED_16:
-			sub_id = fct_id[OMAP_AESS_COPY_FCT_S2D_STEREO_RSHIFTED_16_ID];
+			sub_id = OMAP_AESS_COPY_FCT_S2D_STEREO_RSHIFTED_16_ID;
 			break;
 		case OMAP_AESS_FORMAT_STEREO_16_16:
-			sub_id = fct_id[OMAP_AESS_COPY_FCT_S2D_STEREO_16_16_ID];
+			sub_id = OMAP_AESS_COPY_FCT_S2D_STEREO_16_16_ID;
 			break;
 		case OMAP_AESS_FORMAT_MONO_16_16:
-			sub_id = fct_id[OMAP_AESS_COPY_FCT_S2D_MONO_16_16_ID];
+			sub_id = OMAP_AESS_COPY_FCT_S2D_MONO_16_16_ID;
 			break;
 		case OMAP_AESS_FORMAT_STEREO_MSB:
-			sub_id = fct_id[OMAP_AESS_COPY_FCT_S2D_STEREO_MSB_ID];
+			sub_id = OMAP_AESS_COPY_FCT_S2D_STEREO_MSB_ID;
 			break;
 		case OMAP_AESS_FORMAT_SIX_MSB:
 			if (port_id == OMAP_ABE_PDM_DL_PORT) {
-				sub_id = fct_id[OMAP_AESS_COPY_FCT_MCPDM_DL_ID];
+				sub_id = OMAP_AESS_COPY_FCT_MCPDM_DL_ID;
 				break;
 			}
 			if (port_id == OMAP_ABE_MM_UL_PORT) {
-				sub_id = fct_id[OMAP_AESS_COPY_FCT_MM_UL_ID];
+				sub_id = OMAP_AESS_COPY_FCT_MM_UL_ID;
 				break;
 			}
 		case OMAP_AESS_FORMAT_THREE_MSB:
@@ -440,14 +439,14 @@ static u32 abe_dma_port_copy_subroutine_id(struct omap_aess *aess, u32 port_id)
 		case OMAP_AESS_FORMAT_SEVEN_MSB:
 		case OMAP_AESS_FORMAT_EIGHT_MSB:
 		case OMAP_AESS_FORMAT_NINE_MSB:
-			sub_id = fct_id[OMAP_AESS_COPY_FCT_MM_UL_ID];
+			sub_id = OMAP_AESS_COPY_FCT_MM_UL_ID;
 			break;
 		default:
-			sub_id = fct_id[OMAP_AESS_COPY_FCT_NULL_ID];
+			sub_id = OMAP_AESS_COPY_FCT_NULL_ID;
 			break;
 		}
 	}
-	return sub_id;
+	return aess->fw_info.fct_id[sub_id];
 }
 
 /**
