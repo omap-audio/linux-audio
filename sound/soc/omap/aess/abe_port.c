@@ -568,8 +568,10 @@ static int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 		datasize = abe_dma_port_iter_factor(format);
 		x_io = (u8) abe_dma_port_iteration(format);
 		nsamp = (x_io / datasize);
-		atc_ptr_saved2 = omap_aess_get_label_data(aess, OMAP_AESS_BUFFER_DMIC_ATC_PTR_ID) + id;
-		atc_ptr_saved = omap_aess_get_label_data(aess, OMAP_AESS_BUFFER_DMIC_ATC_PTR_ID) + id;
+		atc_ptr_saved2 = omap_aess_get_label_data(aess,
+					OMAP_AESS_BUFFER_DMIC_ATC_PTR_ID) + id;
+		atc_ptr_saved = omap_aess_get_label_data(aess,
+					OMAP_AESS_BUFFER_DMIC_ATC_PTR_ID) + id;
 
 		smem1 = abe_port[id].smem_buffer1;
 		smem2 = abe_port[id].smem_buffer2;
@@ -1145,7 +1147,8 @@ int omap_aess_enable_data_transfer(struct omap_aess *aess, u32 id)
 
 	omap_aess_clean_temporary_buffers(aess, id);
 
-	omap_aess_update_scheduling_table(aess, &(aess->fw_info.port[id].task), 1);
+	omap_aess_update_scheduling_table(aess, &aess->fw_info.port[id].task,
+					  1);
 
 	switch (id) {
 	case OMAP_ABE_PDM_UL_PORT:
@@ -1161,7 +1164,8 @@ int omap_aess_enable_data_transfer(struct omap_aess *aess, u32 id)
 	case OMAP_ABE_MM_DL_PORT:
 		protocol = &abe_port[OMAP_ABE_MM_DL_PORT].protocol;
 		if (protocol->protocol_switch == OMAP_AESS_PORT_PINGPONG)
-			omap_aess_update_scheduling_table(aess, &aess->fw_info.ping_pong->task, 1);
+			omap_aess_update_scheduling_table(aess,
+					     &aess->fw_info.ping_pong->task, 1);
 		break;
 	default:
 		break;
