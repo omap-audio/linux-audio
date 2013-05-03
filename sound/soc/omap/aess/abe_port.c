@@ -534,6 +534,7 @@ static int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 		omap_aess_mem_write(aess, addr, &desc_pp);
 	} else {
 		u32 *fct_id = aess->fw_info.fct_id;
+		struct omap_aess_port *port = &aess->fw_info.port[id];
 		struct omap_aess_io_desc sio_desc;
 		int idx;
 
@@ -625,45 +626,52 @@ static int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 		switch (id) {
 		case OMAP_ABE_VX_DL_PORT:
 		case OMAP_ABE_VX_UL_PORT:
-			omap_aess_update_scheduling_table(aess, &aess->fw_info.port[id].task, 1);
+			omap_aess_update_scheduling_table(aess, &port->task, 1);
 
-			smem1 = omap_aess_update_io_task(aess, &aess->fw_info.port[id].tsk_freq[idx].task, 1);
+			smem1 = omap_aess_update_io_task(aess,
+						&port->tsk_freq[idx].task, 1);
 			/* check for 8kHz/16kHz */
-			if (idx < 2) {
-				/* ASRC set only for McBSP */
-				if ((prot->protocol_switch == OMAP_AESS_PORT_SERIAL)) {
-					if ((abe_port[OMAP_ABE_VX_DL_PORT].status ==
-						OMAP_ABE_PORT_ACTIVITY_IDLE) &&
-					    (abe_port[OMAP_ABE_VX_UL_PORT].status ==
-						OMAP_ABE_PORT_ACTIVITY_IDLE)) {
-						/* the 1st opened port is VX_DL/UL_PORT
-						 * both VX_UL ASRC and VX_DL ASRC will add/remove sample
-						 * referring to VX_DL/VX_UL flow_counter */
-						omap_aess_update_scheduling_table(aess, &aess->fw_info.port[id].tsk_freq[idx].asrc.serial, 1);
+			if (idx >= 2)
+				break;
 
-						/* Init VX_UL ASRC & VX_DL ASRC and enable its adaptation */
-						omap_aess_init_asrc_vx_ul(aess, -250);
-						omap_aess_init_asrc_vx_dl(aess, 250);
-					} else {
-						/* Do nothing, Scheduling Table has already been patched */
-					}
-				} else {
-					/* Enable only ASRC on VXDL or VXUL port*/
-					omap_aess_update_scheduling_table(aess, &aess->fw_info.port[id].tsk_freq[idx].asrc.cbpr, 1);
-					if (id == OMAP_ABE_VX_DL_PORT)
-						omap_aess_init_asrc_vx_dl(aess,
-									  0);
-					else
-						omap_aess_init_asrc_vx_ul(aess,
-									  0);
+			/* ASRC set only for McBSP */
+			if ((prot->protocol_switch == OMAP_AESS_PORT_SERIAL)) {
+				if ((abe_port[OMAP_ABE_VX_DL_PORT].status ==
+				     OMAP_ABE_PORT_ACTIVITY_IDLE) &&
+				    (abe_port[OMAP_ABE_VX_UL_PORT].status ==
+				     OMAP_ABE_PORT_ACTIVITY_IDLE)) {
+					/*
+					 * The 1st opened port is VX_DL/UL_PORT
+					 * both VX_UL ASRC and VX_DL ASRC will
+					 * add/remove sample referring to
+					 * VX_DL/VX_UL flow_counter
+					 */
+					omap_aess_update_scheduling_table(aess,
+					   &port->tsk_freq[idx].asrc.serial, 1);
+
+					/*
+					 * Init VX_UL ASRC & VX_DL ASRC and
+					 * enable its adaptation
+					 */
+					omap_aess_init_asrc_vx_ul(aess, -250);
+					omap_aess_init_asrc_vx_dl(aess, 250);
 				}
+			} else {
+				/* Enable only ASRC on VXDL or VXUL port */
+				omap_aess_update_scheduling_table(aess,
+					     &port->tsk_freq[idx].asrc.cbpr, 1);
+				if (id == OMAP_ABE_VX_DL_PORT)
+					omap_aess_init_asrc_vx_dl(aess, 0);
+				else
+					omap_aess_init_asrc_vx_ul(aess, 0);
 			}
 			break;
 		case OMAP_ABE_BT_VX_DL_PORT:
 		case OMAP_ABE_BT_VX_UL_PORT:
 		case OMAP_ABE_MM_DL_PORT:
 		case OMAP_ABE_TONES_DL_PORT:
-			smem1 = omap_aess_update_io_task(aess, &aess->fw_info.port[id].tsk_freq[idx].task, 1);
+			smem1 = omap_aess_update_io_task(aess,
+						  &port->tsk_freq[idx].task, 1);
 			break;
 		case OMAP_ABE_MM_UL_PORT:
 			copy_func_index1 = fct_id[OMAP_AESS_COPY_FCT_MM_UL_ID];
@@ -671,7 +679,8 @@ static int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 			break;
 		case OMAP_ABE_MM_EXT_IN_PORT:
 			/* set the SMEM buffer -- programming sequence */
-			smem1 = omap_aess_get_label_data(aess, OMAP_AESS_BUFFER_MM_EXT_IN_ID);
+			smem1 = omap_aess_get_label_data(aess,
+						OMAP_AESS_BUFFER_MM_EXT_IN_ID);
 			break;
 		case OMAP_ABE_PDM_DL_PORT:
 		case OMAP_ABE_PDM_UL_PORT:
