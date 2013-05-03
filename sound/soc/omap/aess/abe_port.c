@@ -624,35 +624,6 @@ static int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 		 */
 		switch (id) {
 		case OMAP_ABE_VX_DL_PORT:
-			omap_aess_update_scheduling_table(aess, &aess->fw_info.port[id].task, 1);
-
-			smem1 = omap_aess_update_io_task(aess, &aess->fw_info.port[id].tsk_freq[idx].task, 1);
-			/* check for 8kHz/16kHz */
-			if (idx < 2) {
-				/* ASRC set only for McBSP */
-				if ((prot->protocol_switch == OMAP_AESS_PORT_SERIAL)) {
-					if ((abe_port[OMAP_ABE_VX_DL_PORT].status ==
-						OMAP_ABE_PORT_ACTIVITY_IDLE) &&
-					    (abe_port[OMAP_ABE_VX_UL_PORT].status ==
-						OMAP_ABE_PORT_ACTIVITY_IDLE)) {
-						/* the 1st opened port is VX_DL_PORT
-						 * both VX_UL ASRC and VX_DL ASRC will add/remove sample
-						 * referring to VX_DL flow_counter */
-						omap_aess_update_scheduling_table(aess, &aess->fw_info.port[id].tsk_freq[idx].asrc.serial, 1);
-
-						/* Init VX_UL ASRC & VX_DL ASRC and enable its adaptation */
-						omap_aess_init_asrc_vx_ul(aess, -250);
-						omap_aess_init_asrc_vx_dl(aess, 250);
-					} else {
-						/* Do nothing, Scheduling Table has already been patched */
-					}
-				} else {
-					/* Enable only ASRC on VXDL port*/
-					omap_aess_update_scheduling_table(aess, &aess->fw_info.port[id].tsk_freq[idx].asrc.cbpr, 1);
-					omap_aess_init_asrc_vx_dl(aess, 0);
-				}
-			}
-			break;
 		case OMAP_ABE_VX_UL_PORT:
 			omap_aess_update_scheduling_table(aess, &aess->fw_info.port[id].task, 1);
 
@@ -665,10 +636,11 @@ static int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 						OMAP_ABE_PORT_ACTIVITY_IDLE) &&
 					    (abe_port[OMAP_ABE_VX_UL_PORT].status ==
 						OMAP_ABE_PORT_ACTIVITY_IDLE)) {
-						/* the 1st opened port is VX_UL_PORT
+						/* the 1st opened port is VX_DL/UL_PORT
 						 * both VX_UL ASRC and VX_DL ASRC will add/remove sample
-						 * referring to VX_UL flow_counter */
+						 * referring to VX_DL/VX_UL flow_counter */
 						omap_aess_update_scheduling_table(aess, &aess->fw_info.port[id].tsk_freq[idx].asrc.serial, 1);
+
 						/* Init VX_UL ASRC & VX_DL ASRC and enable its adaptation */
 						omap_aess_init_asrc_vx_ul(aess, -250);
 						omap_aess_init_asrc_vx_dl(aess, 250);
@@ -676,9 +648,14 @@ static int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 						/* Do nothing, Scheduling Table has already been patched */
 					}
 				} else {
-					/* Enable only ASRC on VXUL port*/
+					/* Enable only ASRC on VXDL or VXUL port*/
 					omap_aess_update_scheduling_table(aess, &aess->fw_info.port[id].tsk_freq[idx].asrc.cbpr, 1);
-					omap_aess_init_asrc_vx_ul(aess, 0);
+					if (id == OMAP_ABE_VX_DL_PORT)
+						omap_aess_init_asrc_vx_dl(aess,
+									  0);
+					else
+						omap_aess_init_asrc_vx_ul(aess,
+									  0);
 				}
 			}
 			break;
