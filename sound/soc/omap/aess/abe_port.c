@@ -454,18 +454,13 @@ static int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 			    struct omap_aess_data_format *format,
 			    struct omap_aess_port_protocol *prot)
 {
-	u32 x_io, direction, iter_samples, smem1, smem2, smem3, io_sub_id,
-		io_flag;
-	u32 copy_func_index, before_func_index, after_func_index;
-	u32 dmareq_addr, dmareq_field;
-	u32 datasize, iter, nsamp, datasize2;
-	u32 atc_ptr_saved, atc_ptr_saved2, copy_func_index1;
-	u32 copy_func_index2, atc_desc_address1, atc_desc_address2;
+	u32 smem1, dmareq_addr, dmareq_field, datasize, iter;
 	struct omap_aess_addr addr;
 
 	if (prot->protocol_switch == OMAP_AESS_PORT_PINGPONG) {
 		struct omap_aess_pingppong *pp = &aess->pingpong;
 		struct omap_aess_pingpong_desc desc_pp;
+		u32 copy_func_index, iter_samples;
 		u16 nextbuff_samples;
 
 		memset(&desc_pp, 0, sizeof(desc_pp));
@@ -536,6 +531,10 @@ static int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 		u32 *fct_id = aess->fw_info.fct_id;
 		struct omap_aess_port *port = &aess->fw_info.port[id];
 		struct omap_aess_io_desc sio_desc;
+		u32 x_io, direction, smem2, smem3, io_sub_id, nsamp;
+		u32 before_func_index, after_func_index, datasize2;
+		u32 atc_ptr_saved, atc_ptr_saved2, copy_func_index1;
+		u32 copy_func_index2, atc_desc_address1, atc_desc_address2;
 		int idx;
 
 		switch (abe_port[id].format.f) {
@@ -561,9 +560,6 @@ static int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 		dmareq_field = 0;
 		atc_desc_address1 = 0;
 		atc_desc_address2 = 0;
-		/* default: repeat of the last downlink samples in case of
-		   DMA errors, (disable=0x00) */
-		io_flag = 0xFF;
 		datasize2 = abe_dma_port_iter_factor(format);
 		datasize = abe_dma_port_iter_factor(format);
 		x_io = (u8) abe_dma_port_iteration(format);
@@ -705,7 +701,11 @@ static int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 		sio_desc.atc_irq_data = (u8) dmareq_field;
 		sio_desc.flow_counter = (u16) 0;
 		sio_desc.direction_rw = (u8) direction;
-		sio_desc.repeat_last_samp = (u8) io_flag;
+		/*
+		 * default: repeat of the last downlink samples in case of DMA
+		 * errors (disable=0x00)
+		 */
+		sio_desc.repeat_last_samp = 0xFF;
 		sio_desc.nsamp = (u8) nsamp;
 		sio_desc.x_io = (u8) x_io;
 		/* set ATC ON */
