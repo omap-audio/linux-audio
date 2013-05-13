@@ -583,21 +583,21 @@ static int omap_aess_init_io_tasks(struct omap_aess *aess, u32 id,
 			/* DMIC port is read in two steps */
 			x_io = x_io >> 1;
 			nsamp = nsamp >> 1;
-			atc_desc_address1 = (ABE_ATC_DMIC_DMA_REQ*ATC_SIZE);
+			atc_desc_address1 = ABE_ATC_DMIC_DMA_REQ * ATC_SIZE;
 			io_sub_id = fct_id[OMAP_AESS_COPY_FCT_IO_IP_ID];
 			break;
 		case OMAP_AESS_PORT_MCPDMDL:
 			/* PDMDL port is written to in two steps */
 			x_io = x_io >> 1;
-			atc_desc_address1 = (ABE_ATC_MCPDMDL_DMA_REQ*ATC_SIZE);
+			atc_desc_address1 = ABE_ATC_MCPDMDL_DMA_REQ * ATC_SIZE;
 			io_sub_id = fct_id[OMAP_AESS_COPY_FCT_IO_IP_ID];
 			break;
 		case OMAP_AESS_PORT_MCPDMUL:
-			atc_desc_address1 = (ABE_ATC_MCPDMUL_DMA_REQ*ATC_SIZE);
+			atc_desc_address1 = ABE_ATC_MCPDMUL_DMA_REQ * ATC_SIZE;
 			io_sub_id = fct_id[OMAP_AESS_COPY_FCT_IO_IP_ID];
 			break;
 		case OMAP_AESS_PORT_SERIAL:	/* McBSP/McASP */
-			atc_desc_address1 = (s16) abe_port[id].protocol.p.prot_serial.desc_addr;
+			atc_desc_address1 = abe_port[id].protocol.p.prot_serial.desc_addr;
 			io_sub_id = fct_id[OMAP_AESS_COPY_FCT_IO_IP_ID];
 			break;
 		case OMAP_AESS_PORT_DMAREQ:	/* DMA w/wo CBPr */
@@ -1002,8 +1002,8 @@ static void omap_aess_init_atc(struct omap_aess *aess, u32 id)
 	/* load default values of the descriptor */
 	memset(&atc_desc, 0, sizeof(struct omap_abe_atc_desc));
 
-	datasize = abe_dma_port_iter_factor(&(abe_port[id].format));
-	iter = (u8) abe_dma_port_iteration(&(abe_port[id].format));
+	datasize = abe_dma_port_iter_factor(&abe_port[id].format);
+	iter = (u8) abe_dma_port_iteration(&abe_port[id].format);
 	/* if the ATC FIFO is too small there will be two ABE firmware
 	   utasks to do the copy this happems on DMIC and MCPDMDL */
 	/* VXDL_8kMono = 4 = 2 + 2x1 */
@@ -1018,11 +1018,11 @@ static void omap_aess_init_atc(struct omap_aess *aess, u32 id)
 	if (protocol->direction == ABE_ATC_DIRECTION_IN)
 		if (iter + 2 * datasize > 126)
 			atc_desc.wrpt = (iter >> 1) +
-				((JITTER_MARGIN-1) * datasize);
+				((JITTER_MARGIN - 1) * datasize);
 		else
-			atc_desc.wrpt = iter + ((JITTER_MARGIN-1) * datasize);
+			atc_desc.wrpt = iter + ((JITTER_MARGIN - 1) * datasize);
 	else
-		atc_desc.wrpt = 0 + ((JITTER_MARGIN+1) * datasize);
+		atc_desc.wrpt = 0 + ((JITTER_MARGIN + 1) * datasize);
 
 	switch (protocol->protocol_switch) {
 	case OMAP_AESS_PORT_SERIAL:
@@ -1248,7 +1248,7 @@ static void abe_init_dma_t(u32 id, struct omap_aess_port_protocol *prot)
 		}
 		dma.data = CIRCULAR_BUFFER_PERIPHERAL_R__0 + (idx << 2);
 		dma.iter = prot->p.prot_dmareq.iter;
-		prot->p.prot_dmareq.desc_addr = (CBPr_DMA_RTX0 + idx) *ATC_SIZE;
+		prot->p.prot_dmareq.desc_addr = (CBPr_DMA_RTX0 + idx) * ATC_SIZE;
 		break;
 	case OMAP_AESS_PORT_SERIAL:
 	case OMAP_AESS_PORT_DMIC:
@@ -1524,12 +1524,10 @@ int omap_aess_read_offset_from_ping_buffer(struct omap_aess *aess,
 		   the value of the counter */
 		if ((desc_pp.counter & 0x1) == 0) {
 			/* the next is buffer0, hence the current is buffer1 */
-			*n = desc_pp.nextbuff1_Samples -
-				desc_pp.workbuff_Samples;
+			*n = desc_pp.nextbuff1_Samples - desc_pp.workbuff_Samples;
 		} else {
 			/* the next is buffer1, hence the current is buffer0 */
-			*n = desc_pp.nextbuff0_Samples -
-				desc_pp.workbuff_Samples;
+			*n = desc_pp.nextbuff0_Samples - desc_pp.workbuff_Samples;
 		}
 
 		switch (abe_port[OMAP_ABE_MM_DL_PORT].format.samp_format) {
