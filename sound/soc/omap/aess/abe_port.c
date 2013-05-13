@@ -1659,6 +1659,7 @@ int omap_aess_connect_irq_ping_pong_port(struct omap_aess *aess,
 					 u32 subroutine_id, u32 size,
 					 u32 *sink, u32 dsp_mcu_flag)
 {
+	struct omap_aess_port *port;
 	struct omap_aess_addr addr;
 
 	/* ping_pong is only supported on MM_DL */
@@ -1670,28 +1671,30 @@ int omap_aess_connect_irq_ping_pong_port(struct omap_aess *aess,
 	memcpy(&addr, &aess->fw_info.map[OMAP_AESS_DMEM_PING_ID],
 	       sizeof(struct omap_aess_addr));
 
-	abe_port[id] = ((struct omap_aess_port *)aess->fw_info.port)[id];
-	abe_port[id].format = (*f);
-	abe_port[id].protocol.protocol_switch = OMAP_AESS_PORT_PINGPONG;
-	abe_port[id].protocol.p.prot_pingpong.buf_addr = addr.offset;
-	abe_port[id].protocol.p.prot_pingpong.buf_size = size;
-	abe_port[id].protocol.p.prot_pingpong.irq_data = (1);
-	omap_aess_init_ping_pong_buffer(aess, OMAP_ABE_MM_DL_PORT, size, 2, sink);
+	omap_aess_reset_port(aess, id);
+	port = &abe_port[id];
+	port->format = *f;
+	port->protocol.protocol_switch = OMAP_AESS_PORT_PINGPONG;
+	port->protocol.p.prot_pingpong.buf_addr = addr.offset;
+	port->protocol.p.prot_pingpong.buf_size = size;
+	port->protocol.p.prot_pingpong.irq_data = 1;
+	omap_aess_init_ping_pong_buffer(aess, OMAP_ABE_MM_DL_PORT, size, 2,
+					sink);
 	if (dsp_mcu_flag == PING_PONG_WITH_MCU_IRQ)
-		abe_port[id].protocol.p.prot_pingpong.irq_addr =
-			OMAP_AESS_MCU_IRQSTATUS_RAW;
+		port->protocol.p.prot_pingpong.irq_addr =
+						OMAP_AESS_MCU_IRQSTATUS_RAW;
 	if (dsp_mcu_flag == PING_PONG_WITH_DSP_IRQ)
-		abe_port[id].protocol.p.prot_pingpong.irq_addr =
-			OMAP_AESS_DSP_IRQSTATUS_RAW;
-	abe_port[id].status = OMAP_ABE_PORT_INITIALIZED;
+		port->protocol.p.prot_pingpong.irq_addr =
+						OMAP_AESS_DSP_IRQSTATUS_RAW;
+	port->status = OMAP_ABE_PORT_INITIALIZED;
 
 	/* load the ATC descriptors - disabled */
 	omap_aess_init_atc(aess, id);
 	/* load the micro-task parameters */
-	omap_aess_init_io_tasks(aess,  id, &abe_port[id].format,
-				&abe_port[id].protocol);
+	omap_aess_init_io_tasks(aess,  id, &port->format,
+				&port->protocol);
 
-	*sink = abe_port[id].protocol.p.prot_pingpong.buf_addr;
+	*sink = port->protocol.p.prot_pingpong.buf_addr;
 	return 0;
 }
 EXPORT_SYMBOL(omap_aess_connect_irq_ping_pong_port);
