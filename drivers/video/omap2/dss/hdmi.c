@@ -60,6 +60,9 @@
 static struct {
 	struct mutex lock;
 	struct platform_device *pdev;
+#if defined(CONFIG_OMAP4_DSS_HDMI_AUDIO)
+	struct platform_device *audio_pdev;
+#endif
 
 	struct hdmi_ip_data ip_data;
 
@@ -811,102 +814,148 @@ static int hdmi_get_clocks(struct platform_device *pdev)
 }
 
 #if defined(CONFIG_OMAP4_DSS_HDMI_AUDIO)
+static int hdmi_probe_audio(struct platform_device *pdev)
+{
+	struct resource *res;
+	struct platform_device *aud_pdev;
+	u32 port_offset, port_size;
+	struct resource aud_res[2] = {
+		DEFINE_RES_MEM(-1, -1),
+		DEFINE_RES_DMA(-1),
+	};
+
+	res = platform_get_resource(hdmi.pdev, IORESOURCE_MEM, 0);
+	if (!res) {
+		DSSERR("can't get IORESOURCE_MEM HDMI\n");
+		return -EINVAL;
+	}
+
+	/*
+	 * Pass DMA audio port to audio drivers.
+	 * Audio drivers should not ioremap it.
+	 */
+	hdmi.ip_data.ops->audio_get_dma_port(&port_offset, &port_size);
+
+	aud_res[0].start = res->start + port_offset;
+	aud_res[0].end =  aud_res[0].start + port_size - 1;
+
+	res = platform_get_resource(hdmi.pdev, IORESOURCE_DMA, 0);
+	if (!res) {
+		DSSERR("can't get IORESOURCE_DMA HDMI\n");
+		return -EINVAL;
+	}
+
+	/* Pass the audio DMA request resource to audio drivers. */
+	aud_res[1].start = res->start;
+
+	/* create platform device for HDMI audio driver */
+	aud_pdev = platform_device_register_simple("omap-hdmi-audio",
+						   pdev->id, aud_res,
+						   ARRAY_SIZE(aud_res));
+	if (IS_ERR(aud_pdev)) {
+		DSSERR("Can't instantiate hdmi-audio\n");
+		return -ENODEV;
+	}
+
+	hdmi.audio_pdev = aud_pdev;
+
+	return 0;
+}
+
 int hdmi_compute_acr(u32 sample_freq, u32 *n, u32 *cts)
 {
+	int r;
 	u32 deep_color;
-	bool deep_color_correct = false;
 	u32 pclk = hdmi.ip_data.cfg.timings.pixel_clock;
 
-	if (n == NULL || cts == NULL)
+	if (n == NULL || cts == NULL || sample_freq == 0)
 		return -EINVAL;
 
 	/* TODO: When implemented, query deep color mode here. */
 	deep_color = 100;
 
-	/*
-	 * When using deep color, the default N value (as in the HDMI
-	 * specification) yields to an non-integer CTS. Hence, we
-	 * modify it while keeping the restrictions described in
-	 * section 7.2.1 of the HDMI 1.4a specification.
-	 */
 	switch (sample_freq) {
 	case 32000:
-	case 48000:
-	case 96000:
-	case 192000:
-		if (deep_color == 125)
-			if (pclk == 27027 || pclk == 74250)
-				deep_color_correct = true;
-		if (deep_color == 150)
-			if (pclk == 27027)
-				deep_color_correct = true;
+		if (deep_color == 125 && pclk == 74250) {
+			*n = 8192;
+			break;
+		}
+
+		if (deep_color == 125 && pclk == 27027) {
+			/*
+			 * For this specific configuration, no value within the
+			 * allowed interval of N (as per the HDMI spec) will
+			 * produce an integer value of CTS. The value we use
+			 * here will produce CTS = 11587.000427246, which is
+			 * slightly larger than the integer. This difference
+			 * could cause the audio clock at the sink to slowly
+			 * drift. The true solution requires alternating between
+			 * two CTS relevant values with careful timing in order
+			 * to, on average, obtain the true CTS float value.
+			*/
+			*n = 13529;
+			break;
+		}
+
+		if (deep_color == 150 && pclk == 27027) {
+			*n = 8192;
+			break;
+		}
+
+		*n = 4096;
 		break;
 	case 44100:
-	case 88200:
-	case 176400:
-		if (deep_color == 125)
-			if (pclk == 27027)
-				deep_color_correct = true;
+		if (deep_color == 125 && pclk == 27027) {
+			*n = 12544;
+			break;
+		}
+
+		*n = 6272;
 		break;
+	case 48000:
+		if (deep_color == 125 && (pclk == 27027 || pclk == 74250)) {
+			*n = 8192;
+			break;
+		}
+
+		if (deep_color == 150 && pclk == 27027) {
+			*n = 8192;
+			break;
+		}
+
+		*n = 6144;
+		break;
+	case 88200:
+		r = hdmi_compute_acr(44100, n, cts);
+		*n *= 2;
+		return r;
+	case 96000:
+		r = hdmi_compute_acr(48000, n, cts);
+		*n *= 2;
+		return r;
+	case 176400:
+		r = hdmi_compute_acr(44100, n, cts);
+		*n *= 4;
+		return r;
+	case 192000:
+		r = hdmi_compute_acr(48000, n, cts);
+		*n *= 4;
+		return r;
 	default:
 		return -EINVAL;
 	}
 
-	if (deep_color_correct) {
-		switch (sample_freq) {
-		case 32000:
-			*n = 8192;
-			break;
-		case 44100:
-			*n = 12544;
-			break;
-		case 48000:
-			*n = 8192;
-			break;
-		case 88200:
-			*n = 25088;
-			break;
-		case 96000:
-			*n = 16384;
-			break;
-		case 176400:
-			*n = 50176;
-			break;
-		case 192000:
-			*n = 32768;
-			break;
-		default:
-			return -EINVAL;
-		}
-	} else {
-		switch (sample_freq) {
-		case 32000:
-			*n = 4096;
-			break;
-		case 44100:
-			*n = 6272;
-			break;
-		case 48000:
-			*n = 6144;
-			break;
-		case 88200:
-			*n = 12544;
-			break;
-		case 96000:
-			*n = 12288;
-			break;
-		case 176400:
-			*n = 25088;
-			break;
-		case 192000:
-			*n = 24576;
-			break;
-		default:
-			return -EINVAL;
-		}
-	}
-	/* Calculate CTS. See HDMI 1.3a or 1.4a specifications */
-	*cts = pclk * (*n / 128) * deep_color / (sample_freq / 10);
+	/*
+	 * Calculate CTS. See HDMI 1.3a or 1.4a specifications. Preserve the
+	 * remainder in case N is not a multiple of 128.
+	 */
+	*cts = (*n / 128) * pclk * deep_color;
+	*cts += (*n % 128) * pclk * deep_color / 128;
+	*cts /= (sample_freq / 10);
+
+	if ((pclk * (*n / 128) * deep_color) % (sample_freq / 10))
+		DSSWARN("CTS is not integer fs[%u]pclk[%u]N[%u]\n",
+			sample_freq, pclk, *n);
 
 	return 0;
 }
@@ -1102,6 +1151,12 @@ static int omapdss_hdmihw_probe(struct platform_device *pdev)
 		return r;
 	}
 
+#if defined(CONFIG_OMAP4_DSS_HDMI_AUDIO)
+	r = hdmi_probe_audio(pdev);
+	if (r)
+		DSSWARN("could not create platform device for audio");
+#endif
+
 	return 0;
 }
 
@@ -1114,6 +1169,11 @@ static int __exit hdmi_remove_child(struct device *dev, void *data)
 
 static int __exit omapdss_hdmihw_remove(struct platform_device *pdev)
 {
+#if defined(CONFIG_OMAP4_DSS_HDMI_AUDIO)
+	if (hdmi.audio_pdev != NULL)
+		platform_device_unregister(hdmi.audio_pdev);
+#endif
+
 	device_for_each_child(&pdev->dev, NULL, hdmi_remove_child);
 
 	dss_unregister_child_devices(&pdev->dev);
