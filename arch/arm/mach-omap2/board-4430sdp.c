@@ -61,6 +61,7 @@
 
 #define FIXED_REG_VBAT_ID	0
 #define FIXED_REG_VWLAN_ID	1
+#define FIXED_REG_BLIGHT_ID	2
 
 static const int sdp4430_keymap[] = {
 	KEY(0, 0, KEY_E),
@@ -731,7 +732,7 @@ static void __init omap_4430sdp_init(void)
 
 	omap4_i2c_init();
 	omap_sfh7741prox_init();
-	regulator_register_always_on(0, "backlight-enable",
+	regulator_register_always_on(FIXED_REG_BLIGHT_ID, "backlight-enable",
 				     &backlight_supply, 1, 0);
 	platform_add_devices(sdp4430_devices, ARRAY_SIZE(sdp4430_devices));
 	omap_serial_init();
