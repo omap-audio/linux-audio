@@ -15,6 +15,7 @@
 
 #include <linux/kernel.h>
 #include <linux/module.h>
+#include <linux/interrupt.h>
 #include <linux/init.h>
 #include <linux/err.h>
 #include <linux/platform_device.h>
@@ -33,6 +34,7 @@ struct regs_info {
 	u8	vsel_addr;
 	u8	ctrl_addr;
 	u8	tstep_addr;
+	u8	short_bit;
 };
 
 static const struct regs_info palmas_regs_info[] = {
@@ -42,6 +44,7 @@ static const struct regs_info palmas_regs_info[] = {
 		.vsel_addr	= PALMAS_SMPS12_VOLTAGE,
 		.ctrl_addr	= PALMAS_SMPS12_CTRL,
 		.tstep_addr	= PALMAS_SMPS12_TSTEP,
+		.short_bit	= PALMAS_SMPS_SHORT_STATUS_SMPS12,
 	},
 	{
 		.name		= "SMPS123",
@@ -55,6 +58,7 @@ static const struct regs_info palmas_regs_info[] = {
 		.sname		= "smps3-in",
 		.vsel_addr	= PALMAS_SMPS3_VOLTAGE,
 		.ctrl_addr	= PALMAS_SMPS3_CTRL,
+		.short_bit	= PALMAS_SMPS_SHORT_STATUS_SMPS3,
 	},
 	{
 		.name		= "SMPS45",
@@ -62,6 +66,7 @@ static const struct regs_info palmas_regs_info[] = {
 		.vsel_addr	= PALMAS_SMPS45_VOLTAGE,
 		.ctrl_addr	= PALMAS_SMPS45_CTRL,
 		.tstep_addr	= PALMAS_SMPS45_TSTEP,
+		.short_bit	= PALMAS_SMPS_SHORT_STATUS_SMPS45,
 	},
 	{
 		.name		= "SMPS457",
@@ -76,12 +81,14 @@ static const struct regs_info palmas_regs_info[] = {
 		.vsel_addr	= PALMAS_SMPS6_VOLTAGE,
 		.ctrl_addr	= PALMAS_SMPS6_CTRL,
 		.tstep_addr	= PALMAS_SMPS6_TSTEP,
+		.short_bit	= PALMAS_SMPS_SHORT_STATUS_SMPS6,
 	},
 	{
 		.name		= "SMPS7",
 		.sname		= "smps7-in",
 		.vsel_addr	= PALMAS_SMPS7_VOLTAGE,
 		.ctrl_addr	= PALMAS_SMPS7_CTRL,
+		.short_bit	= PALMAS_SMPS_SHORT_STATUS_SMPS7,
 	},
 	{
 		.name		= "SMPS8",
@@ -89,83 +96,97 @@ static const struct regs_info palmas_regs_info[] = {
 		.vsel_addr	= PALMAS_SMPS8_VOLTAGE,
 		.ctrl_addr	= PALMAS_SMPS8_CTRL,
 		.tstep_addr	= PALMAS_SMPS8_TSTEP,
+		.short_bit	= PALMAS_SMPS_SHORT_STATUS_SMPS8,
 	},
 	{
 		.name		= "SMPS9",
 		.sname		= "smps9-in",
 		.vsel_addr	= PALMAS_SMPS9_VOLTAGE,
 		.ctrl_addr	= PALMAS_SMPS9_CTRL,
+		.short_bit	= PALMAS_SMPS_SHORT_STATUS_SMPS9,
 	},
 	{
 		.name		= "SMPS10",
 		.sname		= "smps10-in",
 		.ctrl_addr	= PALMAS_SMPS10_CTRL,
+		.short_bit	= PALMAS_SMPS_SHORT_STATUS_SMPS10,
 	},
 	{
 		.name		= "LDO1",
 		.sname		= "ldo1-in",
 		.vsel_addr	= PALMAS_LDO1_VOLTAGE,
 		.ctrl_addr	= PALMAS_LDO1_CTRL,
+		.short_bit	= PALMAS_LDO_SHORT_STATUS1_LDO1,
 	},
 	{
 		.name		= "LDO2",
 		.sname		= "ldo2-in",
 		.vsel_addr	= PALMAS_LDO2_VOLTAGE,
 		.ctrl_addr	= PALMAS_LDO2_CTRL,
+		.short_bit	= PALMAS_LDO_SHORT_STATUS1_LDO2,
 	},
 	{
 		.name		= "LDO3",
 		.sname		= "ldo3-in",
 		.vsel_addr	= PALMAS_LDO3_VOLTAGE,
 		.ctrl_addr	= PALMAS_LDO3_CTRL,
+		.short_bit	= PALMAS_LDO_SHORT_STATUS1_LDO3,
 	},
 	{
 		.name		= "LDO4",
 		.sname		= "ldo4-in",
 		.vsel_addr	= PALMAS_LDO4_VOLTAGE,
 		.ctrl_addr	= PALMAS_LDO4_CTRL,
+		.short_bit	= PALMAS_LDO_SHORT_STATUS1_LDO4,
 	},
 	{
 		.name		= "LDO5",
 		.sname		= "ldo5-in",
 		.vsel_addr	= PALMAS_LDO5_VOLTAGE,
 		.ctrl_addr	= PALMAS_LDO5_CTRL,
+		.short_bit	= PALMAS_LDO_SHORT_STATUS1_LDO5,
 	},
 	{
 		.name		= "LDO6",
 		.sname		= "ldo6-in",
 		.vsel_addr	= PALMAS_LDO6_VOLTAGE,
 		.ctrl_addr	= PALMAS_LDO6_CTRL,
+		.short_bit	= PALMAS_LDO_SHORT_STATUS1_LDO6,
 	},
 	{
 		.name		= "LDO7",
 		.sname		= "ldo7-in",
 		.vsel_addr	= PALMAS_LDO7_VOLTAGE,
 		.ctrl_addr	= PALMAS_LDO7_CTRL,
+		.short_bit	= PALMAS_LDO_SHORT_STATUS1_LDO7,
 	},
 	{
 		.name		= "LDO8",
 		.sname		= "ldo8-in",
 		.vsel_addr	= PALMAS_LDO8_VOLTAGE,
 		.ctrl_addr	= PALMAS_LDO8_CTRL,
+		.short_bit	= PALMAS_LDO_SHORT_STATUS1_LDO8,
 	},
 	{
 		.name		= "LDO9",
 		.sname		= "ldo9-in",
 		.vsel_addr	= PALMAS_LDO9_VOLTAGE,
 		.ctrl_addr	= PALMAS_LDO9_CTRL,
+		.short_bit	= PALMAS_LDO_SHORT_STATUS2_LDO9,
 	},
 	{
 		.name		= "LDOLN",
 		.sname		= "ldoln-in",
 		.vsel_addr	= PALMAS_LDOLN_VOLTAGE,
 		.ctrl_addr	= PALMAS_LDOLN_CTRL,
+		.short_bit	= PALMAS_LDO_SHORT_STATUS2_LDOLN,
 	},
 	{
 		.name		= "LDOUSB",
 		.sname		= "ldousb-in",
 		.vsel_addr	= PALMAS_LDOUSB_VOLTAGE,
 		.ctrl_addr	= PALMAS_LDOUSB_CTRL,
+		.short_bit	= PALMAS_LDO_SHORT_STATUS2_LDOUSB,
 	},
 	{
 		.name		= "REGEN1",
