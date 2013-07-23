@@ -37,7 +37,7 @@
 
 #include "omap-hdmi.h"
 
-#define DRV_NAME "omap-hdmi-audio-dai"
+#define DRV_NAME "omap-hdmi-audio"
 
 struct hdmi_priv {
 	struct snd_dmaengine_dai_dma_data dma_data;
@@ -283,7 +283,7 @@ static int omap_hdmi_probe(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-	hdmi_data->dma_data.addr = hdmi_rsrc->start + OMAP_HDMI_AUDIO_DMA_PORT;
+	hdmi_data->dma_data.addr = hdmi_rsrc->start;
 
 	hdmi_rsrc = platform_get_resource(pdev, IORESOURCE_DMA, 0);
 	if (!hdmi_rsrc) {
