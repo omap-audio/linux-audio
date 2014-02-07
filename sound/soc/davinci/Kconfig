@@ -1,6 +1,7 @@
 config SND_DAVINCI_SOC
 	tristate "SoC Audio for TI DAVINCI or AM33XX/AM43XX chips"
 	depends on ARCH_DAVINCI || SOC_AM33XX || SOC_AM43XX
+	select SND_SOC_GENERIC_DMAENGINE_PCM
 
 config SND_DAVINCI_SOC_I2S
 	tristate
