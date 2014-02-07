@@ -141,7 +141,7 @@ static void edma_execute(struct edma_chan *echan)
 	for (i = 0; i < nslots; i++) {
 		j = i + edesc->processed;
 		edma_write_slot(echan->slot[i], &edesc->pset[j]);
-		dev_dbg(echan->vchan.chan.device->dev,
+		dev_vdbg(echan->vchan.chan.device->dev,
 			"\n pset[%d]:\n"
 			"  chnum\t%d\n"
 			"  slot\t%d\n"
@@ -185,7 +185,8 @@ static void edma_execute(struct edma_chan *echan)
 	edma_resume(echan->ch_num);
 
 	if (edesc->processed <= MAX_NR_SG) {
-		dev_dbg(dev, "first transfer starting %d\n", echan->ch_num);
+		dev_vdbg(dev, "first transfer starting on channel %d\n",
+			 echan->ch_num);
 		edma_start(echan->ch_num);
 	}
 
@@ -195,7 +196,7 @@ static void edma_execute(struct edma_chan *echan)
 	 * MAX_NR_SG
 	 */
 	if (echan->missed) {
-		dev_dbg(dev, "missed event in execute detected\n");
+		dev_dbg(dev, "missed event on channel %d\n", echan->ch_num);
 		edma_clean_channel(echan->ch_num);
 		edma_stop(echan->ch_num);
 		edma_start(echan->ch_num);
@@ -439,7 +440,7 @@ static struct dma_async_tx_descriptor *edma_prep_slave_sg(
 	edesc = kzalloc(sizeof(*edesc) + sg_len *
 		sizeof(edesc->pset[0]), GFP_ATOMIC);
 	if (!edesc) {
-		dev_dbg(dev, "Failed to allocate a descriptor\n");
+		dev_err(dev, "Failed to allocate a descriptor\n");
 		return NULL;
 	}
 
@@ -549,16 +550,15 @@ static struct dma_async_tx_descriptor *edma_prep_dma_cyclic(
 	edesc = kzalloc(sizeof(*edesc) + nslots *
 		sizeof(edesc->pset[0]), GFP_ATOMIC);
 	if (!edesc) {
-		dev_dbg(dev, "Failed to allocate a descriptor\n");
+		dev_err(dev, "Failed to allocate a descriptor\n");
 		return NULL;
 	}
 
 	edesc->cyclic = 1;
 	edesc->pset_nr = nslots;
 
-	dev_dbg(dev, "%s: nslots=%d\n", __func__, nslots);
-	dev_dbg(dev, "%s: period_len=%d\n", __func__, period_len);
-	dev_dbg(dev, "%s: buf_len=%d\n", __func__, buf_len);
+	dev_vdbg(dev, "%s: channel=%d nslots=%d period_len=%d buf_len=%d\n",
+		__func__, echan->ch_num, nslots, period_len, buf_len);
 
 	for (i = 0; i < nslots; i++) {
 		/* Allocate a PaRAM slot, if needed */
@@ -589,8 +589,8 @@ static struct dma_async_tx_descriptor *edma_prep_dma_cyclic(
 		else
 			src_addr += period_len;
 
-		dev_dbg(dev, "%s: Configure period %d of buf:\n", __func__, i);
-		dev_dbg(dev,
+		dev_vdbg(dev, "%s: Configure period %d of buf:\n", __func__, i);
+		dev_vdbg(dev,
 			"\n pset[%d]:\n"
 			"  chnum\t%d\n"
 			"  slot\t%d\n"
@@ -646,12 +646,12 @@ static void edma_callback(unsigned ch_num, u16 ch_status, void *data)
 			if (edesc->cyclic) {
 				vchan_cyclic_callback(&edesc->vdesc);
 			} else if (edesc->processed == edesc->pset_nr) {
-				dev_dbg(dev, "Transfer complete, stopping channel %d\n", ch_num);
+				dev_vdbg(dev, "Transfer complete, stopping channel %d\n", ch_num);
 				edma_stop(echan->ch_num);
 				vchan_cookie_complete(&edesc->vdesc);
 				edma_execute(echan);
 			} else {
-				dev_dbg(dev, "Intermediate transfer complete on channel %d\n", ch_num);
+				dev_vdbg(dev, "Intermediate transfer complete on channel %d\n", ch_num);
 				edma_execute(echan);
 			}
 		}
@@ -677,14 +677,14 @@ static void edma_callback(unsigned ch_num, u16 ch_status, void *data)
 		 * slot. So we avoid doing so and set the missed flag.
 		 */
 		if (p.a_b_cnt == 0 && p.ccnt == 0) {
-			dev_dbg(dev, "Error occurred, looks like slot is null, just setting miss\n");
+			dev_dbg(dev, "Error occurred on channel %d, looks like slot is null\n", echan->ch_num);
 			echan->missed = 1;
 		} else {
 			/*
 			 * The slot is already programmed but the event got
 			 * missed, so its safe to issue it here.
 			 */
-			dev_dbg(dev, "Error occurred but slot is non-null, TRIGGERING\n");
+			dev_dbg(dev, "Error occurred on channel %d but slot is non-null, TRIGGERING\n", echan->ch_num);
 			edma_clean_channel(echan->ch_num);
 			edma_stop(echan->ch_num);
 			edma_start(echan->ch_num);
@@ -727,7 +727,7 @@ static int edma_alloc_chan_resources(struct dma_chan *chan)
 	echan->alloced = true;
 	echan->slot[0] = echan->ch_num;
 
-	dev_dbg(dev, "allocated channel for %u:%u\n",
+	dev_dbg(dev, "allocated channel %d for %u:%u\n", echan->ch_num,
 		EDMA_CTLR(echan->ch_num), EDMA_CHAN_SLOT(echan->ch_num));
 
 	return 0;
