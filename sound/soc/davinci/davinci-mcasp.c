@@ -36,6 +36,7 @@
 
 #include "davinci-pcm.h"
 #include "davinci-mcasp.h"
+#include "edma-pcm.h"
 
 struct davinci_mcasp {
 	struct davinci_pcm_dma_params dma_params[2];
@@ -700,11 +701,8 @@ static int davinci_mcasp_startup(struct snd_pcm_substream *substream,
 {
 	struct davinci_mcasp *mcasp = snd_soc_dai_get_drvdata(dai);
 
-	if (mcasp->version == MCASP_VERSION_4)
-		snd_soc_dai_set_dma_data(dai, substream,
-					&mcasp->dma_data[substream->stream]);
-	else
-		snd_soc_dai_set_dma_data(dai, substream, mcasp->dma_params);
+	snd_soc_dai_set_dma_data(dai, substream,
+				 &mcasp->dma_data[substream->stream]);
 
 	return 0;
 }
@@ -1132,7 +1130,7 @@ static int davinci_mcasp_probe(struct platform_device *pdev)
 		goto err_release_clk;
 
 	if (mcasp->version != MCASP_VERSION_4) {
-		ret = davinci_soc_platform_register(&pdev->dev);
+		ret = edma_pcm_platform_register(&pdev->dev);
 		if (ret) {
 			dev_err(&pdev->dev, "register PCM failed: %d\n", ret);
 			goto err_unregister_component;
@@ -1155,7 +1153,7 @@ static int davinci_mcasp_remove(struct platform_device *pdev)
 
 	snd_soc_unregister_component(&pdev->dev);
 	if (mcasp->version != MCASP_VERSION_4)
-		davinci_soc_platform_unregister(&pdev->dev);
+		edma_pcm_platform_unregister(&pdev->dev);
 
 	pm_runtime_put_sync(&pdev->dev);
 	pm_runtime_disable(&pdev->dev);
