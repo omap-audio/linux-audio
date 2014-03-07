@@ -29,6 +29,7 @@
 #include <sound/pcm_params.h>
 #include <sound/soc.h>
 #include <sound/dmaengine_pcm.h>
+#include <linux/edma.h>
 
 #include "edma-pcm.h"
 
@@ -50,10 +51,25 @@ static const struct snd_dmaengine_pcm_config edma_dmaengine_pcm_config = {
 	.prealloc_buffer_size = 128 * 1024,
 };
 
+static const struct snd_dmaengine_pcm_config edma_compat_dmaengine_pcm_config = {
+	.pcm_hardware = &edma_pcm_hardware,
+	.prepare_slave_config = snd_dmaengine_pcm_prepare_slave_config,
+	.compat_filter_fn = edma_filter_fn,
+	.prealloc_buffer_size = 128 * 1024,
+};
+
 int edma_pcm_platform_register(struct device *dev)
 {
-	return snd_dmaengine_pcm_register(dev, &edma_dmaengine_pcm_config,
-					  SND_DMAENGINE_PCM_FLAG_NO_RESIDUE);
+	if (dev->of_node)
+		return snd_dmaengine_pcm_register(dev,
+					&edma_dmaengine_pcm_config,
+					SND_DMAENGINE_PCM_FLAG_NO_RESIDUE);
+	else
+		return snd_dmaengine_pcm_register(dev,
+					&edma_compat_dmaengine_pcm_config,
+					SND_DMAENGINE_PCM_FLAG_NO_RESIDUE |
+					SND_DMAENGINE_PCM_FLAG_NO_DT |
+					SND_DMAENGINE_PCM_FLAG_COMPAT);
 }
 EXPORT_SYMBOL_GPL(edma_pcm_platform_register);
 
