@@ -41,7 +41,7 @@ static const struct snd_pcm_hardware edma_pcm_hardware = {
 	.period_bytes_min	= 32,
 	.period_bytes_max	= 64 * 1024,
 	.periods_min		= 2,
-	.periods_max		= 19,
+	.periods_max		= 20, /* Limit by edma dmaengine driver */
 };
 
 static const struct snd_dmaengine_pcm_config edma_dmaengine_pcm_config = {
