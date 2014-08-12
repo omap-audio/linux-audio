@@ -10,6 +10,7 @@
 #include "dra74x.dtsi"
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/clk/ti-dra7-atl.h>
 
 / {
 	model = "TI DRA742";
@@ -387,6 +388,12 @@
 		>;
 	};
 
+	atl_pins: pinmux_atl_pins {
+		pinctrl-single,pins = <
+			0x298 (PIN_OUTPUT | MUX_MODE5)	/* xref_clk1.atl_clk1 */
+			0x29c (PIN_OUTPUT | MUX_MODE5)	/* xref_clk2.atl_clk2 */
+		>;
+	};
 };
 
 &i2c1 {
@@ -919,5 +926,17 @@
 		hdmi_out: endpoint {
 			remote-endpoint = <&tpd12s015_in>;
 		};
+	};
+};
+
+&atl {
+	pinctrl-names = "default";
+	pinctrl-0 = <&atl_pins>;
+
+	status = "okay";
+
+	atl2 {
+		bws = <DRA7_ATL_WS_MCASP2_FSX>;
+		aws = <DRA7_ATL_WS_MCASP3_FSX>;
 	};
 };
