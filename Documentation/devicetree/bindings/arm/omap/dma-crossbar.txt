@@ -1,0 +1,26 @@
+Some socs have a crossbar ip which muxes the dma requests
+from the peripherals to the dma request input lines of the
+appropriate dma controller. With this the dma controller's
+available request lines are shared between the peripherals
+
+Required properties:
+- compatible : Should be "ti,dma-crossbar"
+- reg: Base address and the size of the crossbar registers.
+- ti,dma-reqs: Total number of dma request lines available at dma controller.
+- ti,reg-size: Size of a individual register in bytes. Every individual
+	    register is assumed to be of same size. Valid sizes are 1, 2, 4.
+- ti,dmas-reserved: List of the reserved dma lines that are not muxed using
+		 crossbar. These dma lines are reserved in the soc,
+		 so crossbar bar driver should not consider them as free
+		 lines. This is a table of dma request-number and a count of
+		 reserved values from that number.
+
+Examples:
+		crossbar_dma: crossbar@4a020000 {
+			compatible = "ti,dma-crossbar";
+			reg = <0x4a002b78 0x100>;
+			ti,dma-reqs = <160>;
+			ti,reg-size = <2>;
+			ti,dmas-reserved = < 2, 5,
+					     10, 2 >;
+		};
