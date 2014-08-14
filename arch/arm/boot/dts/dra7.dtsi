@@ -270,7 +270,7 @@
 		};
 
 		dmacb: dma-crossbar@4a020000 {
-			compatible = "ti,dma-crossbar";
+			compatible = "ti,dma-xbar";
 			reg = <0x4a002b78 0x100>;
 			ti,dma-reqs = <160>;
 			ti,reg-size = <2>;
