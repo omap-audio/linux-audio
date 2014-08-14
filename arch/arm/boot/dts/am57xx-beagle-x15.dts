@@ -82,6 +82,19 @@
 			default-state = "off";
 		};
 	};
+
+	sound {
+		compatible = "ti,beagle-x15-audio";
+		ti,model = "Beagle x15";
+		ti,audio-codec = <&tlv320aic3104>;
+		ti,mcasp-controller = <&mcasp3>;
+		ti,codec-clock-rate = <20000000>;
+		ti,audio-routing =
+			"Line Out",	"LLOUT",
+			"Line Out",	"RLOUT",
+			"LINE2L",	"Line In",
+			"LINE2R",	"Line In";
+	};
 };
 
 &dra7_pmx_core {
@@ -296,6 +309,24 @@
 			0x3C8 (PIN_INPUT | MUX_MODE15)
 		>;
 	};
+
+	mcasp3_pins_default: mcasp3_pins_default {
+		pinctrl-single,pins = <
+			0x324 (PIN_OUTPUT_PULLDOWN | MUX_MODE0) /* mcasp3_aclkx.mcasp3_aclkx */
+			0x328 (PIN_OUTPUT_PULLDOWN | MUX_MODE0) /* mcasp3_fsx.mcasp3_fsx */
+			0x32c (PIN_OUTPUT_PULLDOWN | MUX_MODE0) /* mcasp3_axr0.mcasp3_axr0 */
+			0x330 (PIN_INPUT_PULLDOWN | MUX_MODE0) /* mcasp3_axr1.mcasp3_axr1 */
+		>;
+	};
+
+	mcasp3_pins_sleep: mcasp3_pins_sleep {
+		pinctrl-single,pins = <
+			0x324 (PIN_INPUT | MUX_MODE15)
+			0x328 (PIN_INPUT | MUX_MODE15)
+			0x32c (PIN_INPUT | MUX_MODE15)
+			0x330 (PIN_INPUT | MUX_MODE15)
+		>;
+	};
 };
 
 &i2c1 {
@@ -458,6 +489,18 @@
 		interrupt-parent = <&gpio7>;
 		interrupts = <16 IRQ_TYPE_LEVEL_LOW>;
 	};
+
+	tlv320aic3104: tlv320aic3104@18 {
+		compatible = "ti,tlv320aic3104";
+		reg = <0x18>;
+		status = "okay";
+		adc-settle-ms = <40>;
+
+		AVDD-supply = <&vdd_3v3>;
+		IOVDD-supply = <&vdd_3v3>;
+		DRVDD-supply = <&vdd_3v3>;
+		DVDD-supply = <&vdd_3v3>;
+	};
 };
 
 &i2c3 {
@@ -560,4 +603,22 @@
 	bus-width = <8>;
 	ti,non-removable;
 	cap-mmc-dual-data-rate;
+};
+
+&mcasp3 {
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&mcasp3_pins_default>;
+	pinctrl-1 = <&mcasp3_pins_sleep>;
+	fck_parent = "abe_sys_clk_div";
+	status = "okay";
+
+	op-mode = <0>;
+	tdm-slots = <2>;
+
+	serial-dir = <
+		1 2 0 0
+		0 0 0 0
+		0 0 0 0
+		0 0 0 0
+	>;
 };
