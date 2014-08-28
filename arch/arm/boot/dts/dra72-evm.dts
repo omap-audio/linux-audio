@@ -402,8 +402,9 @@
 		 * initial state is used here to keep the mdio interface
 		 * selected on RU89 through SEL_VIN4_MUX_S0, VIN2_S1 and
 		 * VIN2_S0 driven high
+		 * VIN6_SEL_S0 high is selecting McASP3
 		 */
-		lines-initial-states = <0xff29>;
+		lines-initial-states = <0xff2b>;
 	};
 };
 
