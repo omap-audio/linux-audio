@@ -722,7 +722,8 @@
 		dmm@4e000000 {
 			compatible = "ti,omap5-dmm";
 			reg = <0x4e000000 0x800>;
-			interrupts = <GIC_SPI 108 IRQ_TYPE_LEVEL_HIGH>;
+//			interrupts = <GIC_SPI 108 IRQ_TYPE_LEVEL_HIGH>;
+			interrupts = <0 113 0x4>;
 			ti,hwmods = "dmm";
 		};
 
