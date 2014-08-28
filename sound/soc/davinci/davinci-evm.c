@@ -195,7 +195,7 @@ static struct snd_soc_ops dra7xx_ops = {
 };
 
 static struct snd_soc_ops beagle_x15_ops = {
-	.startup = evm_startup,
+	.startup = dra7xx_evm_startup,
 	.shutdown = evm_shutdown,
 	.hw_params = beagle_x15_slave_codec_hw_params,
 };
