@@ -39,6 +39,7 @@
 
 #include <sound/core.h>
 #include <sound/pcm.h>
+#include <sound/pcm_params.h>
 #include <sound/soc.h>
 #include <sound/jack.h>
 
@@ -49,11 +50,15 @@ struct omap_twl4030 {
 	struct snd_soc_jack hs_jack;
 };
 
+/* McBSP2 slave, TWL4030 master */
 static int omap_twl4030_hw_params(struct snd_pcm_substream *substream,
 	struct snd_pcm_hw_params *params)
 {
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+	struct snd_soc_card *card = rtd->card;
 	unsigned int fmt;
+	int ret;
 
 	switch (params_channels(params)) {
 	case 2: /* Stereo I2S mode */
@@ -70,11 +75,94 @@ static int omap_twl4030_hw_params(struct snd_pcm_substream *substream,
 		return -EINVAL;
 	}
 
+	/* Set McBSP clock to PER_96M_FCLK */
+	ret = snd_soc_dai_set_sysclk(cpu_dai, OMAP_MCBSP_SYSCLK_CLKS_FCLK,
+				     96000000, SND_SOC_CLOCK_IN);
+	if (ret < 0) {
+		dev_err(card->dev, "can't set cpu system clock\n");
+		return ret;
+	}
+
 	return snd_soc_runtime_set_dai_fmt(rtd, fmt);
 }
 
 static const struct snd_soc_ops omap_twl4030_ops = {
 	.hw_params = omap_twl4030_hw_params,
+};
+
+/* McBSP2 master, TWL4030 slave */
+static int omap_twl4030_slave_hw_params(struct snd_pcm_substream *substream,
+	struct snd_pcm_hw_params *params)
+{
+	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+	struct snd_soc_dai *codec_dai = rtd->codec_dai;
+	struct snd_soc_dai *cpu_dai = rtd->cpu_dai;
+	struct snd_soc_card *card = rtd->card;
+	int channels = params_channels(params);
+	int wlen;
+	unsigned int fmt;
+	int ret;
+
+	switch (channels) {
+	case 2: /* Stereo I2S mode */
+		fmt =	SND_SOC_DAIFMT_I2S |
+			SND_SOC_DAIFMT_NB_NF |
+			SND_SOC_DAIFMT_CBS_CFS;
+		break;
+	case 4: /* Four channel TDM mode */
+		fmt =	SND_SOC_DAIFMT_DSP_A |
+			SND_SOC_DAIFMT_IB_NF |
+			SND_SOC_DAIFMT_CBS_CFS;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	switch (params_format(params)) {
+	case SNDRV_PCM_FORMAT_S16_LE:
+		wlen = 16;
+		break;
+	case SNDRV_PCM_FORMAT_S32_LE:
+		wlen = 32;
+		break;
+	default:
+		return -EINVAL;
+	}
+
+	/* Set codec DAI configuration */
+	ret = snd_soc_runtime_set_dai_fmt(rtd, fmt);
+	if (ret < 0) {
+		dev_err(card->dev, "can't set DAI configuration\n");
+		return ret;
+	}
+
+	/* Set the codec system clock for DAC and ADC */
+	ret = snd_soc_dai_set_sysclk(codec_dai, 0, 26000000,
+				     SND_SOC_CLOCK_IN);
+	if (ret < 0) {
+		dev_err(card->dev, "can't set codec system clock\n");
+		return ret;
+	}
+
+	/* Set McBSP clock to external (CLKS) */
+	ret = snd_soc_dai_set_sysclk(cpu_dai, OMAP_MCBSP_SYSCLK_CLKS_EXT,
+				     256 * params_rate(params),
+				     SND_SOC_CLOCK_IN);
+	if (ret < 0) {
+		dev_err(card->dev, "can't set cpu system clock\n");
+		return ret;
+	}
+
+	ret = snd_soc_dai_set_clkdiv(cpu_dai, OMAP_MCBSP_CLKGDV,
+				     (256 / (wlen * channels)));
+	if (ret < 0)
+		dev_err(card->dev, "can't set SRG clock divider\n");
+
+	return 0;
+}
+
+static struct snd_soc_ops omap_twl4030_slave_ops = {
+	.hw_params = omap_twl4030_slave_hw_params,
 };
 
 static const struct snd_soc_dapm_widget dapm_widgets[] = {
@@ -211,14 +299,23 @@ static int omap_twl4030_init(struct snd_soc_pcm_runtime *rtd)
 /* Digital audio interface glue - connects codec <--> CPU */
 static struct snd_soc_dai_link omap_twl4030_dai_links[] = {
 	{
-		.name = "TWL4030 HiFi",
-		.stream_name = "TWL4030 HiFi",
+		.name = "TWL4030 HiFi CxM",
+		.stream_name = "TWL4030 HiFi CxM",
 		.cpu_dai_name = "omap-mcbsp.2",
 		.codec_dai_name = "twl4030-hifi",
 		.platform_name = "omap-mcbsp.2",
 		.codec_name = "twl4030-codec",
 		.init = omap_twl4030_init,
 		.ops = &omap_twl4030_ops,
+	},
+	{
+		.name = "TWL4030 HiFi CxS",
+		.stream_name = "TWL4030 HiFi CxS",
+		.cpu_dai_name = "omap-mcbsp.2",
+		.codec_dai_name = "twl4030-hifi",
+		.platform_name = "omap-mcbsp.2",
+		.codec_name = "twl4030-codec",
+		.ops = &omap_twl4030_slave_ops,
 	},
 	{
 		.name = "TWL4030 Voice",
@@ -273,14 +370,18 @@ static int omap_twl4030_probe(struct platform_device *pdev)
 			return -EINVAL;
 		}
 		omap_twl4030_dai_links[0].cpu_dai_name  = NULL;
+		omap_twl4030_dai_links[1].cpu_dai_name  = NULL;
 		omap_twl4030_dai_links[0].cpu_of_node = dai_node;
+		omap_twl4030_dai_links[1].cpu_of_node = dai_node;
 
 		omap_twl4030_dai_links[0].platform_name  = NULL;
+		omap_twl4030_dai_links[1].platform_name  = NULL;
 		omap_twl4030_dai_links[0].platform_of_node = dai_node;
+		omap_twl4030_dai_links[1].platform_of_node = dai_node;
 
 		dai_node = of_parse_phandle(node, "ti,mcbsp-voice", 0);
 		if (!dai_node) {
-			card->num_links = 1;
+			card->num_links = 2;
 		} else {
 			omap_twl4030_dai_links[1].cpu_dai_name  = NULL;
 			omap_twl4030_dai_links[1].cpu_of_node = dai_node;
@@ -311,7 +412,7 @@ static int omap_twl4030_probe(struct platform_device *pdev)
 		}
 
 		if (!pdata->voice_connected)
-			card->num_links = 1;
+			card->num_links = 2;
 
 		priv->jack_detect = pdata->jack_detect;
 	} else {
