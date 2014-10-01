@@ -152,17 +152,20 @@ static void edma_execute(struct edma_chan *echan)
 	struct device *dev = echan->vchan.chan.device->dev;
 	int i, j, left, nslots;
 
-	/* If either we processed all psets or we're still not started */
-	if (!echan->edesc ||
-	    echan->edesc->pset_nr == echan->edesc->processed) {
-		/* Get next vdesc */
+	if (!echan->edesc) {
+		/* Setup is needed for the first transfer */
 		vdesc = vchan_next_desc(&echan->vchan);
 		if (!vdesc) {
+			dev_warn(dev, "%s: Failed to get vdesc!\n", __func__);
 			echan->edesc = NULL;
 			return;
 		}
 		list_del(&vdesc->node);
 		echan->edesc = to_edma_desc(&vdesc->tx);
+// 	} else if (echan->edesc->pset_nr == echan->edesc->processed) {
+// 		/* End of transfer */
+// 		echan->edesc = NULL;
+// 		return;
 	}
 
 	edesc = echan->edesc;
@@ -221,6 +224,13 @@ static void edma_execute(struct edma_chan *echan)
 	if (edesc->processed <= MAX_NR_SG) {
 		dev_dbg(dev, "first transfer starting %d\n", echan->ch_num);
 		edma_start(echan->ch_num);
+	} else if (echan->missed) {
+		dev_err(dev, "missed event in execute detected\n");
+		edma_clean_channel(echan->ch_num);
+		edma_stop(echan->ch_num);
+		edma_start(echan->ch_num);
+		edma_trigger_channel(echan->ch_num);
+		echan->missed = 0;
 	} else {
 		dev_dbg(dev, "chan: %d: completed %d elements, resuming\n",
 			echan->ch_num, edesc->processed);
@@ -232,14 +242,14 @@ static void edma_execute(struct edma_chan *echan)
 	 * in long SG lists which have to be broken up into transfers of
 	 * MAX_NR_SG
 	 */
-	if (echan->missed) {
-		dev_dbg(dev, "missed event in execute detected\n");
-		edma_clean_channel(echan->ch_num);
-		edma_stop(echan->ch_num);
-		edma_start(echan->ch_num);
-		edma_trigger_channel(echan->ch_num);
-		echan->missed = 0;
-	}
+// 	if (echan->missed) {
+// 		dev_dbg(dev, "missed event in execute detected\n");
+// 		edma_clean_channel(echan->ch_num);
+// 		edma_stop(echan->ch_num);
+// 		edma_start(echan->ch_num);
+// 		edma_trigger_channel(echan->ch_num);
+// 		echan->missed = 0;
+// 	}
 }
 
 static int edma_terminate_all(struct edma_chan *echan)
@@ -255,13 +265,12 @@ static int edma_terminate_all(struct edma_chan *echan)
 	 * echan->edesc is NULL and exit.)
 	 */
 	if (echan->edesc) {
-		int cyclic = echan->edesc->cyclic;
-		echan->edesc = NULL;
 		edma_stop(echan->ch_num);
 		/* Move the cyclic channel back to default queue */
-		if (cyclic)
+		if (echan->edesc->cyclic)
 			edma_assign_channel_eventq(echan->ch_num,
 						   EVENTQ_DEFAULT);
+		echan->edesc = NULL;
 	}
 
 	vchan_get_all_descriptors(&echan->vchan, &head);
@@ -744,8 +753,8 @@ static void edma_callback(unsigned ch_num, u16 ch_status, void *data)
 	edesc = echan->edesc;
 
 	/* Pause the channel for non-cyclic */
-	if (!edesc || (edesc && !edesc->cyclic))
-		edma_pause(echan->ch_num);
+// 	if (!edesc || (edesc && !edesc->cyclic))
+// 		edma_pause(echan->ch_num);
 
 	switch (ch_status) {
 	case EDMA_DMA_COMPLETE:
@@ -758,10 +767,13 @@ static void edma_callback(unsigned ch_num, u16 ch_status, void *data)
 				dev_dbg(dev, "Transfer complete, stopping channel %d\n", ch_num);
 				edesc->residue = 0;
 				edma_stop(echan->ch_num);
+				echan->edesc = NULL;
 				vchan_cookie_complete(&edesc->vdesc);
-				edma_execute(echan);
+//				edma_execute(echan);
 			} else {
 				dev_dbg(dev, "Intermediate transfer complete on channel %d\n", ch_num);
+
+				edma_pause(echan->ch_num);
 
 				/* Update statistics for tx_status */
 				edesc->residue -= edesc->sg_len;
