@@ -330,6 +330,10 @@ struct omap_hdmi {
 	struct omap_dss_device output;
 
 	int wp_idlemode;
+
+	bool audio_enabled;
+	struct omap_dss_audio *dss_audio;
+
 };
 
 #endif
