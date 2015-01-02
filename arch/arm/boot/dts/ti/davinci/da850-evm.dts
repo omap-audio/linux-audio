@@ -327,6 +327,7 @@
 	status = "okay";
 	pinctrl-names = "default";
 	pinctrl-0 = <&mii_pins>;
+	local-mac-address = [ 00 08 ee 04 63 a7 ];
 };
 
 &gpio {
