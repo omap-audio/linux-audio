@@ -2089,6 +2089,9 @@ struct clk *clk_register(struct device *dev, struct clk_hw *hw)
 	clk->num_parents = hw->init->num_parents;
 	hw->clk = clk;
 
+	spin_lock_init(&clk->enable_lock);
+	mutex_init(&clk->prepare_lock);
+
 	/* allocate local copy in case parent_names is __initdata */
 	clk->parent_names = kcalloc(clk->num_parents, sizeof(char *),
 					GFP_KERNEL);
