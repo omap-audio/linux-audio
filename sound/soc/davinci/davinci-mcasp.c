@@ -341,7 +341,9 @@ static int davinci_mcasp_set_dai_fmt(struct snd_soc_dai *cpu_dai,
 	bool fs_pol_rising;
 	bool inv_fs = false;
 
+	clk_mark_set_trace(true);
 	pm_runtime_get_sync(mcasp->dev);
+	clk_mark_set_trace(false);
 	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
 	case SND_SOC_DAIFMT_DSP_A:
 		mcasp_clr_bits(mcasp, DAVINCI_MCASP_TXFMCTL_REG, FSXDUR);
@@ -461,7 +463,9 @@ static int davinci_mcasp_set_dai_fmt(struct snd_soc_dai *cpu_dai,
 		mcasp_set_bits(mcasp, DAVINCI_MCASP_RXFMCTL_REG, FSRPOL);
 	}
 out:
+	clk_mark_set_trace(true);
 	pm_runtime_put_sync(mcasp->dev);
+	clk_mark_set_trace(false);
 	return ret;
 }
 
@@ -470,7 +474,9 @@ static int __davinci_mcasp_set_clkdiv(struct snd_soc_dai *dai, int div_id,
 {
 	struct davinci_mcasp *mcasp = snd_soc_dai_get_drvdata(dai);
 
+	clk_mark_set_trace(true);
 	pm_runtime_get_sync(mcasp->dev);
+	clk_mark_set_trace(false);
 	switch (div_id) {
 	case 0:		/* MCLK divider */
 		mcasp_mod_bits(mcasp, DAVINCI_MCASP_AHCLKXCTL_REG,
@@ -496,7 +502,9 @@ static int __davinci_mcasp_set_clkdiv(struct snd_soc_dai *dai, int div_id,
 		return -EINVAL;
 	}
 
+	clk_mark_set_trace(true);
 	pm_runtime_put_sync(mcasp->dev);
+	clk_mark_set_trace(false);
 	return 0;
 }
 
@@ -511,7 +519,9 @@ static int davinci_mcasp_set_sysclk(struct snd_soc_dai *dai, int clk_id,
 {
 	struct davinci_mcasp *mcasp = snd_soc_dai_get_drvdata(dai);
 
+	clk_mark_set_trace(true);
 	pm_runtime_get_sync(mcasp->dev);
+	clk_mark_set_trace(false);
 	if (dir == SND_SOC_CLOCK_OUT) {
 		mcasp_set_bits(mcasp, DAVINCI_MCASP_AHCLKXCTL_REG, AHCLKXE);
 		mcasp_set_bits(mcasp, DAVINCI_MCASP_AHCLKRCTL_REG, AHCLKRE);
@@ -524,7 +534,9 @@ static int davinci_mcasp_set_sysclk(struct snd_soc_dai *dai, int clk_id,
 
 	mcasp->sysclk_freq = freq;
 
+	clk_mark_set_trace(true);
 	pm_runtime_put_sync(mcasp->dev);
+	clk_mark_set_trace(false);
 	return 0;
 }
 
@@ -969,7 +981,7 @@ static int davinci_mcasp_startup(struct snd_pcm_substream *substream,
 
 	snd_pcm_hw_constraint_minmax(substream->runtime,
 				     SNDRV_PCM_HW_PARAM_CHANNELS,
-				     2, max_channels);
+				     1, max_channels);
 	return 0;
 }
 
@@ -1024,8 +1036,13 @@ static int davinci_mcasp_suspend(struct snd_soc_dai *dai)
 	int i;
 	u32 reg;
 
-	if (!dai->active)
+	pr_err("%s\n", __func__);
+	if (!dai->active) {
+		clk_mark_set_trace(true);
 		pm_runtime_get_sync(mcasp->dev);
+		clk_mark_set_trace(false);
+	} else
+		pr_err("%s no get_sync\n", __func__);
 	context->txfmtctl = mcasp_get_reg(mcasp, DAVINCI_MCASP_TXFMCTL_REG);
 	context->rxfmtctl = mcasp_get_reg(mcasp, DAVINCI_MCASP_RXFMCTL_REG);
 	context->txfmt = mcasp_get_reg(mcasp, DAVINCI_MCASP_TXFMT_REG);
@@ -1051,7 +1068,9 @@ static int davinci_mcasp_suspend(struct snd_soc_dai *dai)
 		context->xrsrctl[i] = mcasp_get_reg(mcasp,
 						DAVINCI_MCASP_XRSRCTL_REG(i));
 
+	clk_mark_set_trace(true);
 	pm_runtime_put_sync(mcasp->dev);
+	clk_mark_set_trace(false);
 	return 0;
 }
 
@@ -1062,7 +1081,10 @@ static int davinci_mcasp_resume(struct snd_soc_dai *dai)
 	int i;
 	u32 reg;
 
+	pr_err("%s\n", __func__);
+	clk_mark_set_trace(true);
 	pm_runtime_get_sync(mcasp->dev);
+	clk_mark_set_trace(false);
 	mcasp_set_reg(mcasp, DAVINCI_MCASP_TXFMCTL_REG, context->txfmtctl);
 	mcasp_set_reg(mcasp, DAVINCI_MCASP_RXFMCTL_REG, context->rxfmtctl);
 	mcasp_set_reg(mcasp, DAVINCI_MCASP_TXFMT_REG, context->txfmt);
@@ -1088,8 +1110,12 @@ static int davinci_mcasp_resume(struct snd_soc_dai *dai)
 		mcasp_set_reg(mcasp, DAVINCI_MCASP_XRSRCTL_REG(i),
 			      context->xrsrctl[i]);
 
-	if (!dai->active)
+	if (!dai->active) {
+		clk_mark_set_trace(true);
 		pm_runtime_put_sync(mcasp->dev);
+		clk_mark_set_trace(false);
+	} else
+		pr_err("%s no put_sync\n", __func__);
 	return 0;
 }
 #else
@@ -1117,13 +1143,13 @@ static struct snd_soc_dai_driver davinci_mcasp_dai[] = {
 		.suspend	= davinci_mcasp_suspend,
 		.resume		= davinci_mcasp_resume,
 		.playback	= {
-			.channels_min	= 2,
+			.channels_min	= 1,
 			.channels_max	= 32 * 16,
 			.rates 		= DAVINCI_MCASP_RATES,
 			.formats	= DAVINCI_MCASP_PCM_FMTS,
 		},
 		.capture 	= {
-			.channels_min 	= 2,
+			.channels_min 	= 1,
 			.channels_max	= 32 * 16,
 			.rates 		= DAVINCI_MCASP_RATES,
 			.formats	= DAVINCI_MCASP_PCM_FMTS,
@@ -1210,16 +1236,19 @@ static int mcasp_reparent_fck(struct platform_device *pdev)
 	if (!node)
 		return 0;
 
+	clk_mark_set_trace(true);
 	parent_name = of_get_property(node, "fck_parent", NULL);
 	if (!parent_name)
 		return 0;
 
+	pr_err("%s: 01\n", __func__);
 	gfclk = clk_get(&pdev->dev, "fck");
 	if (IS_ERR(gfclk)) {
 		dev_err(&pdev->dev, "failed to get fck\n");
 		return PTR_ERR(gfclk);
 	}
 
+	pr_err("%s: 02 (parent_name: %s)\n", __func__, parent_name);
 	parent_clk = clk_get(NULL, parent_name);
 	if (IS_ERR(parent_clk)) {
 		dev_err(&pdev->dev, "failed to get parent clock\n");
@@ -1227,6 +1256,7 @@ static int mcasp_reparent_fck(struct platform_device *pdev)
 		goto err1;
 	}
 
+	pr_err("%s: 03\n", __func__);
 	ret = clk_set_parent(gfclk, parent_clk);
 	if (ret) {
 		dev_err(&pdev->dev, "failed to reparent fck\n");
@@ -1234,9 +1264,13 @@ static int mcasp_reparent_fck(struct platform_device *pdev)
 	}
 
 err2:
+	pr_err("%s: 04\n", __func__);
 	clk_put(parent_clk);
 err1:
+	pr_err("%s: 05\n", __func__);
 	clk_put(gfclk);
+	clk_mark_set_trace(false);
+
 	return ret;
 }
 

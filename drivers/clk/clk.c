@@ -36,6 +36,14 @@ static HLIST_HEAD(clk_root_list);
 static HLIST_HEAD(clk_orphan_list);
 static LIST_HEAD(clk_notifier_list);
 
+static bool trace_on;
+
+void clk_set_tarce(bool state)
+{
+	trace_on = state;
+}
+EXPORT_SYMBOL_GPL(clk_set_tarce);
+
 /***           locking             ***/
 static void clk_prepare_lock(void)
 {
@@ -74,6 +82,9 @@ static unsigned long clk_enable_lock(void)
 		}
 		spin_lock_irqsave(&enable_lock, flags);
 	}
+	if (trace_on && (enable_owner != NULL))
+		pr_err("%s: enable_owner is NOT null\n", __func__);
+		
 	WARN_ON_ONCE(enable_owner != NULL);
 	WARN_ON_ONCE(enable_refcnt != 0);
 	enable_owner = current;
@@ -83,6 +94,8 @@ static unsigned long clk_enable_lock(void)
 
 static void clk_enable_unlock(unsigned long flags)
 {
+	if (trace_on && (enable_owner != current))
+		pr_err("%s: enable_owner is NOT current\n", __func__);
 	WARN_ON_ONCE(enable_owner != current);
 	WARN_ON_ONCE(enable_refcnt == 0);
 
@@ -882,6 +895,9 @@ static void __clk_disable(struct clk *clk)
 	if (WARN_ON(IS_ERR(clk)))
 		return;
 
+	if (trace_on)
+		pr_err("%s: ENTER for %s\n", __func__, clk->name);
+
 	if (WARN_ON(clk->enable_count == 0))
 		return;
 
@@ -891,7 +907,10 @@ static void __clk_disable(struct clk *clk)
 	if (clk->ops->disable)
 		clk->ops->disable(clk->hw);
 
+
 	__clk_disable(clk->parent);
+	if (trace_on)
+		pr_err("%s: LEAVE for %s\n", __func__, clk->name);
 }
 
 /**
@@ -910,9 +929,13 @@ void clk_disable(struct clk *clk)
 {
 	unsigned long flags;
 
+	if (trace_on)
+		pr_err("%s: ENTER for %s\n", __func__, clk->name);
 	flags = clk_enable_lock();
 	__clk_disable(clk);
 	clk_enable_unlock(flags);
+	if (trace_on)
+		pr_err("%s: LEAVE for %s\n", __func__, clk->name);
 }
 EXPORT_SYMBOL_GPL(clk_disable);
 
@@ -922,6 +945,9 @@ static int __clk_enable(struct clk *clk)
 
 	if (!clk)
 		return 0;
+
+	if (trace_on)
+		pr_err("%s: ENTER for %s\n", __func__, clk->name);
 
 	if (WARN_ON(clk->prepare_count == 0))
 		return -ESHUTDOWN;
@@ -942,6 +968,8 @@ static int __clk_enable(struct clk *clk)
 	}
 
 	clk->enable_count++;
+	if (trace_on)
+		pr_err("%s: LEAVE for %s\n", __func__, clk->name);
 	return 0;
 }
 
@@ -1033,9 +1061,13 @@ int clk_enable(struct clk *clk)
 	unsigned long flags;
 	int ret;
 
+	if (trace_on)
+		pr_err("%s: ENTER for %s\n", __func__, clk->name);
 	flags = clk_enable_lock();
 	ret = __clk_enable(clk);
 	clk_enable_unlock(flags);
+	if (trace_on)
+		pr_err("%s: LEAVE for %s\n", __func__, clk->name);
 
 	return ret;
 }

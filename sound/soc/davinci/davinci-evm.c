@@ -38,15 +38,19 @@ struct snd_soc_card_drvdata_davinci {
 
 static int evm_startup(struct snd_pcm_substream *substream)
 {
+	int ret = 0;
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct snd_soc_card *soc_card = rtd->card;
 	struct snd_soc_card_drvdata_davinci *drvdata =
 		snd_soc_card_get_drvdata(soc_card);
 
-	if (drvdata->mclk)
-		return clk_prepare_enable(drvdata->mclk);
+	if (drvdata->mclk) {
+		clk_mark_set_trace(true);
+		ret = clk_prepare_enable(drvdata->mclk);
+		clk_mark_set_trace(false);
+	}
 
-	return 0;
+	return ret;
 }
 
 static int dra7xx_evm_startup(struct snd_pcm_substream *substream)
@@ -87,8 +91,11 @@ static void evm_shutdown(struct snd_pcm_substream *substream)
 	struct snd_soc_card_drvdata_davinci *drvdata =
 		snd_soc_card_get_drvdata(soc_card);
 
-	if (drvdata->mclk)
+	if (drvdata->mclk) {
+		clk_mark_set_trace(true);
 		clk_disable_unprepare(drvdata->mclk);
+		clk_mark_set_trace(false);
+	}
 }
 
 static int evm_hw_params(struct snd_pcm_substream *substream,

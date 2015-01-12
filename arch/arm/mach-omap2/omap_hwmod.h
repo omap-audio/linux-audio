@@ -680,6 +680,7 @@ struct omap_hwmod {
 	u32				_sysc_cache;
 	void __iomem			*_mpu_rt_va;
 	spinlock_t			_lock;
+	int				lock_counter;
 	struct list_head		node;
 	struct omap_hwmod_ocp_if	*_mpu_port;
 	u16				flags;

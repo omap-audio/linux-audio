@@ -22,6 +22,13 @@ struct clk;
 
 #ifdef CONFIG_COMMON_CLK
 
+void clk_set_tarce(bool state);
+#define clk_mark_set_trace(state)	\
+{					\
+	pr_err("%s -> trace %s", __func__, state ? "ENABLE" : "DISABLE"); \
+	clk_set_tarce(state); \
+}
+
 /**
  * DOC: clk notifier callback types
  *

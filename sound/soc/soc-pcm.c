@@ -25,6 +25,7 @@
 #include <linux/workqueue.h>
 #include <linux/export.h>
 #include <linux/debugfs.h>
+#include <linux/clk.h>
 #include <sound/core.h>
 #include <sound/pcm.h>
 #include <sound/pcm_params.h>
@@ -276,9 +277,11 @@ static int soc_pcm_open(struct snd_pcm_substream *substream)
 
 	pinctrl_pm_select_default_state(cpu_dai->dev);
 	pinctrl_pm_select_default_state(codec_dai->dev);
+	clk_mark_set_trace(true);
 	pm_runtime_get_sync(cpu_dai->dev);
 	pm_runtime_get_sync(codec_dai->dev);
 	pm_runtime_get_sync(platform->dev);
+	clk_mark_set_trace(false);
 
 	mutex_lock_nested(&rtd->pcm_mutex, rtd->pcm_subclass);
 
@@ -409,9 +412,11 @@ platform_err:
 out:
 	mutex_unlock(&rtd->pcm_mutex);
 
+	clk_mark_set_trace(true);
 	pm_runtime_put(platform->dev);
 	pm_runtime_put(codec_dai->dev);
 	pm_runtime_put(cpu_dai->dev);
+	clk_mark_set_trace(false);
 	if (!codec_dai->active)
 		pinctrl_pm_select_sleep_state(codec_dai->dev);
 	if (!cpu_dai->active)
@@ -517,9 +522,11 @@ static int soc_pcm_close(struct snd_pcm_substream *substream)
 
 	mutex_unlock(&rtd->pcm_mutex);
 
+	clk_mark_set_trace(true);
 	pm_runtime_put(platform->dev);
 	pm_runtime_put(codec_dai->dev);
 	pm_runtime_put(cpu_dai->dev);
+	clk_mark_set_trace(false);
 	if (!codec_dai->active)
 		pinctrl_pm_select_sleep_state(codec_dai->dev);
 	if (!cpu_dai->active)

@@ -77,6 +77,8 @@ static int atl_clk_enable(struct clk_hw *hw)
 {
 	struct dra7_atl_desc *cdesc = to_atl_desc(hw);
 
+	pr_err("%s: atl%d, %s\n", __func__, cdesc->id,
+	       cdesc->probed ? "probed" : "not probed");
 	if (!cdesc->probed)
 		goto out;
 
@@ -99,6 +101,8 @@ static void atl_clk_disable(struct clk_hw *hw)
 {
 	struct dra7_atl_desc *cdesc = to_atl_desc(hw);
 
+	pr_err("%s: atl%d, %s\n", __func__, cdesc->id,
+	       cdesc->probed ? "probed" : "not probed");
 	if (!cdesc->probed)
 		goto out;
 
@@ -112,6 +116,10 @@ out:
 static int atl_clk_is_enabled(struct clk_hw *hw)
 {
 	struct dra7_atl_desc *cdesc = to_atl_desc(hw);
+
+	pr_err("%s: atl%d, %s, %s\n", __func__, cdesc->id,
+	       cdesc->probed ? "probed" : "not probed",
+	       cdesc->enabled ? "enabled" : "disabled");
 
 	return cdesc->enabled;
 }
@@ -227,6 +235,7 @@ static int of_dra7_atl_clk_probe(struct platform_device *pdev)
 	pm_runtime_enable(cinfo->dev);
 	pm_runtime_irq_safe(cinfo->dev);
 
+	clk_mark_set_trace(true);
 	pm_runtime_get_sync(cinfo->dev);
 	atl_write(cinfo, DRA7_ATL_PCLKMUX_REG(0), DRA7_ATL_PCLKMUX);
 
@@ -279,6 +288,7 @@ static int of_dra7_atl_clk_probe(struct platform_device *pdev)
 			atl_clk_enable(__clk_get_hw(clk));
 	}
 	pm_runtime_put_sync(cinfo->dev);
+	clk_mark_set_trace(false);
 
 	return ret;
 }

@@ -3573,9 +3573,13 @@ int omap_hwmod_enable(struct omap_hwmod *oh)
 	if (!oh)
 		return -EINVAL;
 
+	pr_err("%s: ENTER for %s (lock_counter: %d)\n", __func__, oh->name, oh->lock_counter);
 	spin_lock_irqsave(&oh->_lock, flags);
+	oh->lock_counter++;
 	r = _enable(oh);
 	spin_unlock_irqrestore(&oh->_lock, flags);
+	oh->lock_counter--;
+	pr_err("%s: LEAVE for %s\n", __func__, oh->name);
 
 	return r;
 }
@@ -3594,9 +3598,13 @@ int omap_hwmod_idle(struct omap_hwmod *oh)
 	if (!oh)
 		return -EINVAL;
 
+	pr_err("%s: ENTER for %s (lock_counter: %d)\n", __func__, oh->name, oh->lock_counter);
 	spin_lock_irqsave(&oh->_lock, flags);
+	oh->lock_counter++;
 	_idle(oh);
 	spin_unlock_irqrestore(&oh->_lock, flags);
+	oh->lock_counter--;
+	pr_err("%s: LEAVE for %s\n", __func__, oh->name);
 
 	return 0;
 }
@@ -3616,9 +3624,13 @@ int omap_hwmod_shutdown(struct omap_hwmod *oh)
 	if (!oh)
 		return -EINVAL;
 
+	pr_err("%s: ENTER for %s (lock_counter: %d)\n", __func__, oh->name, oh->lock_counter);
 	spin_lock_irqsave(&oh->_lock, flags);
+	oh->lock_counter++;
 	_shutdown(oh);
 	spin_unlock_irqrestore(&oh->_lock, flags);
+	oh->lock_counter--;
+	pr_err("%s: LEAVE for %s\n", __func__, oh->name);
 
 	return 0;
 }
@@ -3633,9 +3645,13 @@ int omap_hwmod_enable_clocks(struct omap_hwmod *oh)
 {
 	unsigned long flags;
 
+	pr_err("%s: ENTER for %s (lock_counter: %d)\n", __func__, oh->name, oh->lock_counter);
 	spin_lock_irqsave(&oh->_lock, flags);
+	oh->lock_counter++;
 	_enable_clocks(oh);
 	spin_unlock_irqrestore(&oh->_lock, flags);
+	oh->lock_counter--;
+	pr_err("%s: LEAVE for %s\n", __func__, oh->name);
 
 	return 0;
 }
@@ -3650,9 +3666,13 @@ int omap_hwmod_disable_clocks(struct omap_hwmod *oh)
 {
 	unsigned long flags;
 
+	pr_err("%s: ENTER for %s (lock_counter: %d)\n", __func__, oh->name, oh->lock_counter);
 	spin_lock_irqsave(&oh->_lock, flags);
+	oh->lock_counter++;
 	_disable_clocks(oh);
 	spin_unlock_irqrestore(&oh->_lock, flags);
+	oh->lock_counter--;
+	pr_err("%s: LEAVE for %s\n", __func__, oh->name);
 
 	return 0;
 }
@@ -3701,9 +3721,13 @@ int omap_hwmod_reset(struct omap_hwmod *oh)
 	if (!oh)
 		return -EINVAL;
 
+	pr_err("%s: ENTER for %s (lock_counter: %d)\n", __func__, oh->name, oh->lock_counter);
 	spin_lock_irqsave(&oh->_lock, flags);
+	oh->lock_counter++;
 	r = _reset(oh);
 	spin_unlock_irqrestore(&oh->_lock, flags);
+	oh->lock_counter--;
+	pr_err("%s: LEAVE for %s\n", __func__, oh->name);
 
 	return r;
 }
@@ -4025,7 +4049,9 @@ int omap_hwmod_enable_wakeup(struct omap_hwmod *oh)
 	unsigned long flags;
 	u32 v;
 
+	pr_err("%s: ENTER for %s (lock_counter: %d)\n", __func__, oh->name, oh->lock_counter);
 	spin_lock_irqsave(&oh->_lock, flags);
+	oh->lock_counter++;
 
 	if (oh->class->sysc &&
 	    (oh->class->sysc->sysc_flags & SYSC_HAS_ENAWAKEUP)) {
@@ -4036,6 +4062,8 @@ int omap_hwmod_enable_wakeup(struct omap_hwmod *oh)
 
 	_set_idle_ioring_wakeup(oh, true);
 	spin_unlock_irqrestore(&oh->_lock, flags);
+	oh->lock_counter--;
+	pr_err("%s: LEAVE for %s\n", __func__, oh->name);
 
 	return 0;
 }
@@ -4058,7 +4086,9 @@ int omap_hwmod_disable_wakeup(struct omap_hwmod *oh)
 	unsigned long flags;
 	u32 v;
 
+	pr_err("%s: ENTER for %s (lock_counter: %d)\n", __func__, oh->name, oh->lock_counter);
 	spin_lock_irqsave(&oh->_lock, flags);
+	oh->lock_counter++;
 
 	if (oh->class->sysc &&
 	    (oh->class->sysc->sysc_flags & SYSC_HAS_ENAWAKEUP)) {
@@ -4069,6 +4099,8 @@ int omap_hwmod_disable_wakeup(struct omap_hwmod *oh)
 
 	_set_idle_ioring_wakeup(oh, false);
 	spin_unlock_irqrestore(&oh->_lock, flags);
+	oh->lock_counter--;
+	pr_err("%s: LEAVE for %s\n", __func__, oh->name);
 
 	return 0;
 }
@@ -4093,9 +4125,13 @@ int omap_hwmod_assert_hardreset(struct omap_hwmod *oh, const char *name)
 	if (!oh)
 		return -EINVAL;
 
+	pr_err("%s: ENTER for %s (lock_counter: %d)\n", __func__, oh->name, oh->lock_counter);
 	spin_lock_irqsave(&oh->_lock, flags);
+	oh->lock_counter++;
 	ret = _assert_hardreset(oh, name);
 	spin_unlock_irqrestore(&oh->_lock, flags);
+	oh->lock_counter--;
+	pr_err("%s: LEAVE for %s\n", __func__, oh->name);
 
 	return ret;
 }
@@ -4120,9 +4156,13 @@ int omap_hwmod_deassert_hardreset(struct omap_hwmod *oh, const char *name)
 	if (!oh)
 		return -EINVAL;
 
+	pr_err("%s: ENTER for %s (lock_counter: %d)\n", __func__, oh->name, oh->lock_counter);
 	spin_lock_irqsave(&oh->_lock, flags);
+	oh->lock_counter++;
 	ret = _deassert_hardreset(oh, name);
 	spin_unlock_irqrestore(&oh->_lock, flags);
+	oh->lock_counter--;
+	pr_err("%s: LEAVE for %s\n", __func__, oh->name);
 
 	return ret;
 }
@@ -4146,9 +4186,13 @@ int omap_hwmod_read_hardreset(struct omap_hwmod *oh, const char *name)
 	if (!oh)
 		return -EINVAL;
 
+	pr_err("%s: ENTER for %s (lock_counter: %d)\n", __func__, oh->name, oh->lock_counter);
 	spin_lock_irqsave(&oh->_lock, flags);
+	oh->lock_counter++;
 	ret = _read_hardreset(oh, name);
 	spin_unlock_irqrestore(&oh->_lock, flags);
+	oh->lock_counter--;
+	pr_err("%s: LEAVE for %s\n", __func__, oh->name);
 
 	return ret;
 }
@@ -4221,7 +4265,9 @@ int omap_hwmod_set_postsetup_state(struct omap_hwmod *oh, u8 state)
 	    state != _HWMOD_STATE_IDLE)
 		return -EINVAL;
 
+	pr_err("%s: ENTER for %s (lock_counter: %d)\n", __func__, oh->name, oh->lock_counter);
 	spin_lock_irqsave(&oh->_lock, flags);
+	oh->lock_counter++;
 
 	if (oh->_state != _HWMOD_STATE_REGISTERED) {
 		ret = -EINVAL;
@@ -4233,6 +4279,8 @@ int omap_hwmod_set_postsetup_state(struct omap_hwmod *oh, u8 state)
 
 ohsps_unlock:
 	spin_unlock_irqrestore(&oh->_lock, flags);
+	oh->lock_counter--;
+	pr_err("%s: LEAVE for %s\n", __func__, oh->name);
 
 	return ret;
 }
