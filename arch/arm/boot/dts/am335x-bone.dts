@@ -13,6 +13,59 @@
 / {
 	model = "TI AM335x BeagleBone";
 	compatible = "ti,am335x-bone", "ti,am33xx";
+
+	sound0: sound@0 {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "BeagleBone-Cape";
+		simple-audio-card,widgets =
+			"Headphone", "Headphone Jack",
+			"Line", "Line In";
+		simple-audio-card,routing =
+			"Headphone Jack",	"HPLOUT",
+			"Headphone Jack",	"HPROUT",
+			"LINE1L",		"Line In",
+			"LINE1R",		"Line In";
+		simple-audio-card,format = "dsp_b";
+		simple-audio-card,bitclock-master = <&sound0_master>;
+		simple-audio-card,frame-master = <&sound0_master>;
+		simple-audio-card,bitclock-inversion;
+
+		simple-audio-card,cpu {
+			sound-dai = <&mcasp0>;
+		};
+
+		sound0_master: simple-audio-card,codec {
+			sound-dai = <&tlv320aic3106>;
+			system-clock-frequency = <12000000>;
+		};
+	};
+};
+
+&am33xx_pinmux {
+	mcasp0_pins: mcasp0_pins {
+		pinctrl-single,pins = <
+			0x194 (PIN_INPUT_PULLDOWN | MUX_MODE0) /* mcasp0_fsx.mcasp0_fsx */
+			0x190 (PIN_INPUT_PULLDOWN | MUX_MODE0) /* mcasp0_aclkx.mcasp0_aclkx */
+			0x1ac (PIN_OUTPUT_PULLDOWN | MUX_MODE2) /* mcasp0_ahclkx.mcasp0_axr3 */
+			0x19c (PIN_INPUT_PULLDOWN | MUX_MODE2) /* mcasp0_ahclkr.mcasp0_axr2 */
+		>;
+	};
+
+	mcasp0_pins_sleep: mcasp0_pins_sleep {
+		pinctrl-single,pins = <
+			0x194 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+			0x190 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+			0x1ac (PIN_INPUT_PULLDOWN | MUX_MODE7)
+			0x19c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+		>;
+	};
+
+	i2c2_pins: pinmux_i2c2_pins {
+		pinctrl-single,pins = <
+			0x178 (PIN_INPUT_PULLUP | MUX_MODE3)	/* uart1_ctsn.i2c2_sda */
+			0x17c (PIN_INPUT_PULLUP | MUX_MODE3)	/* uart1_rtsn.i2c2_scl */
+		>;
+	};
 };
 
 &ldo3_reg {
@@ -23,4 +76,43 @@
 
 &mmc1 {
 	vmmc-supply = <&ldo3_reg>;
+};
+
+&i2c2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&i2c2_pins>;
+
+	status = "okay";
+	clock-frequency = <400000>;
+
+	tlv320aic3106: tlv320aic3106@1b {
+		#sound-dai-cells = <0>;
+		compatible = "ti,tlv320aic3106";
+		reg = <0x1b>;
+		status = "okay";
+		adc-settle-ms = <40>;
+
+		AVDD-supply = <&vmmcsd_fixed>;
+		IOVDD-supply = <&vmmcsd_fixed>;
+		DRVDD-supply = <&vmmcsd_fixed>;
+		DVDD-supply = <&vmmcsd_fixed>;
+	};
+};
+
+&mcasp0 {
+		#sound-dai-cells = <0>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&mcasp0_pins>;
+	pinctrl-1 = <&mcasp0_pins_sleep>;
+
+	status = "okay";
+
+	op-mode = <0>;	/* MCASP_IIS_MODE */
+	tdm-slots = <2>;
+	/* 4 serializers */
+	serial-dir = <	/* 0: INACTIVE, 1: TX, 2: RX */
+		0 0 2 1
+	>;
+	tx-num-evt = <32>;
+	rx-num-evt = <32>;
 };
