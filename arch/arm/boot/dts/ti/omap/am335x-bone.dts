@@ -6,10 +6,132 @@
 
 #include "am33xx.dtsi"
 #include "am335x-bone-common.dtsi"
+#include <dt-bindings/sound/ti-mcasp.h>
 
 / {
 	model = "TI AM335x BeagleBone";
 	compatible = "ti,am335x-bone", "ti,am33xx";
+
+	v1_8d_reg: fixedregulator-v1_8d {
+		compatible = "regulator-fixed";
+		regulator-name = "v1_8d";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+	};
+
+	dummy_codec0: dummy_codec@0 {
+		compatible = "linux,snd-soc-dummy";
+		#sound-dai-cells = <0>;
+	};
+
+	sound0: sound@0 {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "BeagleBone-Cape";
+		simple-audio-card,widgets =
+			"Headphone", "Headphone Jack",
+			"Line", "Line In";
+		simple-audio-card,routing =
+			"Headphone Jack",	"HPLOUT",
+			"Headphone Jack",	"HPROUT",
+			"LINE1L",		"Line In",
+			"LINE1R",		"Line In";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,bitclock-master = <&sound0_master>;
+		simple-audio-card,frame-master = <&sound0_master>;
+
+		status = "okay";
+
+		sound0_master: simple-audio-card,cpu {
+			sound-dai = <&mcasp0>;
+			system-clock-frequency = <24000000>;
+			system-clock-id = <MCASP_CLK_HCLK_AUXCLK>;
+		};
+
+		simple-audio-card,codec {
+			sound-dai = <&tlv320aic3106>;
+			clocks = <&clkout2_ck>;
+		};
+	};
+
+	sound1: sound@1 {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "BeagleBone-dummy";
+		simple-audio-card,widgets =
+			"Speaker", "Speaker Port";
+		simple-audio-card,routing =
+			"Speaker Port",	"OUT",
+			"Speaker Port",	"OUT";
+		simple-audio-card,format = "dsp_a";
+		simple-audio-card,bitclock-master = <&sound1_master>;
+		simple-audio-card,frame-master = <&sound1_master>;
+
+		status = "disabled";
+
+		sound1_master: simple-audio-card,cpu {
+			sound-dai = <&mcasp0>;
+			system-clock-frequency = <24000000>;
+			system-clock-id = <MCASP_CLK_HCLK_AUXCLK>;
+			dai-tdm-slot-num = <8>;
+			dai-tdm-slot-width = <32>;
+			dai-tdm-slot-tx-mask = <1 1 1 1 1 1 1 1>;
+			dai-tdm-slot-rx-mask = <1 1 1 1 1 1>;
+		};
+
+		simple-audio-card,codec {
+			sound-dai = <&dummy_codec0>;
+		};
+	};
+};
+
+&am33xx_pinmux {
+	mcasp0_pins: mcasp0_pins {
+		pinctrl-single,pins = <
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_FSX, PIN_INPUT_PULLDOWN, MUX_MODE0) /* mcasp0_fsx */
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_ACLKX, PIN_INPUT_PULLDOWN, MUX_MODE0) /* mcasp0_aclkx */
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_AHCLKX, PIN_OUTPUT_PULLDOWN, MUX_MODE2) /* mcasp0_axr3 */
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_AHCLKR, PIN_INPUT_PULLDOWN, MUX_MODE2) /* mcasp0_axr2 */
+		>;
+	};
+
+	mcasp0_pins_sleep: mcasp0_pins_sleep {
+		pinctrl-single,pins = <
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_FSX, PIN_INPUT_PULLDOWN, MUX_MODE7)
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_ACLKX, PIN_INPUT_PULLDOWN, MUX_MODE7)
+//			AM33XX_PADCONF(AM335X_PIN_MCASP0_AHCLKX, PIN_INPUT_PULLDOWN, MUX_MODE7)
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_AHCLKX, PIN_OUTPUT_PULLDOWN, MUX_MODE3) /* mcasp1_axr1 */
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_AHCLKR, PIN_INPUT_PULLDOWN, MUX_MODE7)
+		>;
+	};
+
+	mcasp1_pins: mcasp1_pins {
+		pinctrl-single,pins = <
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_FSR, PIN_OUTPUT_PULLDOWN, MUX_MODE3) /* mcasp1_fsx */
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_ACLKR, PIN_OUTPUT_PULLDOWN, MUX_MODE3) /* mcasp1_aclkx */
+//			AM33XX_PADCONF(AM335X_PIN_MCASP0_AXR1, PIN_OUTPUT_PULLDOWN, MUX_MODE2) /* mcasp1_axr0 */
+//			AM33XX_PADCONF(AM335X_PIN_MCASP0_AHCLKX, PIN_OUTPUT_PULLDOWN, MUX_MODE3) /* mcasp1_axr1 */
+		>;
+	};
+
+	mcasp1_pins_sleep: mcasp1_pins_sleep {
+		pinctrl-single,pins = <
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_FSR, PIN_INPUT_PULLDOWN, MUX_MODE7) /* mcasp1_fsx */
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_ACLKR, PIN_INPUT_PULLDOWN, MUX_MODE7) /* mcasp1_aclkx */
+//			AM33XX_PADCONF(AM335X_PIN_MCASP0_AXR1, PIN_INPUT_PULLDOWN, MUX_MODE7) /* mcasp1_axr0 */
+//			AM33XX_PADCONF(AM335X_PIN_MCASP0_AHCLKX, PIN_INPUT_PULLDOWN, MUX_MODE7) /* mcasp1_axr1 */
+			AM33XX_PADCONF(AM335X_PIN_ECAP0_IN_PWM0_OUT, PIN_OUTPUT, MUX_MODE7) /* gpio0_7 */
+		>;
+	};
+};
+
+&sysclkout_pre_ck {
+	assigned-clocks = <&sysclkout_pre_ck>;
+	assigned-clock-parents = <&lcd_gclk>;
+};
+
+&clkout2_div_ck {
+	assigned-clocks = <&clkout2_div_ck>;
+//	assigned-clock-rates = <8000000>; /* 8MHz */
+	assigned-clock-rates = <12000000>; /* 12MHz */
 };
 
 &ldo3_reg {
@@ -20,4 +142,63 @@
 
 &mmc1 {
 	vmmc-supply = <&ldo3_reg>;
+};
+
+&i2c2 {
+	tlv320aic3106: tlv320aic3106@1b {
+		#sound-dai-cells = <0>;
+		compatible = "ti,tlv320aic3106";
+		reg = <0x1b>;
+		status = "okay";
+		adc-settle-ms = <40>;
+
+		AVDD-supply = <&vmmcsd_fixed>;
+		IOVDD-supply = <&vmmcsd_fixed>;
+		DRVDD-supply = <&vmmcsd_fixed>;
+		DVDD-supply = <&v1_8d_reg>;
+	};
+
+	tlv320aic3253: tlv320aic3253@18 {
+		#sound-dai-cells = <0>;
+		compatible = "ti,tlv320aic3253";
+		reg = <0x18>;
+//		status = "okay";
+		status = "disabled";
+	};
+};
+
+&mcasp0 {
+	#sound-dai-cells = <0>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&mcasp0_pins>;
+	pinctrl-1 = <&mcasp0_pins_sleep>;
+
+	status = "okay";
+
+	op-mode = <0>;	/* MCASP_IIS_MODE */
+	tdm-slots = <2>;
+	/* 4 serializers */
+	serial-dir = <	/* 0: INACTIVE, 1: TX, 2: RX */
+		0 0 2 1
+	>;
+	tx-num-evt = <32>;
+	rx-num-evt = <32>;
+};
+
+&mcasp1 {
+	#sound-dai-cells = <0>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&mcasp1_pins>;
+	pinctrl-1 = <&mcasp1_pins_sleep>;
+
+	status = "okay";
+
+	op-mode = <0>;	/* MCASP_IIS_MODE */
+	tdm-slots = <2>;
+	/* 4 serializers */
+	serial-dir = <	/* 0: INACTIVE, 1: TX, 2: RX */
+		0 1 0 0
+	>;
+	tx-num-evt = <32>;
+	rx-num-evt = <32>;
 };
