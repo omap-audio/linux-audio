@@ -170,6 +170,8 @@ static int omap_twl4030_init(struct snd_soc_pcm_runtime *rtd)
 			return ret;
 	}
 
+	omap_mcbsp_st_add_controls(rtd, 2);
+
 	/*
 	 * NULL pdata means we booted with DT. In this case the routing is
 	 * provided and the card is fully routed, no need to mark pins.
