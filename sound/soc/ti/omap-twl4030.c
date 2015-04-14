@@ -320,14 +320,22 @@ static struct snd_soc_dai_link omap_twl4030_dai_links[] = {
 		.ops = &omap_twl4030_slave_ops,
 	},
 	{
-		.name = "TWL4030 Voice",
-		.stream_name = "TWL4030 Voice",
+		.name = "McBSP1 CxS",
+		.stream_name = "McBSP1 CxS",
+		.cpu_dai_name = "omap-mcbsp.1",
+		.codec_dai_name = "twl4030-hifi",
+		.platform_name = "omap-mcbsp.1",
+		.codec_name = "twl4030-codec",
+		.ops = &omap_twl4030_slave_ops,
+	},
+	{
+		.name = "McBSP3 CxS",
+		.stream_name = "McBSP3 CxS",
 		.cpu_dai_name = "omap-mcbsp.3",
-		.codec_dai_name = "twl4030-voice",
+		.codec_dai_name = "twl4030-hifi",
 		.platform_name = "omap-mcbsp.3",
 		.codec_name = "twl4030-codec",
-		.dai_fmt = SND_SOC_DAIFMT_DSP_A | SND_SOC_DAIFMT_IB_NF |
-			   SND_SOC_DAIFMT_CBM_CFM,
+		.ops = &omap_twl4030_slave_ops,
 	},
 };
 
@@ -381,16 +389,25 @@ static int omap_twl4030_probe(struct platform_device *pdev)
 		omap_twl4030_dai_links[0].platform_of_node = dai_node;
 		omap_twl4030_dai_links[1].platform_of_node = dai_node;
 
-		dai_node = of_parse_phandle(node, "ti,mcbsp-voice", 0);
+		dai_node = of_parse_phandle(node, "ti,mcbsp1", 0);
 		if (!dai_node) {
-			card->num_links = 2;
-		} else {
-			omap_twl4030_dai_links[1].cpu_dai_name  = NULL;
-			omap_twl4030_dai_links[1].cpu_of_node = dai_node;
-
-			omap_twl4030_dai_links[1].platform_name  = NULL;
-			omap_twl4030_dai_links[1].platform_of_node = dai_node;
+			dev_err(&pdev->dev, "McBSP1 node is not provided\n");
+			return -EINVAL;
 		}
+		omap_twl4030_dai_links[2].cpu_dai_name  = NULL;
+		omap_twl4030_dai_links[2].cpu_of_node = dai_node;
+		omap_twl4030_dai_links[2].platform_name  = NULL;
+		omap_twl4030_dai_links[2].platform_of_node = dai_node;
+
+		dai_node = of_parse_phandle(node, "ti,mcbsp3", 0);
+		if (!dai_node) {
+			dev_err(&pdev->dev, "McBSP3 node is not provided\n");
+			return -EINVAL;
+		}
+		omap_twl4030_dai_links[3].cpu_dai_name  = NULL;
+		omap_twl4030_dai_links[3].cpu_of_node = dai_node;
+		omap_twl4030_dai_links[3].platform_name  = NULL;
+		omap_twl4030_dai_links[3].platform_of_node = dai_node;
 
 		priv->jack_detect = of_get_named_gpio(node,
 						      "ti,jack-det-gpio", 0);
@@ -412,9 +429,6 @@ static int omap_twl4030_probe(struct platform_device *pdev)
 			dev_err(&pdev->dev, "Card name is not provided\n");
 			return -ENODEV;
 		}
-
-		if (!pdata->voice_connected)
-			card->num_links = 2;
 
 		priv->jack_detect = pdata->jack_detect;
 	} else {
