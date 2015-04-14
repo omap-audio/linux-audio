@@ -68,6 +68,8 @@
 		ti,model = "omap3beagle";
 
 		ti,mcbsp = <&mcbsp2>;
+		ti,mcbsp1 = <&mcbsp1>;
+		ti,mcbsp3 = <&mcbsp3>;
 	};
 
 	gpio_keys {
@@ -256,6 +258,25 @@
 			OMAP3_CORE1_IOPAD(0x210a, PIN_OUTPUT | MUX_MODE3)   /* dss_data23.dss_data5 */
 		>;
 	};
+
+       mcbsp1_pins: pinmux_mcbsp1_pins {
+                pinctrl-single,pins = <
+                        OMAP3_CORE1_IOPAD(0x2196, PIN_INPUT | MUX_MODE0) /* mcbsp1_fsx.mcbsp1_fsx */
+                        OMAP3_CORE1_IOPAD(0x218e, PIN_INPUT | MUX_MODE0) /* mcbsp1_fsr.mcbsp1_fsr */
+                        OMAP3_CORE1_IOPAD(0x2198, PIN_INPUT | MUX_MODE0) /* mcbsp1_clkx.mcbsp1_clkx */
+                        OMAP3_CORE1_IOPAD(0x218c, PIN_INPUT | MUX_MODE0) /* mcbsp1_clkr.mcbsp1_clkr */
+                        OMAP3_CORE1_IOPAD(0x2190, PIN_OUTPUT | MUX_MODE0) /* mcbsp1_dx.mcbsp1_dx */
+                        OMAP3_CORE1_IOPAD(0x2192, PIN_INPUT | MUX_MODE0)  /* mcbsp1_dr.mcbsp1_dr */
+                >;
+        };
+	mcbsp3_pins: pinmux_mcbsp3_pins {
+		pinctrl-single,pins = <
+			OMAP3_CORE1_IOPAD(0x2172, PIN_INPUT | MUX_MODE0) /* mcbsp3_fsx.mcbsp3_fsx */
+			OMAP3_CORE1_IOPAD(0x2178, PIN_INPUT | MUX_MODE1) /* uart2_tx.mcbsp3_clkx */
+			OMAP3_CORE1_IOPAD(0x2174, PIN_OUTPUT | MUX_MODE1) /* uart2_cts.mcbsp3_dx */
+			OMAP3_CORE1_IOPAD(0x2176, PIN_INPUT | MUX_MODE1)  /* uart2_rts.mcbsp3_dr */
+		>;
+	};
 };
 
 &omap3_pmx_core2 {
@@ -387,7 +408,19 @@
 	regulator-always-on;
 };
 
+&mcbsp1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&mcbsp1_pins>;
+	status = "okay";
+};
+
 &mcbsp2 {
+	status = "okay";
+};
+
+&mcbsp3 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&mcbsp3_pins>;
 	status = "okay";
 };
 
