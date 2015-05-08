@@ -1,0 +1,61 @@
+Texas Instruments - tas2555 Class-D Mono Audio Amplifier
+		    http://www.ti.com/product/TAS2555
+
+Required properties:
+- compatible - "ti,tas2555"
+- reg -  I2C slave address
+- supply-*: Required supply regulators are:
+	 "iovdd"	I/O power supply
+	 "avdd"		Analog power supply
+	 "dvdd"		Digital power supply
+
+Optional properties:
+- nreset-gpio - gpio pin to enable/disable the device
+- supply-vbat - Battery power supply
+
+tas2555 can receive it's reference clock via several pin: GPIO1-10, GPI1-3.
+Three digital audio interface is available for connecting to CPU or other
+audio component.
+
+For system integration the dt-bindings/sound/tas2555.h header file provides
+defined values to select the pin for MCLK and predefined values for selecting
+the DAI to be used.
+
+Example:
+
+tas2555: tas2555@4c {
+	#sound-dai-cells = <1>;
+	compatible = "ti,tas2555";
+	reg = <0x4c>;
+	nreset-gpio = <&gpio4 2 GPIO_ACTIVE_HIGH>;
+
+	iovdd-supply = <&boardio_fixed>;
+	avdd-supply = <&aud18v_fixed>;
+	dvdd-supply = <&aud18v_fixed>;
+};
+
+sound {
+	compatible = "simple-audio-card";
+	simple-audio-card,name = "TAS2555 card";
+	simple-audio-card,widgets =
+		"Speaker", "Speaker Port";
+	simple-audio-card,routing =
+		"Speaker Port",	"OUT",
+		"Speaker Port",	"OUT";
+	simple-audio-card,format = "i2s";
+	simple-audio-card,bitclock-master = <&sound_master>;
+	simple-audio-card,frame-master = <&sound_master>;
+
+	status = "okay";
+
+	sound_master: simple-audio-card,cpu {
+		sound-dai = <&mcasp0>;
+		system-clock-frequency = <24000000>;
+		system-clock-id = <MCASP_CLK_HCLK_AUXCLK>;
+	};
+
+	simple-audio-card,codec {
+		sound-dai = <&tas2555 TAS2555_DAI_ASI1>;
+		clocks = <&clkout2_ck>;
+	};
+};
