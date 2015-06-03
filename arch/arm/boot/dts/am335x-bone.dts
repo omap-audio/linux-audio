@@ -9,6 +9,8 @@
 
 #include "am33xx.dtsi"
 #include "am335x-bone-common.dtsi"
+#include <dt-bindings/sound/ti-mcasp.h>
+#include <dt-bindings/sound/tas2555.h>
 
 / {
 	model = "TI AM335x BeagleBone";
@@ -25,18 +27,73 @@
 			"Headphone Jack",	"HPROUT",
 			"LINE1L",		"Line In",
 			"LINE1R",		"Line In";
-		simple-audio-card,format = "dsp_b";
+		simple-audio-card,format = "i2s";
 		simple-audio-card,bitclock-master = <&sound0_master>;
 		simple-audio-card,frame-master = <&sound0_master>;
-		simple-audio-card,bitclock-inversion;
 
-		simple-audio-card,cpu {
+		status = "disabled";
+
+		sound0_master: simple-audio-card,cpu {
 			sound-dai = <&mcasp0>;
+			system-clock-frequency = <24000000>;
+			system-clock-id = <MCASP_CLK_HCLK_AUXCLK>;
 		};
 
-		sound0_master: simple-audio-card,codec {
+		simple-audio-card,codec {
 			sound-dai = <&tlv320aic3106>;
-			system-clock-frequency = <12000000>;
+			clocks = <&clkout2_ck>;
+		};
+	};
+
+	sound1: sound@1 {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "BeagleBone-TAS2552";
+		simple-audio-card,widgets =
+			"Speaker", "Speaker Port";
+		simple-audio-card,routing =
+			"Speaker Port",	"OUT",
+			"Speaker Port",	"OUT";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,bitclock-master = <&sound1_master>;
+		simple-audio-card,frame-master = <&sound1_master>;
+
+		status = "disabled";
+
+		sound1_master: simple-audio-card,cpu {
+			sound-dai = <&mcasp0>;
+			system-clock-frequency = <24000000>;
+			system-clock-id = <MCASP_CLK_HCLK_AUXCLK>;
+		};
+
+		simple-audio-card,codec {
+			sound-dai = <&tas2552>;
+			clocks = <&clkout2_ck>;
+		};
+	};
+
+	sound2: sound@2 {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "BeagleBone-TAS2555";
+		simple-audio-card,widgets =
+			"Speaker", "Speaker Port";
+		simple-audio-card,routing =
+			"Speaker Port",	"OUT",
+			"Speaker Port",	"OUT";
+		simple-audio-card,format = "i2s";
+		simple-audio-card,bitclock-master = <&sound2_master>;
+		simple-audio-card,frame-master = <&sound2_master>;
+
+		status = "okay";
+
+		sound2_master: simple-audio-card,cpu {
+			sound-dai = <&mcasp0>;
+			system-clock-frequency = <24000000>;
+			system-clock-id = <MCASP_CLK_HCLK_AUXCLK>;
+		};
+
+		simple-audio-card,codec {
+			sound-dai = <&tas2555 TAS2555_DAI_ASI1>;
+			clocks = <&clkout2_ck>;
 		};
 	};
 };
@@ -55,8 +112,28 @@
 		pinctrl-single,pins = <
 			0x194 (PIN_INPUT_PULLDOWN | MUX_MODE7)
 			0x190 (PIN_INPUT_PULLDOWN | MUX_MODE7)
-			0x1ac (PIN_INPUT_PULLDOWN | MUX_MODE7)
+//			0x1ac (PIN_INPUT_PULLDOWN | MUX_MODE7)
+			0x1ac (PIN_OUTPUT_PULLDOWN | MUX_MODE3) /* mcasp0_ahclkx.mcasp1_axr1 */
 			0x19c (PIN_INPUT_PULLDOWN | MUX_MODE7)
+		>;
+	};
+
+	mcasp1_pins: mcasp1_pins {
+		pinctrl-single,pins = <
+			0x1a4 (PIN_OUTPUT_PULLDOWN | MUX_MODE3) /* mcasp0_fsr.mcasp1_fsx */
+			0x1a0 (PIN_OUTPUT_PULLDOWN | MUX_MODE3) /* mcasp0_aclkr.mcasp1_aclkx */
+//			0x1a8 (PIN_OUTPUT_PULLDOWN | MUX_MODE2) /* mcasp0_axr1.mcasp1_axr0 */
+//			0x1ac (PIN_OUTPUT_PULLDOWN | MUX_MODE3) /* mcasp0_ahclkx.mcasp1_axr1 */
+		>;
+	};
+
+	mcasp1_pins_sleep: mcasp1_pins_sleep {
+		pinctrl-single,pins = <
+			0x1a4 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+			0x1a0 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+//			0x1a8 (PIN_INPUT_PULLDOWN | MUX_MODE7)
+//			0x1ac (PIN_INPUT_PULLDOWN | MUX_MODE7)
+			0x164 (PIN_OUTPUT | MUX_MODE7) /* ecap0_in_pwm0_out.gpio0_7*/
 		>;
 	};
 
@@ -66,6 +143,17 @@
 			0x17c (PIN_INPUT_PULLUP | MUX_MODE3)	/* uart1_rtsn.i2c2_scl */
 		>;
 	};
+};
+
+&sysclkout_pre_ck {
+	assigned-clocks = <&sysclkout_pre_ck>;
+	assigned-clock-parents = <&lcd_gclk>;
+};
+
+&clkout2_div_ck {
+	assigned-clocks = <&clkout2_div_ck>;
+//	assigned-clock-rates = <12000000>; /* 12MHz */
+	assigned-clock-rates = <8000000>; /* 8MHz */
 };
 
 &ldo3_reg {
@@ -97,10 +185,37 @@
 		DRVDD-supply = <&vmmcsd_fixed>;
 		DVDD-supply = <&vmmcsd_fixed>;
 	};
+
+	tlv320aic3253: tlv320aic3253@18 {
+		#sound-dai-cells = <0>;
+		compatible = "ti,tlv320aic3253";
+		reg = <0x18>;
+//		status = "okay";
+		status = "disabled";
+	};
+
+	tas2552: tas2552@40 { // A0=0
+		#sound-dai-cells = <0>;
+		compatible = "ti,tas2552";
+		reg = <0x40>; // A0 =0
+		status = "okay";
+
+		vbat-supply = <&vmmcsd_fixed>;
+		iovdd-supply = <&vmmcsd_fixed>;
+		avdd-supply = <&vmmcsd_fixed>;
+	};
+
+	tas2555: tas2555@4c {
+		#sound-dai-cells = <1>;
+		compatible = "ti,tas2555";
+		reg = <0x4c>;
+		status = "okay";
+	};
+
 };
 
 &mcasp0 {
-		#sound-dai-cells = <0>;
+	#sound-dai-cells = <0>;
 	pinctrl-names = "default", "sleep";
 	pinctrl-0 = <&mcasp0_pins>;
 	pinctrl-1 = <&mcasp0_pins_sleep>;
@@ -112,6 +227,24 @@
 	/* 4 serializers */
 	serial-dir = <	/* 0: INACTIVE, 1: TX, 2: RX */
 		0 0 2 1
+	>;
+	tx-num-evt = <32>;
+	rx-num-evt = <32>;
+};
+
+&mcasp1 {
+	#sound-dai-cells = <0>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&mcasp1_pins>;
+	pinctrl-1 = <&mcasp1_pins_sleep>;
+
+	status = "okay";
+
+	op-mode = <0>;	/* MCASP_IIS_MODE */
+	tdm-slots = <2>;
+	/* 4 serializers */
+	serial-dir = <	/* 0: INACTIVE, 1: TX, 2: RX */
+		0 1 0 0
 	>;
 	tx-num-evt = <32>;
 	rx-num-evt = <32>;
