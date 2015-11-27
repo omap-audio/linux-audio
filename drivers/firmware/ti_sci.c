@@ -87,13 +87,27 @@ struct ti_sci_desc {
 };
 
 /**
+ * struct ti_sci_dbg_entry - TI SCI debug log entry
+ * @msg:	Debug message string
+ * @id:		Debug message index
+ * @node:	List entry
+ */
+struct ti_sci_dbg_entry {
+	char *msg;
+	int id;
+	struct list_head node;
+};
+
+/**
  * struct ti_sci_info - Structure representing a TI SCI instance
  * @dev:	Device pointer
  * @desc:	SoC description for this instance
  * @d:		Debugfs file entry
  * @debug_region: Memory region where the debug message are available
  * @debug_region_size: Debug region size
- * @debug_buffer: Buffer allocated to copy debug messages.
+ * @debug_list:	Debug message list
+ * @debug_index:	Last scanned debug message index
+ * @debug_offset:	Last parsed debug buffer offset
  * @handle:	Instance of TI SCI handle to send to clients.
  * @cl:		Mailbox Client
  * @chan_tx:	Transmit mailbox channel
@@ -107,8 +121,10 @@ struct ti_sci_info {
 	const struct ti_sci_desc *desc;
 	struct dentry *d;
 	void __iomem *debug_region;
-	char *debug_buffer;
 	size_t debug_region_size;
+	struct list_head debug_list;
+	int debug_index;
+	int debug_offset;
 	struct ti_sci_handle handle;
 	struct mbox_client cl;
 	struct mbox_chan *chan_tx;
@@ -122,7 +138,119 @@ struct ti_sci_info {
 #define cl_to_ti_sci_info(cl)	container_of(cl, struct ti_sci_info, cl)
 #define handle_to_ti_sci_info(handle) container_of(handle, struct ti_sci_info,\
 						   handle)
+
 #ifdef CONFIG_DEBUG_FS
+char _dbg_get_char(char *buf, int *p, int *pp)
+{
+	char c;
+
+	if (!buf[*p]) {
+		if (!*p)
+			return 0;
+		*p = 0;
+	}
+
+	c = buf[*p];
+
+	*pp = *p;
+	(*p)++;
+
+	return c;
+}
+
+static void _dbg_buffer_fetch(struct ti_sci_info *info)
+{
+	char *buf;
+	int id, p, pp, sp, len;
+	char c;
+	struct ti_sci_dbg_entry *e;
+
+	if (!info->debug_region_size)
+		return;
+
+	buf = kmalloc(info->debug_region_size + 1, GFP_KERNEL);
+	if (!buf) {
+		pr_err("%s: memalloc failed\n", __func__);
+		return;
+	}
+
+	buf[info->debug_region_size] = 0;
+
+	memcpy_fromio(buf, info->debug_region, info->debug_region_size);
+
+	p = info->debug_offset;
+	pp = 0;
+	sp = p;
+
+	while (1) {
+		/*
+		 * If our list is empty, try to find the beginning of first
+		 * message
+		 */
+		if (list_empty(&info->debug_list)) {
+			while ((c = _dbg_get_char(buf, &p, &pp)) != '[') {
+				if (!c) {
+					p = pp;
+					goto exit;
+				}
+				if (sp == p) {
+					pr_err("buffer parsing failed\n");
+					goto exit;
+				}
+			}
+		} else {
+			c = _dbg_get_char(buf, &p, &pp);
+		}
+
+		if (c == '[') {
+			id = 0;
+
+			while ((c = _dbg_get_char(buf, &p, &pp)) != ']') {
+				id <<= 4;
+				if (c >= 'a') {
+					id += c - 'a' + 0xa;
+				} else {
+					id += c - '0';
+				}
+			}
+
+			if (id <= info->debug_index)
+				goto exit;
+
+			/* find message content */
+			sp = p;
+			len = 0;
+
+			while ((c = _dbg_get_char(buf, &p, &pp)) != '\n') {
+				len++;
+			}
+
+			/* copy message content */
+			e = kzalloc(sizeof(*e), GFP_KERNEL);
+			e->msg = kmalloc(len + 1, GFP_KERNEL);
+			e->id = id;
+
+			p = sp;
+			pp = sp;
+			len = 0;
+
+			while ((c = _dbg_get_char(buf, &p, &pp)) != '\n') {
+				e->msg[len++] = c;
+			}
+
+			e->msg[len] = 0;
+
+			printk(KERN_INFO "PMMC[%04x]:%s\n", e->id, e->msg);
+
+			info->debug_index = id;
+			info->debug_offset = p;
+
+			list_add_tail(&e->node, &info->debug_list);
+		}
+	}
+exit:
+	kfree(buf);
+}
 
 /**
  * ti_sci_debug_show() - Helper to dump the debug log
@@ -134,9 +262,10 @@ struct ti_sci_info {
 static int ti_sci_debug_show(struct seq_file *s, void *unused)
 {
 	struct ti_sci_info *info = s->private;
+	struct ti_sci_dbg_entry *e;
 
-	memcpy_fromio(info->debug_buffer, info->debug_region,
-		      info->debug_region_size);
+	_dbg_buffer_fetch(info);
+
 	/*
 	 * XXX:
 	 * 1. Can we trust firmware to leave NULL terminated last byte??
@@ -144,7 +273,11 @@ static int ti_sci_debug_show(struct seq_file *s, void *unused)
 	 *    provide messages in the right order??
 	 *    TOBEFIXED: rewrite code as per final debug strategy.
 	 */
-	seq_puts(s, info->debug_buffer);
+	//seq_puts(s, info->debug_buffer);
+
+	list_for_each_entry(e, &info->debug_list, node) {
+		seq_printf(s, "PMMC[%04x]:%s\n", e->id, e->msg);
+	}
 	return 0;
 }
 
@@ -190,12 +323,10 @@ static int ti_sci_debugfs_create(struct platform_device *pdev,
 		return 0;
 	info->debug_region_size = res->end - res->start;
 
-	info->debug_buffer = devm_kcalloc(dev, info->debug_region_size + 1,
-					  sizeof(char), GFP_KERNEL);
-	if (!info->debug_buffer)
-		return -ENOMEM;
-	/* Setup NULL termination */
-	info->debug_buffer[info->debug_region_size] = 0;
+	info->debug_index = -1;
+	info->debug_offset = 0;
+
+	INIT_LIST_HEAD(&info->debug_list);
 
 	info->d = debugfs_create_file(strncat(debug_name, dev_name(dev),
 					      sizeof(debug_name)),
@@ -205,6 +336,9 @@ static int ti_sci_debugfs_create(struct platform_device *pdev,
 
 	dev_dbg(dev, "Debug region => %p, size = %zu bytes, resource: %pr\n",
 		info->debug_region, info->debug_region_size, res);
+
+	_dbg_buffer_fetch(info);
+
 	return 0;
 }
 
@@ -230,6 +364,10 @@ static inline int ti_sci_debugfs_create(struct platform_device *dev,
 
 static inline void ti_sci_debugfs_destroy(struct platform_device *dev,
 					  struct ti_sci_info *info)
+{
+}
+
+static void _dbg_buffer_fetch(struct ti_sci_info *info)
 {
 }
 #endif /* CONFIG_DEBUG_FS */
@@ -298,6 +436,8 @@ static void ti_sci_rx_callback(struct mbox_client *cl, void *m)
 	/* Take a copy to the rx buffer.. */
 	memcpy(xfer->xfer_buf, mbox_msg->buf, xfer->rx_len);
 	complete(&xfer->done);
+
+	_dbg_buffer_fetch(info);
 }
 
 /**
