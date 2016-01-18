@@ -290,6 +290,9 @@ int simple_util_parse_clk(struct device *dev,
 	if (of_property_read_bool(node, "system-clock-direction-out"))
 		simple_dai->clk_direction = SND_SOC_CLOCK_OUT;
 
+	if (!of_property_read_u32(node, "system-clock-id", &val))
+		simple_dai->sysclk_id = val;
+
 	return 0;
 }
 EXPORT_SYMBOL_GPL(simple_util_parse_clk);
@@ -587,7 +590,8 @@ static int simple_init_dai(struct simple_util_priv *priv,
 		return 0;
 
 	if (simple_dai->sysclk) {
-		ret = snd_soc_dai_set_sysclk(dai, 0, simple_dai->sysclk,
+		ret = snd_soc_dai_set_sysclk(dai, simple_dai->sysclk_id,
+					     simple_dai->sysclk,
 					     simple_dai->clk_direction);
 		if (ret && ret != -ENOTSUPP) {
 			dev_err(dai->dev, "simple-card: set_sysclk error\n");
