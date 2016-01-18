@@ -57,6 +57,11 @@ definitions:
       single fixed sampling rate.
     $ref: /schemas/types.yaml#/definitions/flag
 
+system-clock-id:
+    description: |
+      Numberic ID of the system clock to select within the dai, default is 0.
+    $ref: /schemas/types.yaml#/definitions/uint32
+
   mclk-fs:
     description: |
       Multiplication factor between stream rate and codec mclk.
