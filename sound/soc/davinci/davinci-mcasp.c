@@ -1183,10 +1183,11 @@ static int davinci_mcasp_hw_rule_rate(struct snd_pcm_hw_params *params,
 		if (snd_interval_test(ri, davinci_mcasp_dai_rates[i])) {
 			uint bclk_freq = sbits*slots*
 				davinci_mcasp_dai_rates[i];
-			int ppm;
+			int ppm, div;
 
-			davinci_mcasp_calc_clk_div(rd->mcasp, bclk_freq, &ppm);
-			if (abs(ppm) < DAVINCI_MAX_RATE_ERROR_PPM) {
+			div = davinci_mcasp_calc_clk_div(rd->mcasp, bclk_freq,
+							 &ppm);
+			if (abs(ppm) < DAVINCI_MAX_RATE_ERROR_PPM && div <= 32) {
 				if (range.empty) {
 					range.min = davinci_mcasp_dai_rates[i];
 					range.empty = 0;
@@ -1219,14 +1220,14 @@ static int davinci_mcasp_hw_rule_format(struct snd_pcm_hw_params *params,
 	for (i = 0; i < SNDRV_PCM_FORMAT_LAST; i++) {
 		if (snd_mask_test(fmt, i)) {
 			uint sbits = snd_pcm_format_width(i);
-			int ppm;
+			int ppm, div;
 
 			if (rd->mcasp->slot_width)
 				sbits = rd->mcasp->slot_width;
 
-			davinci_mcasp_calc_clk_div(rd->mcasp, sbits*slots*rate,
-						   &ppm);
-			if (abs(ppm) < DAVINCI_MAX_RATE_ERROR_PPM) {
+			div = davinci_mcasp_calc_clk_div(rd->mcasp,
+							sbits*slots*rate, &ppm);
+			if (abs(ppm) < DAVINCI_MAX_RATE_ERROR_PPM && div <= 32) {
 				snd_mask_set(&nfmt, i);
 				count++;
 			}
