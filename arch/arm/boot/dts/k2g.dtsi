@@ -194,7 +194,7 @@
 			dma-requests = <64>;
 			#dma-cells = <2>;
 
-			ti,tptcs = <&edma0_tptc0 7>, <&edma1_tptc0 0>;
+			ti,tptcs = <&edma0_tptc0 7>, <&edma0_tptc1 0>;
 
 			ti,edma-memcpy-channels = <32 33 34 35>;
 
