@@ -100,6 +100,11 @@ static void omap_plane_atomic_update(struct drm_plane *plane,
 	    ovl_id);
 	DBG("%s, crtc=%p fb=%p", omap_plane->name, state->crtc, state->fb);
 
+	if (!state->crtc->state->enable) {
+		priv->dispc_ops->ovl_enable(priv->dispc, omap_plane->id, false);
+		return;
+	}
+
 	memset(&info, 0, sizeof(info));
 	info.rotation_type = OMAP_DSS_ROT_NONE;
 	info.rotation = DRM_MODE_ROTATE_0;
