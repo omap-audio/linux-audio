@@ -43,7 +43,7 @@ struct panel_drv_data {
 	struct omap_dss_device dssdev;
 	struct omap_dss_device *in;
 
-	struct videomode timings;
+	struct videomode vm;
 
 	struct platform_device *pdev;
 
@@ -383,8 +383,8 @@ static const struct backlight_ops dsicm_bl_ops = {
 static void dsicm_get_resolution(struct omap_dss_device *dssdev,
 		u16 *xres, u16 *yres)
 {
-	*xres = dssdev->panel.timings.hactive;
-	*yres = dssdev->panel.timings.vactive;
+	*xres = dssdev->panel.vm.hactive;
+	*yres = dssdev->panel.vm.vactive;
 }
 
 static ssize_t dsicm_num_errors_show(struct device *dev,
@@ -590,7 +590,7 @@ static int dsicm_power_on(struct panel_drv_data *ddata)
 	struct omap_dss_dsi_config dsi_config = {
 		.mode = OMAP_DSS_DSI_CMD_MODE,
 		.pixel_format = OMAP_DSS_DSI_FMT_RGB888,
-		.timings = &ddata->timings,
+		.vm = &ddata->vm,
 		.hs_clk_min = 150000000,
 		.hs_clk_max = 300000000,
 		.lp_clk_min = 7000000,
@@ -893,8 +893,8 @@ static int dsicm_update(struct omap_dss_device *dssdev,
 
 	/* XXX no need to send this every frame, but dsi break if not done */
 	r = dsicm_set_update_window(ddata, 0, 0,
-			dssdev->panel.timings.hactive,
-			dssdev->panel.timings.vactive);
+			dssdev->panel.vm.hactive,
+			dssdev->panel.vm.vactive);
 	if (r)
 		goto err;
 
@@ -1025,8 +1025,7 @@ static int dsicm_memory_read(struct omap_dss_device *dssdev,
 	}
 
 	size = min((u32)w * h * 3,
-			dssdev->panel.timings.hactive *
-			dssdev->panel.timings.vactive * 3);
+		   dssdev->panel.vm.hactive * dssdev->panel.vm.vactive * 3);
 
 	in->ops.dsi->bus_lock(in);
 
@@ -1187,14 +1186,14 @@ static int dsicm_probe(struct platform_device *pdev)
 	if (r)
 		return r;
 
-	ddata->timings.hactive = 864;
-	ddata->timings.vactive = 480;
-	ddata->timings.pixelclock = 864 * 480 * 60;
+	ddata->vm.hactive = 864;
+	ddata->vm.vactive = 480;
+	ddata->vm.pixelclock = 864 * 480 * 60;
 
 	dssdev = &ddata->dssdev;
 	dssdev->dev = dev;
 	dssdev->driver = &dsicm_ops;
-	dssdev->panel.timings = ddata->timings;
+	dssdev->panel.vm = ddata->vm;
 	dssdev->type = OMAP_DISPLAY_TYPE_DSI;
 	dssdev->owner = THIS_MODULE;
 
