@@ -33,7 +33,7 @@ int dra7_mcasp_hdmi_gpio_put(struct platform_device *pdev);
 int dra7_mcasp_hdmi_gpio_set(struct platform_device *pdev, bool high);
 
 /* HPD gpio debounce time in microseconds */
-#define HPD_DEBOUNCE_TIME	1000
+#define HPD_DEBOUNCE_TIME	10000
 
 struct panel_drv_data {
 	struct omap_dss_device dssdev;
