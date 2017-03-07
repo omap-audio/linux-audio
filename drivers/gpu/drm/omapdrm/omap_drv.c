@@ -568,6 +568,32 @@ static void omap_modeset_free(struct drm_device *dev)
 }
 
 /*
+ * Enable the HPD in extermal components if supported
+ */
+static void omap_modeset_enable_external_hpd(void)
+{
+	struct omap_dss_device *dssdev = NULL;
+
+	for_each_dss_dev(dssdev) {
+		if (dssdev->driver->enable_hpd)
+			dssdev->driver->enable_hpd(dssdev);
+	}
+}
+
+/*
+ * Disable the HPD in extermal components if supported
+ */
+static void omap_modeset_disable_external_hpd(void)
+{
+	struct omap_dss_device *dssdev = NULL;
+
+	for_each_dss_dev(dssdev) {
+		if (dssdev->driver->disable_hpd)
+			dssdev->driver->disable_hpd(dssdev);
+	}
+}
+
+/*
  * drm ioctl funcs
  */
 
@@ -778,6 +804,8 @@ static int dev_load(struct drm_device *dev, unsigned long flags)
 			priv->wb_initialized = true;
 	}
 
+	omap_modeset_enable_external_hpd();
+
 	return 0;
 }
 
@@ -790,6 +818,7 @@ static int dev_unload(struct drm_device *dev)
 	if (priv->wb_initialized)
 		wb_cleanup(dev);
 
+	omap_modeset_disable_external_hpd();
 	drm_kms_helper_poll_fini(dev);
 
 	if (priv->fbdev)
