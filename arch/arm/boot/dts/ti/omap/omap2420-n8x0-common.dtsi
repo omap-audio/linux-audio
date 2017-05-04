@@ -109,3 +109,19 @@
 		};
 	};
 };
+
+&omap2420_pmx {
+	pinctrl-0 = <&tusb6010_dmareq_pins>;
+	pinctrl-names = "default";
+
+	tusb6010_dmareq_pins: pinmux_tusb6010_dmareq_pins {
+	pinctrl-single,pins = <
+		OMAP2420_CORE_IOPAD(0x0071, PIN_INPUT | MUX_MODE2)	/* gpmc_10.sys_ndmareq5 */
+		OMAP2420_CORE_IOPAD(0x0072, PIN_INPUT | MUX_MODE2)	/* gpmc_9.sys_ndmareq4 */
+		OMAP2420_CORE_IOPAD(0x0073, PIN_INPUT | MUX_MODE2)	/* gpmc_8.sys_ndmareq3 */
+		OMAP2420_CORE_IOPAD(0x0074, PIN_INPUT | MUX_MODE2)	/* gpmc_7.sys_ndmareq1 */
+		OMAP2420_CORE_IOPAD(0x00e5, PIN_INPUT | MUX_MODE2)	/* vlynq_clk.sys_ndmareq0 */
+		OMAP2420_CORE_IOPAD(0x00e6, PIN_INPUT | MUX_MODE2)	/* vlynq_rx1.sys_ndmareq1 */
+		>;
+	};
+};
