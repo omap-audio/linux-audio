@@ -573,6 +573,11 @@ static void omap_dma_start_desc(struct omap_chan *c)
 	omap_dma_start_sg(c, d);
 }
 
+#if 0
+#define SDMA_VCHAN_COMPLETION
+#else
+#undef SDMA_VCHAN_COMPLETION
+#endif
 static void omap_dma_callback(int ch, u16 status, void *data)
 {
 	struct omap_chan *c = data;
@@ -582,6 +587,7 @@ static void omap_dma_callback(int ch, u16 status, void *data)
 	spin_lock_irqsave(&c->vc.lock, flags);
 	d = c->desc;
 	if (d) {
+#ifdef SDMA_VCHAN_COMPLETION
 		if (c->cyclic) {
 			vchan_cyclic_callback(&d->vd);
 		} else if (d->using_ll || c->sgidx == d->sglen) {
@@ -590,6 +596,32 @@ static void omap_dma_callback(int ch, u16 status, void *data)
 		} else {
 			omap_dma_start_sg(c, d);
 		}
+#else
+		struct dmaengine_desc_callback cb;
+		struct dmaengine_result res = {
+			.result = DMA_TRANS_NOERROR,
+			.residue = 0
+		};
+
+		if (c->cyclic) {
+			dmaengine_desc_get_callback(&d->vd.tx, &cb);
+			dmaengine_desc_callback_invoke(&cb, &res);
+		} else if (d->using_ll || c->sgidx == d->sglen) {
+			omap_dma_start_desc(c);
+			dmaengine_desc_get_callback(&d->vd.tx, &cb);
+			dma_cookie_complete(&d->vd.tx);
+
+			if (dmaengine_desc_test_reuse(&d->vd.tx)) {
+				list_add(&d->vd.node, &c->vc.desc_allocated);
+			}else {
+				c->vc.desc_free(&d->vd);
+			}
+
+			dmaengine_desc_callback_invoke(&cb, &res);
+		} else {
+			omap_dma_start_sg(c, d);
+		}
+#endif
 	}
 	spin_unlock_irqrestore(&c->vc.lock, flags);
 }
