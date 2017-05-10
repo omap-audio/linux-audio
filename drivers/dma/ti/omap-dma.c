@@ -124,6 +124,7 @@ struct omap_desc {
 	uint32_t csdp;		/* CSDP value */
 
 	unsigned sglen;
+	bool completed;
 	struct omap_sg sg[] __counted_by(sglen);
 };
 
@@ -967,6 +968,36 @@ static void omap_dma_issue_pending(struct dma_chan *chan)
 	spin_unlock_irqrestore(&c->vc.lock, flags);
 }
 
+static struct omap_desc *omap_dma_get_recycled_desc(struct omap_chan *c,
+						    unsigned sglen)
+{
+	struct virt_dma_chan *vc = &c->vc;
+	struct virt_dma_desc *vd;
+	struct omap_desc *d;
+	bool found = false;
+	unsigned long flags;
+
+	spin_lock_irqsave(&c->vc.lock, flags);
+
+	list_for_each_entry(vd, &vc->desc_allocated, node) {
+		d = to_omap_dma_desc(&vd->tx);
+
+		if (d->completed && d->sglen == sglen) {
+			found = true;
+			break;
+		}
+	}
+
+	if (found)
+		list_del(&d->vd.node);
+	else
+		d = NULL;
+
+	spin_unlock_irqrestore(&c->vc.lock, flags);
+
+	return d;
+}
+
 static struct dma_async_tx_descriptor *omap_dma_prep_slave_sg(
 	struct dma_chan *chan, struct scatterlist *sgl, unsigned sglen,
 	enum dma_transfer_direction dir, unsigned long tx_flags, void *context)
@@ -975,10 +1006,11 @@ static struct dma_async_tx_descriptor *omap_dma_prep_slave_sg(
 	struct omap_chan *c = to_omap_dma_chan(chan);
 	enum dma_slave_buswidth dev_width;
 	struct scatterlist *sgent;
-	struct omap_desc *d;
+	struct omap_desc *d = NULL;
 	dma_addr_t dev_addr;
 	unsigned i, es, en, frame_bytes;
 	bool ll_failed = false;
+	bool reuse = false;
 	u32 burst;
 	u32 port_window, port_window_bytes;
 
@@ -1012,11 +1044,17 @@ static struct dma_async_tx_descriptor *omap_dma_prep_slave_sg(
 		return NULL;
 	}
 
-	/* Now allocate and setup the descriptor. */
-	d = kzalloc(struct_size(d, sg, sglen), GFP_ATOMIC);
-	if (!d)
-		return NULL;
-	d->sglen = sglen;
+	d = omap_dma_get_recycled_desc(c, sglen);
+	if (!d) {
+		/* Allocate and setup the descriptor. */
+		d = kzalloc(struct_size(d, sg, sglen), GFP_ATOMIC);
+		if (!d)
+			return NULL;
+		d->sglen = sglen;
+	} else {
+		d->completed = false;
+		reuse = true;
+	}
 
 	d->dir = dir;
 	d->dev_addr = dev_addr;
@@ -1118,8 +1156,10 @@ static struct dma_async_tx_descriptor *omap_dma_prep_slave_sg(
 		osg->fn = sg_dma_len(sgent) / frame_bytes;
 
 		if (d->using_ll) {
-			osg->t2_desc = dma_pool_alloc(od->desc_pool, GFP_ATOMIC,
-						      &osg->t2_desc_paddr);
+			if (!reuse)
+				osg->t2_desc = dma_pool_alloc(od->desc_pool,
+							GFP_ATOMIC,
+							&osg->t2_desc_paddr);
 			if (!osg->t2_desc) {
 				dev_err(chan->device->dev,
 					"t2_desc[%d] allocation failed\n", i);
@@ -1748,6 +1788,7 @@ static int omap_dma_probe(struct platform_device *pdev)
 	else
 		od->ddev.residue_granularity = DMA_RESIDUE_GRANULARITY_BURST;
 	od->ddev.max_burst = SZ_16M - 1; /* CCEN: 24bit unsigned */
+	od->ddev.descriptor_reuse = true;
 	od->ddev.dev = &pdev->dev;
 	INIT_LIST_HEAD(&od->ddev.channels);
 	mutex_init(&od->lch_lock);
