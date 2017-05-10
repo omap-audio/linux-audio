@@ -301,8 +301,8 @@ static int tusb_omap_dma_program(struct dma_channel *channel, u16 packet_sz,
 	}
 
 	dma_desc = dmaengine_prep_slave_single(dma_data->chan, dma_addr,
-					chdat->transfer_len, dma_dir,
-					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+			chdat->transfer_len, dma_dir,
+			DMA_PREP_INTERRUPT | DMA_CTRL_ACK | DMA_CTRL_REUSE);
 	if (!dma_desc) {
 		dev_err(musb->controller, "DMA prep_slave_single failed\n");
 		return false;
