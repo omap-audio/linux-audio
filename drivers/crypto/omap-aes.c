@@ -311,8 +311,8 @@ static int omap_aes_crypt_dma(struct omap_aes_dev *dd,
 	}
 
 	tx_in = dmaengine_prep_slave_sg(dd->dma_lch_in, in_sg, in_sg_len,
-					DMA_MEM_TO_DEV,
-					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+			DMA_MEM_TO_DEV,
+			DMA_PREP_INTERRUPT | DMA_CTRL_ACK | DMA_CTRL_REUSE);
 	if (!tx_in) {
 		dev_err(dd->dev, "IN prep_slave_sg() failed\n");
 		return -EINVAL;
@@ -330,8 +330,8 @@ static int omap_aes_crypt_dma(struct omap_aes_dev *dd,
 	}
 
 	tx_out = dmaengine_prep_slave_sg(dd->dma_lch_out, out_sg, out_sg_len,
-					DMA_DEV_TO_MEM,
-					DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+			DMA_DEV_TO_MEM,
+			DMA_PREP_INTERRUPT | DMA_CTRL_ACK | DMA_CTRL_REUSE);
 	if (!tx_out) {
 		dev_err(dd->dev, "OUT prep_slave_sg() failed\n");
 		return -EINVAL;

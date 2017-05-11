@@ -610,8 +610,8 @@ static int omap_sham_xmit_dma(struct omap_sham_dev *dd, size_t length,
 	}
 
 	tx = dmaengine_prep_slave_sg(dd->dma_lch, ctx->sg, ctx->sg_len,
-				     DMA_MEM_TO_DEV,
-				     DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+			DMA_MEM_TO_DEV,
+			DMA_PREP_INTERRUPT | DMA_CTRL_ACK | DMA_CTRL_REUSE);
 
 	if (!tx) {
 		dev_err(dd->dev, "prep_slave_sg failed\n");
