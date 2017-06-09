@@ -1615,6 +1615,8 @@ static struct davinci_mcasp_pdata *davinci_mcasp_set_pdata_from_of(
 	const struct of_device_id *match =
 			of_match_device(mcasp_dt_ids, &pdev->dev);
 	struct of_phandle_args dma_spec;
+	struct device_node *test_node_1, *test_node_2;
+	struct of_phandle_args test_spec;
 
 	const u32 *of_serial_dir32;
 	u32 val;
@@ -1713,6 +1715,21 @@ static struct davinci_mcasp_pdata *davinci_mcasp_set_pdata_from_of(
 	if (ret >= 0)
 		pdata->sram_size_capture = val;
 
+	test_node_1 = of_parse_phandle(pdev->dev.of_node, "mcasp0-node", 0);
+	if (!test_node_1)
+		dev_err(&pdev->dev, "mcasp0-node is not found :o\n");
+
+	ret = of_parse_phandle_with_args(np, "binding-test", "#dma-cells", 0,
+					 &test_spec);
+	if (ret < 0)
+		dev_err(&pdev->dev, "binding-test error :o\n");
+
+	test_node_2 = of_find_node_by_phandle(test_spec.args[1]);
+
+	if (test_node_1 == test_node_2)
+		dev_err(&pdev->dev, "The two node is pointing to the same place :D\n");
+	else
+		dev_err(&pdev->dev, "OOOOOPPPPPSSSS\n");
 	return  pdata;
 
 nodata:

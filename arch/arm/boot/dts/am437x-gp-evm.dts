@@ -1103,6 +1103,9 @@
 	>;
 	tx-num-evt = <32>;
 	rx-num-evt = <32>;
+
+	mcasp0-node = <&mcasp0>;
+	binding-test = <&edma 10 &mcasp0>;
 };
 
 &rtc {
