@@ -223,6 +223,12 @@ static inline bool led_sysfs_is_disabled(struct led_classdev *led_cdev)
 	return led_cdev->flags & LED_SYSFS_DISABLE;
 }
 
+static inline enum led_brightness led_get_brightness(
+			struct led_classdev *led_cdev)
+{
+	return led_cdev->brightness;
+}
+
 /*
  * LED Triggers
  */
