@@ -133,6 +133,38 @@ static int led_bl_parse_dt(struct device *dev,
 	return 0;
 }
 
+static int led_backlight_initial_power_state(const struct led_bl_data *priv)
+{
+	struct device_node *node = priv->dev->of_node;
+
+	/* Not booted with device tree or no phandle link to the node */
+	if (!node || !node->phandle)
+		return FB_BLANK_UNBLANK;
+
+	/*
+	 * If the driver is probed from the device tree and there is a
+	 * phandle link pointing to the backlight node, it is safe to
+	 * assume that another driver will enable the backlight at the
+	 * appropriate time. Therefore, if it is disabled, keep it so.
+	 */
+
+	/* if the enable GPIO is disabled, do not enable the backlight */
+	if (priv->enable_gpio &&
+	    gpiod_get_value_cansleep(priv->enable_gpio) == 0)
+		return FB_BLANK_POWERDOWN;
+
+	/* The regulator is disabled, do not enable the backlight */
+	if (!regulator_is_enabled(priv->power_supply))
+		return FB_BLANK_POWERDOWN;
+
+	/* The pwm is disabled, keep it like this */
+	if (led_get_brightness(priv->led_cdev) == LED_OFF)
+		return FB_BLANK_POWERDOWN;
+
+	return FB_BLANK_UNBLANK;
+}
+
+
 static int led_bl_probe(struct platform_device *pdev)
 {
 	struct backlight_properties props;
@@ -179,6 +211,7 @@ static int led_bl_probe(struct platform_device *pdev)
 	}
 
 	priv->bl_dev->props.brightness = priv->default_brightness;
+	priv->bl_dev->props.power = led_backlight_initial_power_state(priv);
 	backlight_update_status(priv->bl_dev);
 
 	return 0;
