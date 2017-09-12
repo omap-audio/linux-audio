@@ -827,6 +827,9 @@ struct dma_filter {
  *	with per-channel specific ones
  * @device_config: Pushes a new configuration to a channel, return 0 or an error
  *	code
+ * @device_get_max_len: Get the maximum supported length in bytes of a slave
+ *	transfer based on the set dma_slave_config. The length limitation
+ *	applies to each SG element's length.
  * @device_pause: Pauses any transfer happening on a channel. Returns
  *	0 or an error code
  * @device_resume: Resumes any transfer on a channel previously
@@ -927,6 +930,7 @@ struct dma_device {
 
 	void (*device_caps)(struct dma_chan *chan, struct dma_slave_caps *caps);
 	int (*device_config)(struct dma_chan *chan, struct dma_slave_config *config);
+	u32 (*device_get_max_len)(struct dma_chan *chan, enum dma_transfer_direction dir);
 	int (*device_pause)(struct dma_chan *chan);
 	int (*device_resume)(struct dma_chan *chan);
 	int (*device_terminate_all)(struct dma_chan *chan);
@@ -949,6 +953,15 @@ static inline int dmaengine_slave_config(struct dma_chan *chan,
 		return chan->device->device_config(chan, config);
 
 	return -ENOSYS;
+}
+
+static inline u32 dmaengine_slave_get_max_len(struct dma_chan *chan,
+					      enum dma_transfer_direction dir)
+{
+	if (chan->device->device_get_max_len)
+		return chan->device->device_get_max_len(chan, dir);
+
+	return 0;
 }
 
 static inline bool is_slave_direction(enum dma_transfer_direction direction)
