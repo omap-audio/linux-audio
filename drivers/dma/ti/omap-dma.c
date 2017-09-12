@@ -1395,6 +1395,28 @@ static int omap_dma_slave_config(struct dma_chan *chan, struct dma_slave_config 
 	return 0;
 }
 
+static u32 omap_dma_get_max_len(struct dma_chan *chan,
+				enum dma_transfer_direction dir)
+{
+	struct omap_chan *c = to_omap_dma_chan(chan);
+	enum dma_slave_buswidth dev_width;
+	u32 burst;
+
+	if (!is_slave_direction(dir))
+		return 0;
+
+	if (dir == DMA_DEV_TO_MEM) {
+		dev_width = c->cfg.src_addr_width;
+		burst = c->cfg.src_maxburst;
+	} else {
+		burst = c->cfg.dst_maxburst;
+		dev_width = c->cfg.dst_addr_width;
+	}
+
+	/* CFN: 16bit unsigned. Number of bursts */
+	return dev_width * burst * (SZ_64K - 1);
+}
+
 static int omap_dma_terminate_all(struct dma_chan *chan)
 {
 	struct omap_chan *c = to_omap_dma_chan(chan);
@@ -1712,6 +1734,7 @@ static int omap_dma_probe(struct platform_device *pdev)
 	od->ddev.device_prep_dma_memcpy = omap_dma_prep_dma_memcpy;
 	od->ddev.device_prep_interleaved_dma = omap_dma_prep_dma_interleaved;
 	od->ddev.device_config = omap_dma_slave_config;
+	od->ddev.device_get_max_len = omap_dma_get_max_len;
 	od->ddev.device_pause = omap_dma_pause;
 	od->ddev.device_resume = omap_dma_resume;
 	od->ddev.device_terminate_all = omap_dma_terminate_all;
