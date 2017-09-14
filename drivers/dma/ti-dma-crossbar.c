@@ -1,6 +1,6 @@
 /*
- *  Copyright (C) 2015 Texas Instruments Incorporated - http://www.ti.com
- *  Author: Peter Ujfalusi <peter.ujfalusi@ti.com>
+ * Copyright (C) 2015 Texas Instruments Incorporated - http://www.ti.com
+ * Author: Peter Ujfalusi <peter.ujfalusi@ti.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -35,7 +35,7 @@ static const struct of_device_id ti_dma_xbar_match[] = {
 	{},
 };
 
-/* Crossbar on AM335x/AM437x family */
+/* Crossbar on AM335x/AM437x family of devices */
 #define TI_AM335X_XBAR_LINES	64
 
 struct ti_am335x_xbar_data {
@@ -99,7 +99,7 @@ static void *ti_am335x_xbar_route_allocate(struct of_phandle_args *dma_spec,
 		return ERR_PTR(-EINVAL);
 	}
 
-	/* The of_node_put() will be done in the core for the node */
+	/* The of_node_put() will be done in the core */
 	dma_spec->np = of_parse_phandle(ofdma->of_node, "dma-masters", 0);
 	if (!dma_spec->np) {
 		dev_err(&pdev->dev, "Can't get DMA master\n");
@@ -254,7 +254,7 @@ static void *ti_dra7_xbar_route_allocate(struct of_phandle_args *dma_spec,
 		return ERR_PTR(-EINVAL);
 	}
 
-	/* The of_node_put() will be done in the core for the node */
+	/* The of_node_put() will be done in the core */
 	dma_spec->np = of_parse_phandle(ofdma->of_node, "dma-masters", 0);
 	if (!dma_spec->np) {
 		dev_err(&pdev->dev, "Can't get DMA master\n");
