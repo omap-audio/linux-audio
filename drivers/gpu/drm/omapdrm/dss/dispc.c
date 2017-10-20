@@ -4039,6 +4039,24 @@ static u32 dispc_get_memory_bandwidth_limit(void)
 	return limit;
 }
 
+static void dispc_get_memory_and_clock_limits(u32 *max_bandwidth,
+					      u32 *max_pixelclock)
+{
+	int ret;
+
+	/* Optional maximum pixelclock */
+	ret = of_property_read_u32(dispc.pdev->dev.of_node, "max-pixelclock",
+				   max_pixelclock);
+	if (ret)
+		*max_pixelclock = 0;
+
+	/* Optional maximum memory bandwidth */
+	ret = of_property_read_u32(dispc.pdev->dev.of_node,
+				   "max-memory-bandwidth", max_bandwidth);
+	if (ret)
+		*max_bandwidth = 0;
+}
+
 /*
  * Workaround for errata i734 in DSS dispc
  *  - LCD1 Gamma Correction Is Not Working When GFX Pipe Is Disabled
@@ -4212,6 +4230,7 @@ static const struct dispc_ops dispc_ops = {
 	.get_num_mgrs = dispc_get_num_mgrs,
 	.get_min_max_size = dispc_get_min_max_size,
 	.get_memory_bandwidth_limit = dispc_get_memory_bandwidth_limit,
+	.get_memory_and_clock_limits = dispc_get_memory_and_clock_limits,
 
 	.mgr_enable = dispc_mgr_enable,
 	.mgr_is_enabled = dispc_mgr_is_enabled,

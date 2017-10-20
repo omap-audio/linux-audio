@@ -199,6 +199,10 @@ static int omap_connector_mode_valid(struct drm_connector *connector,
 		drm_mode_destroy(dev, new_mode);
 	}
 
+	/* Check for pixelclock limit */
+	if (!r && priv->max_pixelclock && mode->clock > priv->max_pixelclock)
+		ret = MODE_BAD;
+
 	/* Check for bandwidth limit */
 	if (!r && priv->max_bandwidth) {
 		/*

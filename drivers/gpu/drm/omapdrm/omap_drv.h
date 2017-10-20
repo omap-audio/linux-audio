@@ -99,6 +99,8 @@ struct omap_drm_private {
 	void *wb_private;	      /* Write-back private data */
 	bool wb_initialized;
 
+	/* memory pixelclock limit if it is needed on the platform in kHz */
+	unsigned int max_pixelclock;
 	/* memory bandwidth limit if it is needed on the platform */
 	unsigned int max_bandwidth;
 

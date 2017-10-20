@@ -885,6 +885,11 @@ static int pdev_probe(struct platform_device *pdev)
 		priv->max_bandwidth =
 				priv->dispc_ops->get_memory_bandwidth_limit();
 
+	/* Get memory bandwidth and pixelcolc limits */
+	if (priv->dispc_ops->get_memory_and_clock_limits)
+		priv->dispc_ops->get_memory_and_clock_limits(
+				&priv->max_bandwidth, &priv->max_pixelclock);
+
 	omap_gem_init(ddev);
 
 	ret = omap_modeset_init(ddev);
