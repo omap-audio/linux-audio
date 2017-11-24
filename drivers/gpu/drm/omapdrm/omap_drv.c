@@ -157,6 +157,26 @@ static bool omap_atomic_is_pending(struct omap_drm_private *priv,
 	return pending;
 }
 
+static int omap_atomic_check(struct drm_device *dev,
+			     struct drm_atomic_state *state)
+{
+	int ret;
+
+	ret = drm_atomic_helper_check_modeset(dev, state);
+	if (ret)
+		return ret;
+
+	ret = drm_atomic_normalize_zpos(dev, state);
+	if (ret)
+		return ret;
+
+	ret = drm_atomic_helper_check_planes(dev, state);
+	if (ret)
+		return ret;
+
+	return ret;
+}
+
 static int omap_atomic_commit(struct drm_device *dev,
 			      struct drm_atomic_state *state, bool nonblock)
 {
@@ -211,7 +231,7 @@ error:
 static const struct drm_mode_config_funcs omap_mode_config_funcs = {
 	.fb_create = omap_framebuffer_create,
 	.output_poll_changed = omap_fb_output_poll_changed,
-	.atomic_check = drm_atomic_helper_check,
+	.atomic_check = omap_atomic_check,
 	.atomic_commit = omap_atomic_commit,
 };
 
