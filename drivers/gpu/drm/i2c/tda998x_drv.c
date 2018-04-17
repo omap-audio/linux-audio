@@ -722,6 +722,9 @@ tda998x_reset(struct tda998x_priv *priv)
 
 	/* Write the default value MUX register */
 	reg_write(priv, REG_MUX_VP_VIP_OUT, 0x24);
+
+	/* Write the default to I2S_FORMAT register */
+	reg_write(priv, REG_I2S_FORMAT,   0x00);
 }
 
 /*
