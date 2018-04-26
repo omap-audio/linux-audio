@@ -20,6 +20,22 @@
 		regulator-min-microvolt = <2800000>;
 		regulator-max-microvolt = <2800000>;
 	};
+
+	sound: n810-audio {
+		compatible = "nokia,n810-audio";
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&amplifier_pins>;
+
+		nokia,cpu-dai = <&mcbsp2>;
+		nokia,audio-codec = <&aic33>;
+
+		clocks = <&sys_clkout2>;
+		clock-names = "codec-mclk";
+
+		headset-amplifier-gpios = <&gpio1 10 GPIO_ACTIVE_HIGH>; /* gpio10 */
+		speaker-amplifier-gpios = <&gpio4 5 GPIO_ACTIVE_HIGH>; /* gpio101 */
+	};
 };
 
 &omap2420_pmx {
@@ -38,10 +54,17 @@
 			OMAP2420_CORE_IOPAD(0x00e8, PIN_OUTPUT | MUX_MODE2)	/* vlynq_tx1.sys_clkout2 */
 		>;
 	};
+
+	amplifier_pins: amplifier_pins {
+		pinctrl-single,pins = <
+			OMAP2420_CORE_IOPAD(0x0078, PIN_OUTPUT | MUX_MODE3)	/* gpmc_a3.gpio10 */
+			OMAP2420_CORE_IOPAD(0x0115, PIN_OUTPUT | MUX_MODE3)	/* hdq_sio.gpio101 */
+		>;
+	};
 };
 
 &i2c2 {
-	aic33@18 {
+	aic33: aic33@18 {
 		compatible = "ti,tlv320aic33";
 		reg = <0x18>;
 
