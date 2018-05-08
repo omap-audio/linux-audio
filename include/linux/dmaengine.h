@@ -415,6 +415,11 @@ enum dma_residue_granularity {
  *	each type, the dma controller should set BIT(<TYPE>) and same
  *	should be checked by controller as well
  * @max_burst: max burst capability per-transfer
+ * @max_segment_size_in_bytes: if true the max_segment_size holds the maximum
+ *	size of each SG element (dma_len). If false, max_segment_size is the
+ *	number of bursts.
+ * @max_segment_size: Either the maximum length in bytes or the number of bursts
+ *	per SG element.
  * @cmd_pause: true, if pause is supported (i.e. for reading residue or
  *	       for resume later)
  * @cmd_resume: true, if resume is supported
@@ -428,6 +433,8 @@ struct dma_slave_caps {
 	u32 dst_addr_widths;
 	u32 directions;
 	u32 max_burst;
+	bool max_segment_size_in_bytes;
+	u32 max_segment_size;
 	bool cmd_pause;
 	bool cmd_resume;
 	bool cmd_terminate;
