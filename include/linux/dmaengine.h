@@ -490,6 +490,11 @@ enum dma_residue_granularity {
  * @max_sg_burst: max number of SG list entries executed in a single burst
  *	DMA tansaction with no software intervention for reinitialization.
  *	Zero value means unlimited number of entries.
+ * @max_segment_size_in_bytes: if true the max_segment_size holds the maximum
+ *	size of each SG element (dma_len). If false, max_segment_size is the
+ *	number of bursts.
+ * @max_segment_size: Either the maximum length in bytes or the number of bursts
+ *	per SG element.
  * @cmd_pause: true, if pause is supported (i.e. for reading residue or
  *	       for resume later)
  * @cmd_resume: true, if resume is supported
@@ -505,6 +510,8 @@ struct dma_slave_caps {
 	u32 min_burst;
 	u32 max_burst;
 	u32 max_sg_burst;
+	bool max_segment_size_in_bytes;
+	u32 max_segment_size;
 	bool cmd_pause;
 	bool cmd_resume;
 	bool cmd_terminate;
