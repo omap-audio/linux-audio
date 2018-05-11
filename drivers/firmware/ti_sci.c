@@ -402,7 +402,7 @@ static inline int ti_sci_do_xfer(struct ti_sci_info *info,
 	bool response_expected = !!(hdr->flags & (TI_SCI_FLAG_REQ_ACK_ON_PROCESSED |
 						  TI_SCI_FLAG_REQ_ACK_ON_RECEIVED));
 	int ret;
-	int timeout;
+	unsigned long timeout;
 	struct device *dev = info->dev;
 	bool done_state = true;
 
