@@ -32,6 +32,8 @@ static inline void *dma_pool_zalloc(struct dma_pool *pool, gfp_t mem_flags,
 
 void dma_pool_free(struct dma_pool *pool, void *vaddr, dma_addr_t addr);
 
+void *dma_pool_get_vaddr(struct dma_pool *pool, dma_addr_t addr);
+
 /*
  * Managed DMA pool
  */

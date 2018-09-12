@@ -473,6 +473,28 @@ void dma_pool_free(struct dma_pool *pool, void *vaddr, dma_addr_t dma)
 }
 EXPORT_SYMBOL(dma_pool_free);
 
+void *dma_pool_get_vaddr(struct dma_pool *pool, dma_addr_t dma)
+{
+	struct dma_page *page;
+	unsigned long flags;
+
+	spin_lock_irqsave(&pool->lock, flags);
+	page = pool_find_page(pool, dma);
+	spin_unlock_irqrestore(&pool->lock, flags);
+	if (!page) {
+		if (pool->dev)
+			dev_err(pool->dev, "%s %s, %pad (bad dma)\n", __func__,
+				pool->name, &dma);
+		else
+			pr_err("%s %s, %pad (bad dma)\n", __func__, pool->name,
+			       &dma);
+		return NULL;
+	}
+
+	return page->vaddr + (dma - page->dma);
+}
+EXPORT_SYMBOL(dma_pool_get_vaddr);
+
 /*
  * Managed DMA pool
  */
