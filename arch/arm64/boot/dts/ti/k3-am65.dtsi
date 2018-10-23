@@ -9,6 +9,7 @@
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/interrupt-controller/arm-gic.h>
 #include <dt-bindings/dma/k3-udma.h>
+#include <dt-bindings/pinctrl/k3-am6.h>
 
 / {
 	model = "Texas Instruments K3 AM654 SoC";
