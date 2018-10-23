@@ -9,8 +9,8 @@
 	dmsc: dmsc {
 		compatible = "ti,am654-sci";
 		ti,host-id = <12>;
-		#address-cells = <1>;
-		#size-cells = <1>;
+		#address-cells = <2>;
+		#size-cells = <2>;
 		ranges;
 
 		mbox-names = "rx", "tx";

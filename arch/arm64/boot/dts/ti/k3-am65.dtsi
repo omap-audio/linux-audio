@@ -82,10 +82,10 @@
 
 			cbass_wakeup: interconnect@42040000 {
 				compatible = "simple-bus";
-				#address-cells = <1>;
-				#size-cells = <1>;
+				#address-cells = <2>;
+				#size-cells = <2>;
 				/* WKUP  Basic peripherals */
-				ranges = <0x42040000 0x00 0x42040000 0x03ac2400>;
+				ranges = <0x00 0x42040000 0x00 0x42040000 0x00 0x03ac2400>;
 			};
 		};
 	};
