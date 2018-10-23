@@ -389,7 +389,11 @@
 		compatible = "simple-bus";
 		#address-cells = <2>;
 		#size-cells = <2>;
+		dma-coherent;
+		dma-ranges;
 		ranges;
+
+		ti,sci-dev-id = <118>;
 
 		intr_main_navss: interrupt-controller1 {
 			compatible = "ti,sci-intr";
@@ -412,6 +416,142 @@
 			ti,sci-dev-id = <179>;
 			ti,sci-rm-range-vint = <0x0>;
 			ti,sci-rm-range-global-event = <0x1>;
+		};
+
+		ringacc: ringacc@3c000000 {
+			compatible = "ti,am654-navss-ringacc";
+			reg =	<0x0 0x3c000000 0x0 0x400000>,
+				<0x0 0x38000000 0x0 0x400000>,
+				<0x0 0x31120000 0x0 0x100>,
+				<0x0 0x33000000 0x0 0x40000>;
+			reg-names = "rt", "fifos", "proxy_gcfg", "proxy_target";
+			ti,num-rings = <818>;
+			ti,sci-rm-range-gp-rings = <0x2>; /* GP ring range */
+			ti,dma-ring-reset-quirk;
+			ti,sci = <&dmsc>;
+			ti,sci-dev-id = <187>;
+			msi-parent = <&inta_main_udmass>;
+		};
+
+		main_udmap: dma-controller@31150000 {
+			compatible = "ti,am654-navss-main-udmap";
+			reg =	<0x0 0x31150000 0x0 0x100>,
+				<0x0 0x34000000 0x0 0x100000>,
+				<0x0 0x35000000 0x0 0x100000>;
+			reg-names = "gcfg", "rchanrt", "tchanrt";
+			#dma-cells = <3>;
+
+			ti,ringacc = <&ringacc>;
+			ti,psil-base = <0x1000>;
+
+			msi-parent = <&inta_main_udmass>;
+
+			ti,sci = <&dmsc>;
+			ti,sci-dev-id = <188>;
+
+			ti,sci-rm-range-tchan = <0x1>, /* TX_HCHAN */
+						<0x2>; /* TX_CHAN */
+			ti,sci-rm-range-rchan = <0x4>, /* RX_HCHAN */
+						<0x5>; /* RX_CHAN */
+			ti,sci-rm-range-rflow = <0x6>; /* GP RFLOW */
+		};
+	};
+
+	pdma0: pdma@2a41000 {
+		compatible = "ti,am654-pdma";
+		reg = <0x0 0x02A41000 0x0 0x400>;
+		reg-names = "eccaggr_cfg";
+
+		ti,psil-base = <0x4400>;
+
+		/* psil-config0-2 */
+		psil-config0 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config1 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config2 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+	};
+
+	pdma1: pdma@2a42000 {
+		compatible = "ti,am654-pdma";
+		reg = <0x0 0x02A42000 0x0 0x400>;
+		reg-names = "eccaggr_cfg";
+
+		ti,psil-base = <0x4500>;
+
+		/* psil-config0-22 */
+		psil-config0 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config1 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config2 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config3 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config4 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config5 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config6 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config7 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config8 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config9 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config10 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config11 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config12 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config13 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config14 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config15 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config16 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config17 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config18 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config19 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config20 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config21 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
+		};
+		psil-config22 {
+			pdma,statictr-type = <PSIL_STATIC_TR_XY>;
 		};
 	};
 
