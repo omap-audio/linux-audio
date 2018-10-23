@@ -76,3 +76,10 @@ config TWL4030_USB
 	  family chips (including the TWL5030 and TPS659x0 devices).
 	  This transceiver supports high and full speed devices plus,
 	  in host mode, low speed.
+
+config PHY_AM654_MMC
+	tristate "TI AM654 MMC PHY Support"
+	select GENERIC_PHY
+	help
+	  This option enables support for the Physical layer for MMC host
+	  controllers present on TI AM654 SOCs.
