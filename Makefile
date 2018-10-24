@@ -1240,7 +1240,7 @@ endif
 
 ifneq ($(dtstree),)
 
-%.dtb: prepare3 scripts_dtc
+%.dtb %.dtbo: prepare3 scripts_dtc
 	$(Q)$(MAKE) $(build)=$(dtstree) $(dtstree)/$@
 
 PHONY += dtbs dtbs_install
