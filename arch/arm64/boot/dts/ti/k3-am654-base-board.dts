@@ -66,6 +66,15 @@
 	};
 };
 
+&main_pmx1 {
+	main_i2c0_pins_default: main_i2c0_pins_default {
+		pinctrl-single,pins = <
+			AM65X_IOPAD(0x0000, PIN_INPUT | MUX_MODE0) /* (D20) I2C0_SCL */
+			AM65X_IOPAD(0x0004, PIN_INPUT | MUX_MODE0) /* (C21) I2C0_SDA */
+		>;
+	};
+};
+
 
 &wkup_uart0 {
 	/* Wakeup UART is used by System firmware */
@@ -95,4 +104,14 @@
 &mmc_phy1 {
 	status = "okay";
 	ti,driver-strength-ohm = <50>;
+};
+
+&main_i2c0 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&main_i2c0_pins_default>;
+	status = "okay";
+	clock-frequency = <400000>;
 };
