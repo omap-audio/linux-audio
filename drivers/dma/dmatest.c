@@ -828,7 +828,7 @@ err_thread_type:
 
 	/* terminate all transfers on specified channels */
 	if (ret || failed_tests)
-		dmaengine_terminate_all(chan);
+		dmaengine_terminate_sync(chan);
 
 	thread->done = true;
 	wake_up(&thread_wait);
@@ -852,7 +852,7 @@ static void dmatest_cleanup_channel(struct dmatest_chan *dtc)
 	}
 
 	/* terminate all transfers on specified channels */
-	dmaengine_terminate_all(dtc->chan);
+	dmaengine_terminate_sync(dtc->chan);
 
 	kfree(dtc);
 }
