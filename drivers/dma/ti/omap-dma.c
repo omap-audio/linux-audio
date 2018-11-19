@@ -205,6 +205,10 @@ enum {
 
 	CLNK_CTRL_ENABLE_LNK	= BIT(15),
 
+	/* OMAP1 only */
+	LCH_CTRL_LCH_2D		= 0,
+	LCH_CTRL_LCH_P		= 2,
+
 	CDP_DST_VALID_INC	= 0 << 0,
 	CDP_DST_VALID_RELOAD	= 1 << 0,
 	CDP_DST_VALID_REUSE	= 2 << 0,
@@ -563,6 +567,7 @@ static void omap_dma_start_sg(struct omap_chan *c, struct omap_desc *d)
 
 static void omap_dma_start_desc(struct omap_chan *c)
 {
+	struct omap_dmadev *od = to_omap_dma_dev(c->vc.chan.device);
 	struct virt_dma_desc *vd = vchan_next_desc(&c->vc);
 	struct omap_desc *d;
 	unsigned cxsa, cxei, cxfi;
@@ -604,6 +609,12 @@ static void omap_dma_start_desc(struct omap_chan *c)
 	omap_dma_chan_write(c, CSDP, d->csdp);
 	omap_dma_chan_write(c, CLNK_CTRL, d->clnk_ctrl);
 
+	if (dma_omap1() && !__dma_omap15xx(od->plat->dma_attr)) {
+		if (is_slave_direction(d->dir))
+			omap_dma_chan_write(c, LCH_CTRL, LCH_CTRL_LCH_P);
+		else
+			omap_dma_chan_write(c, LCH_CTRL, LCH_CTRL_LCH_2D);
+	}
 	omap_dma_start_sg(c, d);
 }
 
