@@ -36,7 +36,8 @@ struct udma_dev *of_xudma_dev_get(struct device_node *np, const char *property)
 		return ERR_PTR(-EPROBE_DEFER);
 	}
 
-	of_node_put(udma_node);
+	if (np != udma_node)
+		of_node_put(udma_node);
 
 	ud = platform_get_drvdata(pdev);
 	if (!ud) {
