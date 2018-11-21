@@ -2802,6 +2802,9 @@ static int omap_udc_probe(struct platform_device *pdev)
 			type = xceiv->label;
 		else if (config->otg) {
 			DBG("OTG requires external transceiver!\n");
+			status = PTR_ERR(xceiv);
+			if (status != -ENXIO)
+				status = -EPROBE_DEFER;
 			goto cleanup0;
 		}
 
