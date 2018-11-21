@@ -2737,8 +2737,10 @@ static int omap_udc_probe(struct platform_device *pdev)
 	struct clk		*dc_clk = NULL;
 	struct clk		*hhc_clk = NULL;
 
+#ifdef	USE_DMA
 	if (cpu_is_omap7xx())
 		use_dma = 0;
+#endif
 
 	/* NOTE:  "knows" the order of the resources! */
 	if (!request_mem_region(pdev->resource[0].start,
