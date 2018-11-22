@@ -887,14 +887,14 @@ omap_ep_queue(struct usb_ep *_ep, struct usb_request *_req, gfp_t gfp_flags)
 
 	/* this isn't bogus, but OMAP DMA isn't the only hardware to
 	 * have a hard time with partial packet reads...  reject it.
+	 * Wait a minute, it does work :o
 	 */
 	if (use_dma
 			&& ep->has_dma
 			&& ep->bEndpointAddress != 0
 			&& (ep->bEndpointAddress & USB_DIR_IN) == 0
 			&& (req->req.length % ep->ep.maxpacket) != 0) {
-		DBG("%s, no partial packet OUT reads\n", __func__);
-		return -EMSGSIZE;
+		DBG("%s, partial packet OUT, might not work?\n", __func__);
 	}
 
 	udc = ep->udc;
