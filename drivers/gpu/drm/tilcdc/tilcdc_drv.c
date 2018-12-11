@@ -114,7 +114,7 @@ static int cpufreq_transition(struct notifier_block *nb,
 	struct tilcdc_drm_private *priv = container_of(nb,
 			struct tilcdc_drm_private, freq_transition);
 
-	if (val == CPUFREQ_POSTCHANGE)
+	if (val == CPUFREQ_POSTCHANGE && priv->crtc)
 		tilcdc_crtc_update_clk(priv->crtc);
 
 	return 0;
