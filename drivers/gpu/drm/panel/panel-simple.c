@@ -1898,6 +1898,32 @@ static const struct panel_desc osddisplays_osd070t1718_19ts = {
 	.bus_flags = DRM_BUS_FLAG_DE_HIGH | DRM_BUS_FLAG_PIXDATA_DRIVE_POSEDGE,
 };
 
+static const struct drm_display_mode osddisplays_osd057T0559_34ts_mode  = {
+	.clock = 33000,
+	.hdisplay = 800,
+	.hsync_start = 800 + 210,
+	.hsync_end = 800 + 210 + 30,
+	.htotal = 800 + 210 + 30 + 16,
+	.vdisplay = 480,
+	.vsync_start = 480 + 22,
+	.vsync_end = 480 + 22 + 13,
+	.vtotal = 480 + 22 + 13 + 10,
+	.vrefresh = 60,
+	.flags = DRM_MODE_FLAG_NVSYNC | DRM_MODE_FLAG_NHSYNC,
+};
+
+static const struct panel_desc osddisplays_osd057T0559_34ts = {
+	.modes = &osddisplays_osd057T0559_34ts_mode,
+	.num_modes = 1,
+	.bpc = 8,
+	.size = {
+		.width = 152, // XXX CHECK SIZE
+		.height = 91,
+	},
+	.bus_format = MEDIA_BUS_FMT_RGB888_1X24,
+	.bus_flags = DRM_BUS_FLAG_DE_HIGH | DRM_BUS_FLAG_PIXDATA_DRIVE_POSEDGE,
+};
+
 static const struct drm_display_mode qd43003c0_40_mode = {
 	.clock = 9000,
 	.hdisplay = 480,
@@ -2561,6 +2587,9 @@ static const struct of_device_id platform_of_match[] = {
 	}, {
 		.compatible = "osddisplays,osd070t1718-19ts",
 		.data = &osddisplays_osd070t1718_19ts,
+	}, {
+		.compatible = "osddisplays,osd057T0559-34ts",
+		.data = &osddisplays_osd057T0559_34ts,
 	}, {
 		.compatible = "qiaodian,qd43003c0-40",
 		.data = &qd43003c0_40,
