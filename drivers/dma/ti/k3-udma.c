@@ -151,7 +151,6 @@ struct udma_desc {
 	unsigned int sglen;
 	unsigned int desc_idx; /* Only used for cyclic in packet mode */
 	unsigned int tr_idx;
-	unsigned int num_tr;
 
 	/* for slave_sg RX workaround */
 	struct udma_rx_sg_workaround rx_sg_wa;
@@ -351,73 +350,26 @@ static inline char *udma_get_dir_text(enum dma_transfer_direction dir)
 static inline void udma_dump_chan_stdata(struct udma_chan *uc)
 {
 	struct device *dev = uc->ud->dev;
-	u32 offset, state_ram[32];
+	u32 offset;
 	int i;
 
-	dev_err(dev, "===== chan%d dump START =====\n", uc->id);
 	if (uc->dir == DMA_MEM_TO_DEV || uc->dir == DMA_MEM_TO_MEM) {
-		dev_err(dev, "TCHAN%d State data:\n", uc->tchan->id);
+		dev_dbg(dev, "TCHAN State data:\n");
 		for (i = 0; i < 32; i++) {
 			offset = UDMA_TCHAN_RT_STDATA_REG + i * 4;
-			state_ram[i] = udma_tchanrt_read(uc->tchan, offset);
+			dev_dbg(dev, "TRT_STDATA[%02d]: 0x%08x\n", i,
+				udma_tchanrt_read(uc->tchan, offset));
 		}
-		print_hex_dump(KERN_ERR, "TRT STDATA ", DUMP_PREFIX_OFFSET,
-			       4 * 4, 4, state_ram, 32 * 4, false);
 	}
 
 	if (uc->dir == DMA_DEV_TO_MEM || uc->dir == DMA_MEM_TO_MEM) {
-		dev_err(dev, "RCHAN%d State data:\n", uc->rchan->id);
+		dev_dbg(dev, "RCHAN State data:\n");
 		for (i = 0; i < 32; i++) {
 			offset = UDMA_RCHAN_RT_STDATA_REG + i * 4;
-			state_ram[i] = udma_rchanrt_read(uc->rchan, offset);
-		}
-		print_hex_dump(KERN_ERR, "RRT STDATA ", DUMP_PREFIX_OFFSET,
-			       4 * 4, 4, state_ram, 32 * 4, false);
-	}
-
-	if (uc->terminated_desc) {
-		struct udma_desc *d = uc->terminated_desc;
-
-		dev_err(dev, "Stuck descriptor:\n");
-		print_hex_dump(KERN_ERR, "CPP5 descriptor ", DUMP_PREFIX_OFFSET,
-			       4 * 4, 4, d->hwdesc[0].cppi5_desc_vaddr,
-			       d->hwdesc[0].cppi5_desc_size, false);
-
-		if (uc->dir == DMA_MEM_TO_MEM) {
-			struct cppi5_tr_type15_t *tr_req;
-			int i;
-			u32 reg;
-
-			dev_err(dev, "Transfer length: %u\n", d->residue);
-			tr_req = (struct cppi5_tr_type15_t *)d->hwdesc[0].tr_req_base;
-			for (i = 0; i < d->num_tr; i++) {
-				dev_err(dev, "tr[%d].icnt0: %u\n", i,
-					tr_req[i].icnt0);
-				dev_err(dev, "tr[%d].icnt1: %u\n", i,
-					tr_req[i].icnt1);
-				dev_err(dev, "tr[%d].dim1: %u\n", i,
-					tr_req[i].dim1);
-			}
-			reg = udma_tchanrt_read(uc->tchan,
-						UDMA_TCHAN_RT_CTL_REG);
-			dev_err(dev, "UDMA TRT_CTL: 0x%08x\n", reg);
-
-			reg = udma_rchanrt_read(uc->rchan,
-						UDMA_RCHAN_RT_CTL_REG);
-			dev_err(dev, "UDMA RRT_CTL: 0x%08x\n", reg);
-
-			reg = udma_tchanrt_read(uc->tchan,
-						UDMA_TCHAN_RT_SBCNT_REG);
-			dev_err(dev, "UDMA SBCNT: %u (%u) -> %u\n", reg,
-				uc->bcnt, reg ? reg - uc->bcnt : 0);
-
-			dev_err(dev, "tring occ: %u\n",
-				k3_nav_ringacc_ring_get_occ(uc->tchan->t_ring));
-			dev_err(dev, "tcring occ: %u\n",
-				k3_nav_ringacc_ring_get_occ(uc->tchan->tc_ring));
+			dev_dbg(dev, "RRT_STDATA[%02d]: 0x%08x\n", i,
+				udma_rchanrt_read(uc->rchan, offset));
 		}
 	}
-	dev_err(dev, "===== chan%d dump END =====\n", uc->id);
 }
 
 static inline dma_addr_t udma_curr_cppi5_desc_paddr(struct udma_desc *d,
@@ -1574,8 +1526,6 @@ static int udma_alloc_chan_resources(struct dma_chan *chan)
 		uc->src_thread = ud->psil_base + uc->tchan->id;
 		uc->dst_thread = (ud->psil_base + uc->rchan->id) | 0x8000;
 
-		pr_err("%s: chan%d: tchan/rchan id: %d\n", __func__, uc->id,
-		       uc->tchan->id);
 		break;
 	case DMA_MEM_TO_DEV:
 		/* Slave transfer synchronized - mem to dev (TX) trasnfer */
@@ -2585,7 +2535,6 @@ static struct dma_async_tx_descriptor *udma_prep_dma_memcpy(
 	d->dir = DMA_MEM_TO_MEM;
 	d->desc_idx = 0;
 	d->tr_idx = 0;
-	d->num_tr = num_tr;
 	d->residue = len;
 
 	tr_req = (struct cppi5_tr_type15_t *)d->hwdesc[0].tr_req_base;
@@ -2796,16 +2745,8 @@ static int udma_terminate_all(struct dma_chan *chan)
 
 	spin_lock_irqsave(&uc->vc.lock, flags);
 
-	if (udma_is_chan_running(uc)) {
-		if (uc->desc) {
-			dev_warn(uc->ud->dev, "chan%d terminating a transfer!\n",
-				uc->id);
-			uc->terminated_desc = uc->desc;
-			udma_dump_chan_stdata(uc);
-			uc->terminated_desc = NULL;
-		}
+	if (udma_is_chan_running(uc))
 		udma_stop(uc);
-	}
 
 	if (uc->desc) {
 		uc->terminated_desc = uc->desc;
