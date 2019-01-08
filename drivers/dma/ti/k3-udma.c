@@ -1084,7 +1084,6 @@ static irqreturn_t udma_ring_irq_handler(int irq, void *data)
 	struct udma_chan *uc = data;
 	dma_addr_t paddr = 0;
 
-	pr_err("%s: chan%d\n", __func__, uc->id);
 	if (!udma_pop_from_ring(uc, &paddr))
 		udma_ring_callback(uc, paddr);
 
@@ -1099,7 +1098,6 @@ static irqreturn_t udma_udma_irq_handler(int irq, void *data)
 	ti_sci_inta_ack_event(uc->ud->irq_domain, tisci_rm->tisci_dev_id,
 			      uc->irq_udma_idx, uc->irq_num_udma);
 
-	pr_err("%s: chan%d\n", __func__, uc->id);
 	udma_tr_event_callback(uc);
 
 	return IRQ_HANDLED;
