@@ -1,0 +1,76 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (C) 2019 Texas Instruments Incorporated - http://www.ti.com/
+ */
+
+/dts-v1/;
+/plugin/;
+#include <dt-bindings/interrupt-controller/irq.h>
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+  fragment@101 {
+	target-path = "/";
+
+	__overlay__ {
+		aliases {
+			display0 = "/display";
+			display1 = "/connector";
+		};
+
+		lcd_bl: backlight {
+			compatible = "led-backlight";
+			leds = <&backlight_led>;
+			brightness-levels = <0 243 245 247 248 249 251 252 255>;
+			default-brightness-level = <8>;
+
+			enable-gpios = <&tlc59108 0 GPIO_ACTIVE_HIGH>;
+		};
+
+		lcd: display {
+			compatible = "lg,lp101wx2";
+			enable-gpios = <&pcf_lcd 13 GPIO_ACTIVE_LOW>;
+			label = "lcd";
+			backlight = <&lcd_bl>;
+
+			port {
+				lcd_in: endpoint {
+					remote-endpoint = <&dpi_out>;
+				};
+			};
+		};
+	};
+  };
+};
+
+&i2c1 {
+	tlc59108: tlc59108@40 {
+		compatible = "ti,tlc59108";
+		#address-cells = <1>;
+		#size-cells = <0>;
+		reg = <0x40>;
+		gpio-controller;
+		#gpio-cells = <2>;
+
+		backlight_led: bl@2 {
+			label = "backlight";
+			reg = <0x2>;
+		};
+	};
+};
+
+&dss {
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		dss_port: port {
+			reg = <0>;
+
+			dpi_out: endpoint {
+				data-lines = <24>;
+				remote-endpoint = <&lcd_in>;
+			};
+		};
+	};
+};

@@ -775,6 +775,7 @@ dtb-merge-$(CONFIG_SOC_DRA7XX) += \
 	am574x-idk-lcd-osd101t2587.dtb \
 	dra71-evm-nand.dtb \
 	dra71-evm-lcd-auo-g101evn01.0.dtb \
+	dra72-evm-lcd-lg.dtb \
 	dra72-evm-lcd-osd101t2045.dtb \
 	dra72-evm-lcd-osd101t2587.dtb \
 	dra72-evm-revc-lcd-osd101t2045.dtb \

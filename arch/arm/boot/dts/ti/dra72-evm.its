@@ -63,6 +63,14 @@
 			compression = "none";
 			load = <0x83100000>;
 		};
+		fdt@7 {
+			description = "DRA72-evm lg lp101wx2";
+			data = /incbin/("dra72-evm-lcd-lg-lp101wx2.dtbo");
+			type = "flat_dt";
+			arch = "arm";
+			compression = "none";
+			load = <0x83080000>;
+		};
 	};
 
 	configurations {
@@ -84,6 +92,10 @@
 		lcd-osd101t2587 {
 			description = "osd101t2587 LCD overlay";
 			fdt = "fdt@3", "fdt@4", "fdt@6";
+		};
+		lcd-lg {
+			description = "lg lp101wx2 overlay";
+			fdt = "fdt@7";
 		};
 	};
 };
