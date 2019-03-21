@@ -689,6 +689,10 @@ struct drm_plane *omap_plane_reserve_wb(struct drm_device *dev)
 		if (omap_plane->reserved_wb_overlay)
 			continue;
 
+		if (priv->num_pipes)
+			crtc_mask = (1 << priv->num_pipes) - 1;
+		else
+			crtc_mask = 1;
 		ret = omap_overlay_assign_wb(priv, plane, caps, fourcc,
 					     crtc_mask, &new_ovl);
 		if (ret) {

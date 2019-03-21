@@ -547,7 +547,10 @@ static int omap_modeset_init(struct drm_device *dev)
 	}
 
 	/* Create all planes first. They can all be put to any CRTC. */
-	plane_crtc_mask = (1 << priv->num_pipes) - 1;
+	if (priv->num_pipes)
+		plane_crtc_mask = (1 << priv->num_pipes) - 1;
+	else
+		plane_crtc_mask = 1;
 
 	for (i = 0; i < num_ovls; i++) {
 		enum drm_plane_type type = i < priv->num_pipes

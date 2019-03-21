@@ -183,7 +183,10 @@ void omap_overlay_disable(struct drm_atomic_state *s,
 		 * atomic cycle we can reset the available crtcs
 		 * it can be used on
 		 */
-		overlay->possible_crtcs = (1 << priv->num_pipes) - 1;
+		if (priv->num_pipes)
+			overlay->possible_crtcs = (1 << priv->num_pipes) - 1;
+		else
+			overlay->possible_crtcs = 1;
 	}
 
 	/*
@@ -262,7 +265,10 @@ void omap_overlay_release_wb(struct omap_drm_private *priv,
 		priv->dispc_ops->ovl_enable(priv->dispc, overlay->overlay_id,
 					    false);
 		priv->dispc_ops->runtime_put(priv->dispc);
-		overlay->possible_crtcs = (1 << priv->num_pipes) - 1;
+		if (priv->num_pipes)
+			overlay->possible_crtcs = (1 << priv->num_pipes) - 1;
+		else
+			overlay->possible_crtcs = 1;
 		overlay_map[overlay->idx] = NULL;
 	}
 }
