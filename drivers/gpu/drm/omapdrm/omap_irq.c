@@ -283,6 +283,16 @@ int omap_drm_irq_install(struct drm_device *dev)
 
 	dev->irq_enabled = true;
 
+	if (!priv->num_pipes) {
+		unsigned long flags;
+
+		spin_lock_irqsave(&priv->wait_lock, flags);
+		priv->dispc_ops->runtime_get(priv->dispc);
+		omap_irq_update(dev);
+		priv->dispc_ops->runtime_put(priv->dispc);
+		spin_unlock_irqrestore(&priv->wait_lock, flags);
+	}
+
 	return 0;
 }
 
