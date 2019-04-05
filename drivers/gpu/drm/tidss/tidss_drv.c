@@ -211,7 +211,8 @@ static int tidss_probe(struct platform_device *pdev)
 
 	ret = tidss->features->dispc_init(tidss);
 	if (ret) {
-		dev_err(dev, "failed to initialize dispc: %d\n", ret);
+		if (ret != -EPROBE_DEFER)
+			dev_err(dev, "failed to initialize dispc: %d\n", ret);
 		goto err_disable_pm;
 	}
 
