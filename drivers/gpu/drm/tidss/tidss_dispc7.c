@@ -3540,8 +3540,10 @@ int dispc7_init(struct tidss_device *tidss)
 
 		clk = devm_clk_get(dev, dispc->feat->vpclk_name[i]);
 		if (IS_ERR(clk)) {
-			dev_err(dev, "%s: Failed to get clk %s:%ld\n", __func__,
-				dispc->feat->vpclk_name[i], PTR_ERR(clk));
+			if (PTR_ERR(clk) != -EPROBE_DEFER)
+				dev_err(dev, "%s: Failed to get clk %s:%ld\n",
+					__func__, dispc->feat->vpclk_name[i],
+					PTR_ERR(clk));
 			return PTR_ERR(clk);
 		}
 		dispc->vp_clk[i] = clk;
