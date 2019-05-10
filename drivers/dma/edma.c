@@ -246,6 +246,9 @@ struct edma_cc {
 	 */
 	unsigned long *slot_inuse;
 
+	/* for tracking reserved channels used by DSP */
+	unsigned long *reserved_chans;
+
 	struct dma_device		dma_slave;
 	struct dma_device		*dma_memcpy;
 	struct edma_chan		*slave_chans;
@@ -695,6 +698,12 @@ static int edma_alloc_channel(struct edma_chan *echan,
 {
 	struct edma_cc *ecc = echan->ecc;
 	int channel = EDMA_CHAN_SLOT(echan->ch_num);
+
+	if (test_bit(echan->ch_num, ecc->reserved_chans)) {
+		dev_err(ecc->dev, "Channel%d is reserved, can not be used!\n",
+			echan->ch_num);
+		return -EINVAL;
+	}
 
 	/* ensure access through shadow region 0 */
 	edma_or_array2(ecc, EDMA_DRAE, 0, channel >> 5, BIT(channel & 0x1f));
@@ -2019,6 +2028,76 @@ static int edma_xbar_event_map(struct device *dev, struct edma_soc_info *pdata,
 	return 0;
 }
 
+static struct edma_rsv_info *edma_get_reserved_ranges_dt(struct device *dev)
+{
+	static const char * const prop_names[] = {
+						"ti,edma-reserved-slot-ranges",
+						"ti,edma-reserved-chan-ranges"
+						};
+	struct edma_rsv_info *rsv_info = NULL;
+	struct property *props[2];
+	int sz[2], i, ret;
+
+	for (i = 0; i < 2; i++)
+		props[i] = of_find_property(dev->of_node, prop_names[i],
+					    &sz[i]);
+
+	if (!props[0] && !props[1])
+		return NULL;
+
+	rsv_info = devm_kzalloc(dev, sizeof(*rsv_info), GFP_KERNEL);
+	if (!rsv_info)
+		return ERR_PTR(-ENOMEM);
+
+	for (i = 0; i < 2; i++) {
+		u32 (*tmp)[2];
+		s16 (*reserved)[2];
+		size_t nelm;
+		int j;
+
+		if (!props[i])
+			continue;
+
+		nelm = sz[i] / sizeof(*tmp);
+		if (!nelm)
+			continue;
+
+		tmp = kcalloc(nelm, sizeof(*tmp), GFP_KERNEL);
+		if (!tmp)
+			return ERR_PTR(-ENOMEM);
+
+		reserved = devm_kcalloc(dev, nelm + 1, sizeof(*reserved),
+					GFP_KERNEL);
+		if (!reserved) {
+			kfree(tmp);
+			return ERR_PTR(-ENOMEM);
+		}
+
+		ret = of_property_read_u32_array(dev->of_node, prop_names[i],
+						 (u32 *)tmp, nelm * 2);
+		if (ret) {
+			kfree(tmp);
+			return ERR_PTR(ret);
+		}
+
+		for (j = 0; j < nelm; j++) {
+			reserved[j][0] = tmp[j][0];
+			reserved[j][1] = tmp[j][1];
+		}
+		reserved[nelm][0] = -1;
+		reserved[nelm][1] = -1;
+
+		if (i == 0)
+			rsv_info->rsv_slots = (const s16 (*)[2])reserved;
+		else if (i == 1)
+			rsv_info->rsv_chans = (const s16 (*)[2])reserved;
+
+		kfree(tmp);
+	}
+
+	return rsv_info;
+}
+
 static struct edma_soc_info *edma_setup_info_from_dt(struct device *dev,
 						     bool legacy_mode)
 {
@@ -2063,55 +2142,9 @@ static struct edma_soc_info *edma_setup_info_from_dt(struct device *dev,
 		info->memcpy_channels = memcpy_ch;
 	}
 
-	prop = of_find_property(dev->of_node, "ti,edma-reserved-slot-ranges",
-				&sz);
-	if (prop) {
-		const char pname[] = "ti,edma-reserved-slot-ranges";
-		u32 (*tmp)[2];
-		s16 (*rsv_slots)[2];
-		size_t nelm = sz / sizeof(*tmp);
-		struct edma_rsv_info *rsv_info;
-		int i;
-
-		if (!nelm)
-			return info;
-
-		tmp = kcalloc(nelm, sizeof(*tmp), GFP_KERNEL);
-		if (!tmp)
-			return ERR_PTR(-ENOMEM);
-
-		rsv_info = devm_kzalloc(dev, sizeof(*rsv_info), GFP_KERNEL);
-		if (!rsv_info) {
-			kfree(tmp);
-			return ERR_PTR(-ENOMEM);
-		}
-
-		rsv_slots = devm_kcalloc(dev, nelm + 1, sizeof(*rsv_slots),
-					 GFP_KERNEL);
-		if (!rsv_slots) {
-			kfree(tmp);
-			return ERR_PTR(-ENOMEM);
-		}
-
-		ret = of_property_read_u32_array(dev->of_node, pname,
-						 (u32 *)tmp, nelm * 2);
-		if (ret) {
-			kfree(tmp);
-			return ERR_PTR(ret);
-		}
-
-		for (i = 0; i < nelm; i++) {
-			rsv_slots[i][0] = tmp[i][0];
-			rsv_slots[i][1] = tmp[i][1];
-		}
-		rsv_slots[nelm][0] = -1;
-		rsv_slots[nelm][1] = -1;
-
-		info->rsv = rsv_info;
-		info->rsv->rsv_slots = (const s16 (*)[2])rsv_slots;
-
-		kfree(tmp);
-	}
+	info->rsv = edma_get_reserved_ranges_dt(dev);
+	if (IS_ERR(info->rsv))
+		return ERR_PTR(PTR_ERR(info->rsv));
 
 	return info;
 }
@@ -2172,7 +2205,7 @@ static int edma_probe(struct platform_device *pdev)
 	struct edma_soc_info	*info = pdev->dev.platform_data;
 	s8			(*queue_priority_mapping)[2];
 	int			i, off;
-	const s16		(*rsv_slots)[2];
+	const s16		(*reserved)[2];
 	const s16		(*xbar_chans)[2];
 	int			irq;
 	char			*irq_name;
@@ -2255,15 +2288,29 @@ static int edma_probe(struct platform_device *pdev)
 	if (!ecc->slot_inuse)
 		return -ENOMEM;
 
+	ecc->reserved_chans = devm_kcalloc(dev,
+					   BITS_TO_LONGS(ecc->num_channels),
+					   sizeof(unsigned long), GFP_KERNEL);
+	if (!ecc->reserved_chans)
+		return -ENOMEM;
+
 	ecc->default_queue = info->default_queue;
 
 	if (info->rsv) {
 		/* Set the reserved slots in inuse list */
-		rsv_slots = info->rsv->rsv_slots;
-		if (rsv_slots) {
-			for (i = 0; rsv_slots[i][0] != -1; i++)
-				bitmap_set(ecc->slot_inuse, rsv_slots[i][0],
-					   rsv_slots[i][1]);
+		reserved = info->rsv->rsv_slots;
+		if (reserved) {
+			for (i = 0; reserved[i][0] != -1; i++)
+				bitmap_set(ecc->slot_inuse, reserved[i][0],
+					   reserved[i][1]);
+		}
+
+		/* Mark reserved channels */
+		reserved = info->rsv->rsv_chans;
+		if (reserved) {
+			for (i = 0; reserved[i][0] != -1; i++)
+				bitmap_set(ecc->reserved_chans, reserved[i][0],
+					   reserved[i][1]);
 		}
 	}
 
@@ -2360,6 +2407,10 @@ static int edma_probe(struct platform_device *pdev)
 	edma_dma_init(ecc, legacy_mode);
 
 	for (i = 0; i < ecc->num_channels; i++) {
+		/* Do not touch reserved channels */
+		if (test_bit(i, ecc->reserved_chans))
+			continue;
+
 		/* Assign all channels to the default queue */
 		edma_assign_channel_eventq(&ecc->slave_chans[i],
 					   info->default_queue);
