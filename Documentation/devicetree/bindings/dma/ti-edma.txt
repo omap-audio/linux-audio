@@ -26,6 +26,9 @@ Optional properties:
 - ti,edma-reserved-slot-ranges: PaRAM slot ranges which should not be used by
 		the driver, they are allocated to be used by for example the
 		DSP. See example.
+- ti,edma-reserved-chan-ranges: channel ranges which should not be used by
+		the driver, they are allocated to be used by for example the
+		DSP. See example.
 
 ------------------------------------------------------------------------------
 eDMA3 Transfer Controller
@@ -58,6 +61,8 @@ edma: edma@49000000 {
 	ti,edma-memcpy-channels = <20 21>;
 	/* The following PaRAM slots are reserved: 35-44 and 100-109 */
 	ti,edma-reserved-slot-ranges = <35 10>, <100 10>;
+	/* The following channels are reserved: 35-44 */
+	ti,edma-reserved-chan-ranges = <35 10>;
 };
 
 edma_tptc0: tptc@49800000 {
