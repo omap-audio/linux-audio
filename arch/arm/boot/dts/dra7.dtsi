@@ -232,6 +232,7 @@
 					#dma-cells = <2>;
 					dma-requests = <204>;
 					ti,dma-safe-map = <0>;
+					ti,reserved-dma-request-ranges = <20 2>;
 					dma-masters = <&edma>;
 				};
 			};
@@ -498,6 +499,7 @@
 			#dma-cells = <2>;
 
 			ti,tptcs = <&edma_tptc0 7>, <&edma_tptc1 0>;
+			ti,edma-memcpy-channels = <20 21>;
 
 			/*
 			 * memcpy is disabled, can be enabled with:
