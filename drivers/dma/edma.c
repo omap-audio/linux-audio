@@ -181,6 +181,7 @@ struct edma_desc {
 	struct list_head		node;
 	enum dma_transfer_direction	direction;
 	int				cyclic;
+	bool				polled;
 	int				absync;
 	int				pset_nr;
 	struct edma_chan		*echan;
@@ -1258,6 +1259,9 @@ static struct dma_async_tx_descriptor *edma_prep_dma_memcpy(
 			edesc->pset[1].param.opt |= TCINTEN;
 	}
 
+	if (!(tx_flags & DMA_PREP_INTERRUPT))
+		edesc->polled = true;
+
 	return vchan_tx_prep(&echan->vchan, &edesc->vdesc, tx_flags);
 }
 
@@ -1852,8 +1856,14 @@ static enum dma_status edma_tx_status(struct dma_chan *chan,
 	 * transfers
 	 */
 	if (ret != DMA_COMPLETE && !txstate->residue &&
-	    (!echan->edesc || !echan->edesc->cyclic))
+	    echan->edesc && echan->edesc->polled &&
+	    echan->edesc->vdesc.tx.cookie == cookie) {
+		edma_stop(echan);
+		vchan_cookie_complete(&echan->edesc->vdesc);
+		echan->edesc = NULL;
+		edma_execute(echan);
 		ret = DMA_COMPLETE;
+	}
 
 	spin_unlock_irqrestore(&echan->vchan.lock, flags);
 
