@@ -645,9 +645,10 @@ static int dmatest_func(void *data)
 
 		if (params->polled) {
 			status = dma_sync_wait(chan, cookie);
-			dmaengine_terminate_sync(chan);
 			if (status == DMA_COMPLETE)
 				done->done = true;
+			else
+				dmaengine_terminate_sync(chan);
 		} else {
 			dma_async_issue_pending(chan);
 
