@@ -507,6 +507,8 @@ static int dmatest_func(void *data)
 		dma_addr_t *dsts;
 		unsigned int src_off, dst_off, len;
 		u8 align = 0;
+		ktime_t tstamp1, tstamp2;
+		s64 delta_us;
 
 		total_tests++;
 
@@ -643,6 +645,7 @@ static int dmatest_func(void *data)
 			continue;
 		}
 
+		tstamp1 = ktime_get();
 		if (params->polled) {
 			status = dma_sync_wait(chan, cookie);
 			if (status == DMA_COMPLETE)
@@ -659,6 +662,10 @@ static int dmatest_func(void *data)
 			status = dma_async_is_tx_complete(chan, cookie, NULL,
 							  NULL);
 		}
+		tstamp2 = ktime_get();
+		delta_us = ktime_us_delta(tstamp2, tstamp1);
+		pr_err("%s: copy of %u bytes took %lld us\n", __func__, len,
+		       delta_us);
 
 		if (!done->done) {
 			dmaengine_unmap_put(um);
