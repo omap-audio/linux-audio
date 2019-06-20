@@ -831,6 +831,8 @@ static int davinci_config_channel_size(struct davinci_mcasp *mcasp,
 	}
 
 	mcasp_set_reg(mcasp, DAVINCI_MCASP_TXMASK_REG, mask);
+	pr_err("%s: sample_width: %d, slot_width: %u, tx_rotate: %u, rx_rotate: %u, mask: 0x%08x, fmt: 0x%08x\n",
+		__func__, sample_width, slot_width, tx_rotate, rx_rotate, mask, fmt);
 
 	return 0;
 }
@@ -847,6 +849,9 @@ static int mcasp_common_hw_param(struct davinci_mcasp *mcasp, int stream,
 	u8 max_rx_serializers, max_tx_serializers;
 	int active_serializers, numevt;
 	u32 reg;
+
+	pr_err("%s: channels: %d, slots: %d -> max_active_serializers: %d\n",
+	       __func__, channels, slots, max_active_serializers);
 	/* Default configuration */
 	if (mcasp->version < MCASP_VERSION_3)
 		mcasp_set_bits(mcasp, DAVINCI_MCASP_PWREMUMGT_REG, MCASP_SOFT);
@@ -873,10 +878,12 @@ static int mcasp_common_hw_param(struct davinci_mcasp *mcasp, int stream,
 			mcasp_mod_bits(mcasp, DAVINCI_MCASP_XRSRCTL_REG(i),
 				       mcasp->dismod, DISMOD_MASK);
 			set_bit(PIN_BIT_AXR(i), &mcasp->pdir);
+			pr_err("%s: AXR%d as TX\n", __func__, i);
 			tx_ser++;
 		} else if (mcasp->serial_dir[i] == RX_MODE &&
 					rx_ser < max_rx_serializers) {
 			clear_bit(PIN_BIT_AXR(i), &mcasp->pdir);
+			pr_err("%s: AXR%d as RX\n", __func__, i);
 			rx_ser++;
 		} else {
 			/* Inactive or unused pin, set it to inactive */
@@ -888,6 +895,7 @@ static int mcasp_common_hw_param(struct davinci_mcasp *mcasp, int stream,
 					       DAVINCI_MCASP_XRSRCTL_REG(i),
 					       mcasp->dismod, DISMOD_MASK);
 			clear_bit(PIN_BIT_AXR(i), &mcasp->pdir);
+			pr_err("%s: AXR%d as Inactive\n", __func__, i);
 		}
 	}
 
@@ -900,6 +908,8 @@ static int mcasp_common_hw_param(struct davinci_mcasp *mcasp, int stream,
 		numevt = mcasp->rxnumevt;
 		reg = mcasp->fifo_base + MCASP_RFIFOCTL_OFFSET;
 	}
+
+	pr_err("%s: active_serializers: %d\n", __func__, active_serializers);
 
 	if (active_serializers < max_active_serializers) {
 		dev_warn(mcasp->dev, "stream has more channels (%d) than are "
@@ -1002,6 +1012,7 @@ static int mcasp_i2s_hw_param(struct davinci_mcasp *mcasp, int stream,
 
 	mcasp_clr_bits(mcasp, DAVINCI_MCASP_ACLKXCTL_REG, TX_ASYNC);
 
+	pr_err("%s: active_serializers: %d, active_slots: %d, mask: 0x%08x\n", __func__, active_serializers, active_slots, mask);
 	if (!mcasp->dat_port)
 		busel = TXSEL;
 
