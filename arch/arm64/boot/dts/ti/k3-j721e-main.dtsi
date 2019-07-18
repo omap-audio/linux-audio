@@ -1046,6 +1046,8 @@
 		power-domains = <&k3_pds 281 TI_SCI_PD_EXCLUSIVE>;
 		clocks = <&k3_clks 281 0>;
 		clock-names = "fclk";
+		dmas = <&main_udmap 0xc704>, <&main_udmap 0x4704>;
+		dma-names = "tx", "rx";
 	};
 
 	main_uart5: serial@2850000 {
