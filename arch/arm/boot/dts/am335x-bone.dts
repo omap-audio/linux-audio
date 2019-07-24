@@ -9,6 +9,7 @@
 
 #include "am33xx.dtsi"
 #include "am335x-bone-common.dtsi"
+#include <dt-bindings/sound/ti-mcasp.h>
 
 / {
 	model = "TI AM335x BeagleBone";
@@ -29,14 +30,14 @@
 		simple-audio-card,bitclock-master = <&sound0_master>;
 		simple-audio-card,frame-master = <&sound0_master>;
 
-		simple-audio-card,cpu {
+		sound0_master: simple-audio-card,cpu {
 			sound-dai = <&mcasp0>;
-//			system-clock-frequency = <24000000>;
-//			system-clock-id = <MCASP_CLK_HCLK_AUXCLK>;
+			system-clock-frequency = <24000000>;
+			system-clock-id = <MCASP_CLK_HCLK_AUXCLK>;
 
 		};
 
-		sound0_master: simple-audio-card,codec {
+		simple-audio-card,codec {
 			sound-dai = <&tlv320aic3106>;
 //			system-clock-frequency = <12000000>;
 			clocks = <&clkout2_ck>;
@@ -48,8 +49,8 @@
 &am33xx_pinmux {
 	mcasp0_pins: mcasp0_pins {
 		pinctrl-single,pins = <
-			0x194 (PIN_INPUT_PULLDOWN | MUX_MODE0) /* mcasp0_fsx.mcasp0_fsx */
-			0x190 (PIN_INPUT_PULLDOWN | MUX_MODE0) /* mcasp0_aclkx.mcasp0_aclkx */
+			0x194 (PIN_OUTPUT_PULLDOWN | MUX_MODE0) /* mcasp0_fsx.mcasp0_fsx */
+			0x190 (PIN_OUTPUT_PULLDOWN | MUX_MODE0) /* mcasp0_aclkx.mcasp0_aclkx */
 			0x1ac (PIN_OUTPUT_PULLDOWN | MUX_MODE2) /* mcasp0_ahclkx.mcasp0_axr3 */
 			0x19c (PIN_INPUT_PULLDOWN | MUX_MODE2) /* mcasp0_ahclkr.mcasp0_axr2 */
 		>;
