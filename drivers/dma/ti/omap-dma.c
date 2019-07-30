@@ -862,7 +862,6 @@ out:
 		 * accordingly and mark it as completed
 		 */
 		if (!(ccr & CCR_ENABLE)) {
-			struct omap_desc *d = c->desc;
 			ret = DMA_COMPLETE;
 			omap_dma_start_desc(c);
 			vchan_cookie_complete(&d->vd);
