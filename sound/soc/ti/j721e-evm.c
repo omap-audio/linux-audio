@@ -40,8 +40,8 @@ struct j721e_audio_clocks {
 
 struct j721e_priv {
 	struct device *dev;
-	struct snd_soc_card cpb_card;
-	struct snd_soc_dai_link cpb_dai_links[J721E_CPD_DAI_CNT];
+	struct snd_soc_card card;
+	struct snd_soc_dai_link dai_links[J721E_CPD_DAI_CNT];
 	struct snd_soc_codec_conf codec_conf;
 	struct snd_interval rate_range;
 
@@ -379,7 +379,7 @@ static int j721e_soc_probe(struct platform_device *pdev)
 
 	priv->current_cpb_ref_parent = -1;
 	priv->dev = &pdev->dev;
-	card = &priv->cpb_card;
+	card = &priv->card;
 	card->dev = &pdev->dev;
 	card->owner = THIS_MODULE;
 	card->dapm_widgets = j721e_cpb_dapm_widgets;
@@ -423,30 +423,30 @@ static int j721e_soc_probe(struct platform_device *pdev)
 	if (ret)
 		return ret;
 	
-	priv->cpb_dai_links[0].name = "CPB pcm3168a DAC";
-	priv->cpb_dai_links[0].stream_name = "cpb pcm3168a Playback";
-	priv->cpb_dai_links[0].cpu_of_node = cpb_dai_node;
-	priv->cpb_dai_links[0].platform_of_node = cpb_dai_node;
-	priv->cpb_dai_links[0].codec_of_node = cpb_codec_node;
-	priv->cpb_dai_links[0].codec_dai_name = "pcm3168a-dac";
-	priv->cpb_dai_links[0].playback_only = 1;
-	priv->cpb_dai_links[0].dai_fmt = J721E_DAI_FMT;
-	priv->cpb_dai_links[0].init = j721e_audio_init;
-	priv->cpb_dai_links[0].ops = &j721e_audio_ops;
+	priv->dai_links[0].name = "CPB pcm3168a DAC";
+	priv->dai_links[0].stream_name = "cpb pcm3168a Playback";
+	priv->dai_links[0].cpu_of_node = cpb_dai_node;
+	priv->dai_links[0].platform_of_node = cpb_dai_node;
+	priv->dai_links[0].codec_of_node = cpb_codec_node;
+	priv->dai_links[0].codec_dai_name = "pcm3168a-dac";
+	priv->dai_links[0].playback_only = 1;
+	priv->dai_links[0].dai_fmt = J721E_DAI_FMT;
+	priv->dai_links[0].init = j721e_audio_init;
+	priv->dai_links[0].ops = &j721e_audio_ops;
 
-	priv->cpb_dai_links[1].name = "CPB pcm3168a ADC";
-	priv->cpb_dai_links[1].stream_name = "cpb pcm3168a Capture";
-	priv->cpb_dai_links[1].cpu_of_node = cpb_dai_node;
-	priv->cpb_dai_links[1].platform_of_node = cpb_dai_node;
-	priv->cpb_dai_links[1].codec_of_node = cpb_codec_node;
-	priv->cpb_dai_links[1].codec_dai_name = "pcm3168a-adc";
-	priv->cpb_dai_links[1].capture_only = 1;
-	priv->cpb_dai_links[1].dai_fmt = J721E_DAI_FMT;
-	priv->cpb_dai_links[1].init = j721e_audio_init;
-	priv->cpb_dai_links[1].ops = &j721e_audio_ops;
+	priv->dai_links[1].name = "CPB pcm3168a ADC";
+	priv->dai_links[1].stream_name = "cpb pcm3168a Capture";
+	priv->dai_links[1].cpu_of_node = cpb_dai_node;
+	priv->dai_links[1].platform_of_node = cpb_dai_node;
+	priv->dai_links[1].codec_of_node = cpb_codec_node;
+	priv->dai_links[1].codec_dai_name = "pcm3168a-adc";
+	priv->dai_links[1].capture_only = 1;
+	priv->dai_links[1].dai_fmt = J721E_DAI_FMT;
+	priv->dai_links[1].init = j721e_audio_init;
+	priv->dai_links[1].ops = &j721e_audio_ops;
 
-	card->dai_link = priv->cpb_dai_links;
-	card->num_links = ARRAY_SIZE(priv->cpb_dai_links);
+	card->dai_link = priv->dai_links;
+	card->num_links = ARRAY_SIZE(priv->dai_links);
 
 	priv->codec_conf.of_node = cpb_codec_node;
 	priv->codec_conf.name_prefix = "codec1";
