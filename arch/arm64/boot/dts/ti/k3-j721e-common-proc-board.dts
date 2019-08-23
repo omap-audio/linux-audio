@@ -528,6 +528,12 @@
 	};
 };
 
+&k3_clks {
+	/* Confiure AUDIO_EXT_REFCLK2 pin as output */
+	pinctrl-names = "default";
+	pinctrl-0 = <&audi_ext_refclk2_pins_default>;
+};
+
 &main_i2c3 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&main_i2c3_pins_default>;
@@ -543,9 +549,6 @@
 	pcm3168a_1: audio-codec@44 {
 		compatible = "ti,pcm3168a";
 		reg = <0x44>;
-
-		pinctrl-names = "default";
-		pinctrl-0 = <&audi_ext_refclk2_pins_default>;
 
 		#sound-dai-cells = <1>;
 
