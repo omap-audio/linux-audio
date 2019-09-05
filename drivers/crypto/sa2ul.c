@@ -1013,6 +1013,13 @@ sa_prepare_tx_desc(u32 *mdptr, u32 pslen, u32 *psdata, u32 epiblen, u32 *epib)
 		*out++ = *in++;
 }
 
+static void sa_issue_dma(struct sa_crypto_data *data)
+{
+	dma_async_issue_pending(data->dma_rx1);
+	dma_async_issue_pending(data->dma_rx2);
+	dma_async_issue_pending(data->dma_tx);
+}
+
 static int sa_aes_run(struct ablkcipher_request *req, u8 *iv, int enc)
 {
 	struct sa_tfm_ctx *ctx =
@@ -1130,8 +1137,7 @@ static int sa_aes_run(struct ablkcipher_request *req, u8 *iv, int enc)
 	dmaengine_submit(tx_out);
 	dmaengine_submit(tx_in);
 
-	dma_async_issue_pending(dma_rx);
-	dma_async_issue_pending(pdata->dma_tx);
+	sa_issue_dma(pdata);
 
 	return -EINPROGRESS;
 }
@@ -1453,8 +1459,8 @@ static int sa_aead_run(struct aead_request *req, u8 *iv, int enc)
 	dmaengine_submit(tx_out);
 	dmaengine_submit(tx_in);
 
-	dma_async_issue_pending(dma_rx);
-	dma_async_issue_pending(pdata->dma_tx);
+	sa_issue_dma(pdata);
+
 	return -EINPROGRESS;
 }
 
@@ -1627,8 +1633,7 @@ static int sa_sham_digest(struct ahash_request *req)
 	dmaengine_submit(tx_out);
 	dmaengine_submit(tx_in);
 
-	dma_async_issue_pending(dma_rx);
-	dma_async_issue_pending(pdata->dma_tx);
+	sa_issue_dma(pdata);
 
 	return -EINPROGRESS;
 }
