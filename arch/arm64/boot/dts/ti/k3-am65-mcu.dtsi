@@ -6,6 +6,7 @@
  */
 
 &cbass_mcu {
+	dma-domain-controller = <&mcu_udmap>;
 	mcu_conf: bus@40f00000 {
 		compatible = "simple-bus";
 		#address-cells = <1>;

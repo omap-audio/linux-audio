@@ -16,6 +16,7 @@
 	model = "Texas Instruments K3 AM654 SoC";
 	compatible = "ti,am654";
 	interrupt-parent = <&gic500>;
+	dma-domain-controller = <&main_udmap>;
 	#address-cells = <2>;
 	#size-cells = <2>;
 
