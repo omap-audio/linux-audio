@@ -21,6 +21,48 @@ static LIST_HEAD(of_dma_list);
 static DEFINE_MUTEX(of_dma_lock);
 
 /**
+ * of_find_dma_domain - Get the domain DMA controller
+ * @np:		device node of the client device
+ *
+ * Look up the DMA controller of the domain the client device is part of.
+ * Finds the dma-domain controller the client device belongs to. It is used when
+ * requesting non slave channels (like channel for memcpy) to make sure that the
+ * channel can be request from a DMA controller which can service the given
+ * domain best.
+ *
+ * Returns the device_node pointer of the DMA controller or succes or NULL on
+ * error.
+ */
+struct device_node *of_find_dma_domain(struct device_node *np)
+{
+	struct device_node *dma_domain = NULL;
+	phandle dma_phandle;
+
+	/*
+	 * If no device_node is provided look at the root level for system
+	 * default DMA controller for modules.
+	 */
+	if (!np)
+		np = of_root;
+
+	if (!np || !of_node_get(np))
+		return NULL;
+
+	do {
+		if (of_property_read_u32(np, "dma-domain-controller",
+					 &dma_phandle)) {
+			np = of_get_next_parent(np);
+		} else {
+			dma_domain = of_find_node_by_phandle(dma_phandle);
+			of_node_put(np);
+		}
+	} while (!dma_domain && np);
+
+	return dma_domain;
+}
+EXPORT_SYMBOL_GPL(of_find_dma_domain);
+
+/**
  * of_dma_find_controller - Get a DMA controller in DT DMA helpers list
  * @dma_spec:	pointer to DMA specifier as found in the device tree
  *
