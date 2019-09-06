@@ -759,6 +759,10 @@ struct dma_chan *__dma_request_channel(const dma_cap_mask_t *mask,
 	struct dma_device *device, *_d;
 	struct dma_chan *chan = NULL;
 
+	/* If np is not specified, get the default DMA domain controller */
+	if (!np)
+		np = of_find_dma_domain(NULL);
+
 	/* Find a channel */
 	mutex_lock(&dma_list_mutex);
 	list_for_each_entry_safe(device, _d, &dma_device_list, global_node) {
@@ -874,19 +878,26 @@ found:
 EXPORT_SYMBOL_GPL(dma_request_chan);
 
 /**
- * dma_request_chan_by_mask - allocate a channel satisfying certain capabilities
+ * dma_request_chan_by_domain - allocate a channel by mask from DMA domain
+ * @dev:	pointer to client device structure
  * @mask:	capabilities that the channel must satisfy
  *
  * Returns pointer to appropriate DMA channel on success or an error pointer.
  */
-struct dma_chan *dma_request_chan_by_mask(const dma_cap_mask_t *mask)
+struct dma_chan *dma_request_chan_by_domain(struct device *dev,
+					    const dma_cap_mask_t *mask)
 {
 	struct dma_chan *chan;
 
 	if (!mask)
 		return ERR_PTR(-ENODEV);
 
-	chan = __dma_request_channel(mask, NULL, NULL, NULL);
+	if (dev)
+		chan = __dma_request_channel(mask, NULL, NULL,
+					     of_find_dma_domain(dev->of_node));
+	else
+		chan = __dma_request_channel(mask, NULL, NULL, NULL);
+
 	if (!chan) {
 		mutex_lock(&dma_list_mutex);
 		if (list_empty(&dma_device_list))
@@ -898,7 +909,7 @@ struct dma_chan *dma_request_chan_by_mask(const dma_cap_mask_t *mask)
 
 	return chan;
 }
-EXPORT_SYMBOL_GPL(dma_request_chan_by_mask);
+EXPORT_SYMBOL_GPL(dma_request_chan_by_domain);
 
 void dma_release_channel(struct dma_chan *chan)
 {
