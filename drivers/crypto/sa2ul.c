@@ -145,6 +145,9 @@ struct sa_rx_data {
 	struct device *ddev;
 	struct dma_async_tx_descriptor *tx_in;
 	u8 enc;
+
+	void *rx_tmp_vaddr;
+	dma_addr_t rx_tmp_paddr;
 };
 
 /*
@@ -2405,6 +2408,13 @@ static int sa_dma_init(struct sa_crypto_data *dd)
 	if (ret)
 		return ret;
 
+	dd->rx_pool = dma_pool_create("sa2ul-crypto rx", dd->dev, SZ_16K, 64,
+				      0);
+	if (!dd->rx_pool) {
+		dev_err(dd->dev, "Descriptor pool allocation failed\n");
+		return -ENOMEM;
+	}
+
 	dd->dma_rx1 = dma_request_chan(dd->dev, "rx1");
 	if (IS_ERR(dd->dma_rx1)) {
 		if (PTR_ERR(dd->dma_rx1) != -EPROBE_DEFER)
@@ -2537,6 +2547,7 @@ static int sa_ul_remove(struct platform_device *pdev)
 	dma_release_channel(dev_data->dma_tx);
 
 	dma_pool_destroy(dev_data->sc_pool);
+	dma_pool_destroy(dev_data->rx_pool);
 
 	platform_set_drvdata(pdev, NULL);
 

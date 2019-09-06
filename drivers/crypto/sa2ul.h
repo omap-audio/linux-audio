@@ -155,6 +155,7 @@ struct sa_tfm_ctx;
 #define SA_ALIGN_MASK		(sizeof(u32) - 1)
 #define SA_ALIGNED		__aligned(32)
 
+#define SA_RX_POOL_MAX		42
 /**
  * struct sa_crypto_data - Crypto driver instance data
  * @base: Base address of the register space
@@ -187,6 +188,9 @@ struct sa_crypto_data {
 	struct dma_chan		*dma_rx1;
 	struct dma_chan		*dma_rx2;
 	struct dma_chan		*dma_tx;
+
+	struct dma_pool	*rx_pool;
+	int		rx_pool_occ;
 };
 
 /**
