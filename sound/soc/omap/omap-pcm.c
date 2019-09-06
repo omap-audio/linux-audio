@@ -215,26 +215,26 @@ static int omap_pcm_new(struct snd_soc_pcm_runtime *rtd)
 {
 	struct snd_card *card = rtd->card->snd_card;
 	struct snd_pcm *pcm = rtd->pcm;
-	int ret;
+	int i, ret;
 
 	ret = dma_coerce_mask_and_coherent(card->dev, DMA_BIT_MASK(32));
 	if (ret)
 		return ret;
 
-	if (pcm->streams[SNDRV_PCM_STREAM_PLAYBACK].substream) {
-		ret = omap_pcm_preallocate_dma_buffer(pcm,
-			SNDRV_PCM_STREAM_PLAYBACK);
+	for (i = SNDRV_PCM_STREAM_PLAYBACK; i <= SNDRV_PCM_STREAM_CAPTURE; i++) {
+		if (!pcm->streams[i].substream)
+			continue;
+
+		ret = omap_pcm_preallocate_dma_buffer(pcm, i);
 		if (ret)
 			goto out;
-	}
 
-	if (pcm->streams[SNDRV_PCM_STREAM_CAPTURE].substream) {
-		ret = omap_pcm_preallocate_dma_buffer(pcm,
-			SNDRV_PCM_STREAM_CAPTURE);
-		if (ret)
-			goto out;
+		if (pcm->streams[i].pcm->name[0] == '\0') {
+			strncpy(pcm->streams[i].pcm->name,
+				pcm->streams[i].pcm->id,
+				sizeof(pcm->streams[i].pcm->name));
+		}
 	}
-
 out:
 	/* free preallocated buffers in case of error */
 	if (ret)
