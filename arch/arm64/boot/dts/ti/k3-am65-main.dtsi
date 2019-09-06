@@ -7,6 +7,8 @@
 #include <dt-bindings/phy/phy-am654-serdes.h>
 
 &cbass_main {
+	dma-domain-controller = <&main_udmap>;
+
 	msmc_ram: sram@70000000 {
 		compatible = "mmio-sram";
 		reg = <0x0 0x70000000 0x0 0x200000>;
