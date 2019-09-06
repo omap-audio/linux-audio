@@ -6,6 +6,8 @@
  */
 
 &cbass_mcu {
+	dma-domain-controller = <&mcu_udmap>;
+
 	mcu_conf: scm-conf@40f00000 {
 		compatible = "syscon", "simple-mfd";
 		reg = <0x0 0x40f00000 0x0 0x20000>;
