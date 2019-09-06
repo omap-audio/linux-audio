@@ -1487,7 +1487,8 @@ struct dma_chan *__dma_request_channel(const dma_cap_mask_t *mask,
 				       struct device_node *np);
 
 struct dma_chan *dma_request_chan(struct device *dev, const char *name);
-struct dma_chan *dma_request_chan_by_mask(const dma_cap_mask_t *mask);
+struct dma_chan *dma_request_chan_by_domain(struct device *dev,
+					    const dma_cap_mask_t *mask);
 
 void dma_release_channel(struct dma_chan *chan);
 int dma_get_slave_caps(struct dma_chan *chan, struct dma_slave_caps *caps);
@@ -1519,8 +1520,8 @@ static inline struct dma_chan *dma_request_chan(struct device *dev,
 {
 	return ERR_PTR(-ENODEV);
 }
-static inline struct dma_chan *dma_request_chan_by_mask(
-						const dma_cap_mask_t *mask)
+static inline struct dma_chan *dma_request_chan_by_domain(struct device *dev,
+			const dma_cap_mask_t *mask)
 {
 	return ERR_PTR(-ENODEV);
 }
@@ -1581,6 +1582,8 @@ void dma_async_device_channel_unregister(struct dma_device *device,
 void dma_run_dependencies(struct dma_async_tx_descriptor *tx);
 #define dma_request_channel(mask, x, y) \
 	__dma_request_channel(&(mask), x, y, NULL)
+#define dma_request_chan_by_mask(mask) \
+	dma_request_chan_by_domain(NULL, mask)
 
 /* Deprecated, please use dma_request_chan() directly */
 static inline struct dma_chan * __deprecated
