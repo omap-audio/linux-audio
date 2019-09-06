@@ -32,6 +32,8 @@ struct of_dma_filter_info {
 };
 
 #ifdef CONFIG_DMA_OF
+extern struct device_node *of_find_dma_domain(struct device_node *np);
+
 extern int of_dma_controller_register(struct device_node *np,
 		struct dma_chan *(*of_dma_xlate)
 		(struct of_phandle_args *, struct of_dma *),
@@ -52,6 +54,11 @@ extern struct dma_chan *of_dma_xlate_by_chan_id(struct of_phandle_args *dma_spec
 		struct of_dma *ofdma);
 
 #else
+static inline struct device_node *of_find_dma_domain(struct device_node *np)
+{
+	return NULL;
+}
+
 static inline int of_dma_controller_register(struct device_node *np,
 		struct dma_chan *(*of_dma_xlate)
 		(struct of_phandle_args *, struct of_dma *),
