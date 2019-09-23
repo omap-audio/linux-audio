@@ -538,14 +538,6 @@
 		reg = <0x20>;
 		gpio-controller;
 		#gpio-cells = <2>;
-
-		p0 {
-			/* P0 - CODEC_RSTz */
-			gpio-hog;
-			gpios = <0 GPIO_ACTIVE_HIGH>;
-			output-high;
-			line-name = "CODEC_RSTz";
-		};
 	};
 
 	pcm3168a_1: audio-codec@44 {
@@ -556,6 +548,8 @@
 		pinctrl-0 = <&audi_ext_refclk2_pins_default>;
 
 		#sound-dai-cells = <1>;
+
+		rst-gpios = <&exp3 0 GPIO_ACTIVE_HIGH>;
 
 		/* C_AUDIO_REFCLK2 -> RGMII6_RXC (W26) */
 		clocks = <&k3_clks 157 371>;
