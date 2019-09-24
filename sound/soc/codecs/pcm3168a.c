@@ -320,8 +320,6 @@ static int pcm3168a_set_dai_sysclk(struct snd_soc_dai *dai,
 
 	pcm3168a->sysclk = freq;
 
-	pr_err("%s: Requested scki rate: %u, readback from hw: %lu\n", __func__,
-	       freq, clk_get_rate(pcm3168a->scki));
 	return 0;
 }
 
