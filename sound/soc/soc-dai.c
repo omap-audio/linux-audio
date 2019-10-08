@@ -292,6 +292,30 @@ int snd_soc_dai_set_tdm_slot(struct snd_soc_dai *dai,
 EXPORT_SYMBOL_GPL(snd_soc_dai_set_tdm_slot);
 
 /**
+ * snd_soc_dai_set_data_pins - configure DAI parallel data pins
+ * @dai: DAI
+ * @tx_data_pins: number of data pins used for TX
+ * @rx_data_pins: number of data pins used for RX
+ *
+ * This function can be used to set the number of parallel data pins wired up
+ * between the codec and CPU.
+ */
+int snd_soc_dai_set_data_pins(struct snd_soc_dai *dai,
+			      unsigned int tx_data_pins,
+			      unsigned int rx_data_pins)
+{
+	snd_soc_dai_data_pins_set(dai, SNDRV_PCM_STREAM_PLAYBACK, tx_data_pins);
+	snd_soc_dai_data_pins_set(dai, SNDRV_PCM_STREAM_CAPTURE, rx_data_pins);
+
+	if (dai->driver->ops->set_data_pins)
+		return dai->driver->ops->set_data_pins(dai, tx_data_pins,
+						       rx_data_pins);
+	else
+		return -ENOTSUPP;
+}
+EXPORT_SYMBOL_GPL(snd_soc_dai_set_data_pins);
+
+/**
  * snd_soc_dai_set_channel_map - configure DAI audio channel map
  * @dai: DAI
  * @tx_num: how many TX channels
