@@ -187,6 +187,10 @@ int snd_soc_dai_set_fmt(struct snd_soc_dai *dai, unsigned int fmt);
 int snd_soc_dai_set_tdm_slot(struct snd_soc_dai *dai,
 	unsigned int tx_mask, unsigned int rx_mask, int slots, int slot_width);
 
+int snd_soc_dai_set_data_pins(struct snd_soc_dai *dai,
+			      unsigned int tx_data_pins,
+			      unsigned int rx_data_pins);
+
 int snd_soc_dai_set_channel_map(struct snd_soc_dai *dai,
 	unsigned int tx_num, unsigned int *tx_slot,
 	unsigned int rx_num, unsigned int *rx_slot);
@@ -304,6 +308,8 @@ struct snd_soc_dai_ops {
 	int (*set_tdm_slot)(struct snd_soc_dai *dai,
 		unsigned int tx_mask, unsigned int rx_mask,
 		int slots, int slot_width);
+	int (*set_data_pins)(struct snd_soc_dai *dai,
+		unsigned int tx_data_pins, unsigned int rx_data_pins);
 	int (*set_channel_map)(struct snd_soc_dai *dai,
 		unsigned int tx_num, unsigned int *tx_slot,
 		unsigned int rx_num, unsigned int *rx_slot);
@@ -433,6 +439,7 @@ struct snd_soc_dai_stream {
 
 	unsigned int active;	/* usage count */
 	unsigned int tdm_mask;	/* CODEC TDM slot masks and params (for fixup) */
+	unsigned int data_pins;
 
 	void *dma_data;		/* DAI DMA data */
 };
@@ -527,6 +534,17 @@ static inline void snd_soc_dai_tdm_mask_set(struct snd_soc_dai *dai, int stream,
 					    unsigned int tdm_mask)
 {
 	dai->stream[stream].tdm_mask = tdm_mask;
+}
+
+static inline unsigned int snd_soc_dai_data_pins_get(struct snd_soc_dai *dai, int stream)
+{
+	return dai->stream[stream].data_pins;
+}
+
+static inline void snd_soc_dai_data_pins_set(struct snd_soc_dai *dai, int stream,
+					    unsigned int data_pins)
+{
+	dai->stream[stream].data_pins = data_pins;
 }
 
 static inline unsigned int snd_soc_dai_stream_active(struct snd_soc_dai *dai, int stream)
