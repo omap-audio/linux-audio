@@ -936,10 +936,9 @@ static int soc_pcm_prepare(struct snd_pcm_substream *substream)
 }
 
 static void soc_pcm_codec_params_fixup(struct snd_pcm_hw_params *params,
-				       unsigned int mask)
+				       int channels)
 {
 	struct snd_interval *interval;
-	int channels = hweight_long(mask);
 
 	interval = hw_param_interval(params, SNDRV_PCM_HW_PARAM_CHANNELS);
 	interval->min = channels;
@@ -1029,6 +1028,7 @@ static int __soc_pcm_hw_params(struct snd_soc_pcm_runtime *rtd,
 
 	for_each_rtd_codec_dais(rtd, i, codec_dai) {
 		unsigned int tdm_mask = snd_soc_dai_tdm_mask_get(codec_dai, substream->stream);
+		unsigned int data_pins = snd_soc_dai_data_pins_get(codec_dai, substream->stream);
 
 		/*
 		 * Skip CODECs which don't support the current stream type,
@@ -1051,8 +1051,14 @@ static int __soc_pcm_hw_params(struct snd_soc_pcm_runtime *rtd,
 		tmp_params = *params;
 
 		/* fixup params based on TDM slot masks */
-		if (tdm_mask)
-			soc_pcm_codec_params_fixup(&tmp_params, tdm_mask);
+		if (tdm_mask) {
+			int channels = hweight_long(tdm_mask);
+
+			if (data_pins)
+				channels *= data_pins;
+
+			soc_pcm_codec_params_fixup(&tmp_params, channels);
+		}
 
 		ret = snd_soc_dai_hw_params(codec_dai, substream,
 					    &tmp_params);
