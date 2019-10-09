@@ -25,6 +25,7 @@
 #define J721E_DAI_LINK_CODECA		(J721E_AUDIO_DOMAIN_IVI | (0 << 4))
 #define J721E_DAI_LINK_CODECB		(J721E_AUDIO_DOMAIN_IVI | (1 << 4))
 #define J721E_DAI_LINK_IVI_MULTICODEC	(J721E_AUDIO_DOMAIN_IVI | (2 << 4))
+#define J721E_DAI_LINK_IVI_DPCM		(J721E_AUDIO_DOMAIN_IVI | (3 << 4))
 
 #define J721E_DAI_LINK_ID_TO_DOMAIN(x)	((x) & 0xf)
 
@@ -42,6 +43,7 @@ enum j721e_board_type {
 	J721E_BOARD_CPB = 1,
 	J721E_BOARD_CPB_IVI,
 	J721E_BOARD_CPB_IVI_MULTICODEC,
+	J721E_BOARD_CPB_IVI_DPCM,
 };
 
 struct j721e_audio_match_data {
@@ -167,6 +169,14 @@ static const struct snd_soc_dapm_route j721e_codec_b_dapm_routes[] = {
 	{"codecb AIN2R", NULL, "IVI B Stereo Mic 2"},
 	{"codecb AIN3L", NULL, "IVI B Line In"},
 	{"codecb AIN3R", NULL, "IVI B Line In"},
+};
+
+static const struct snd_soc_dapm_route j721e_dpcm_dapm_routes[] = {
+	{"IIS Playback",  NULL, "Playback"},
+	{"codeca Playback",  NULL, "IIS Playback"},
+
+	{"IIS Capture",  NULL, "codeca Capture"},
+	{"Capture",  NULL, "IIS Capture"},
 };
 
 static int j721e_configure_refclk(struct j721e_priv *priv,
@@ -399,6 +409,17 @@ out:
 	return ret;
 }
 
+static int j721e_audio_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
+					  struct snd_pcm_hw_params *params)
+{
+	struct snd_interval *channels = hw_param_interval(params,
+						SNDRV_PCM_HW_PARAM_CHANNELS);
+
+	channels->max = 8;
+
+	return 0;
+}
+
 static void j721e_audio_shutdown(struct snd_pcm_substream *substream)
 {
 	struct 	snd_soc_pcm_runtime *rtd = substream->private_data;
@@ -487,6 +508,11 @@ static int j721e_audio_init_ivi(struct snd_soc_pcm_runtime *rtd)
 				ARRAY_SIZE(j721e_ivi_codec_b_dapm_widgets));
 		snd_soc_dapm_add_routes(dapm, j721e_codec_b_dapm_routes,
 					ARRAY_SIZE(j721e_codec_b_dapm_routes));
+
+		if (rtd->dai_link->id == J721E_DAI_LINK_IVI_DPCM) {
+			snd_soc_dapm_add_routes(dapm, j721e_dpcm_dapm_routes,
+					ARRAY_SIZE(j721e_dpcm_dapm_routes));
+		}
 	}
 
 	return j721e_audio_init(rtd);
@@ -559,6 +585,11 @@ static const struct j721e_audio_match_data j721e_cpb_ivi_multicodec_data = {
 	.num_links = 4, /* CPB pcm3168a + 2x IVI pcm3168a */
 };
 
+static const struct j721e_audio_match_data j721e_cpb_ivi_dpcm_data = {
+	.board_type = J721E_BOARD_CPB_IVI_DPCM,
+	.num_links = 8, /* CPB pcm3168a + 2x IVI pcm3168a + 2x FE */
+};
+
 static const struct of_device_id j721e_audio_of_match[] = {
 	{
 		.compatible = "ti,j721e-cpb-audio",
@@ -569,6 +600,9 @@ static const struct of_device_id j721e_audio_of_match[] = {
 	}, {
 		.compatible = "ti,j721e-cpb-ivi-multicodec-audio",
 		.data = &j721e_cpb_ivi_multicodec_data,
+	}, {
+		.compatible = "ti,j721e-cpb-ivi-dpcm-audio",
+		.data = &j721e_cpb_ivi_dpcm_data,
 	},
 	{ },
 };
@@ -858,6 +892,137 @@ static int j721e_soc_probe_ivi_multicodec(struct j721e_priv *priv,
 	return 0;
 }
 
+static int j721e_soc_probe_ivi_dpcm(struct j721e_priv *priv, int *link_idx,
+				    int *conf_idx)
+{
+	struct device_node *node = priv->dev->of_node;
+	struct device_node *dai_node, *codeca_node, *codecb_node;
+	struct j721e_audio_domain *domain;
+	int ret;
+
+	if (priv->match_data->board_type != J721E_BOARD_CPB_IVI_DPCM)
+		return 0;
+
+	dai_node = of_parse_phandle(node, "ti,ivi-mcasp", 0);
+	if (!dai_node) {
+		dev_err(priv->dev, "IVI McASP node is not provided\n");
+		return -EINVAL;
+	}
+
+	codeca_node = of_parse_phandle(node, "ti,ivi-codec-a", 0);
+	if (!codeca_node) {
+		dev_err(priv->dev, "IVI codec-a node is not provided\n");
+		return -EINVAL;
+	}
+
+	codecb_node = of_parse_phandle(node, "ti,ivi-codec-b", 0);
+	if (!codecb_node) {
+		dev_warn(priv->dev, "IVI codec-b node is not provided\n");
+		return 0;
+	}
+
+	domain = &priv->audio_domains[J721E_AUDIO_DOMAIN_IVI];
+	ret = j721e_get_clocks(priv->dev, &domain->codec,
+			       "audio-refclk0");
+	if (ret)
+		return ret;
+
+	ret = j721e_get_clocks(priv->dev, &domain->mcasp, "ivi-mcasp");
+	if (ret)
+		return ret;
+
+	/* Playback FE: ivi-mcasp -> dummy */
+	priv->dai_links[*link_idx].name = "IVI FE Playback";
+	priv->dai_links[*link_idx].stream_name = "ivi fe Playback";
+	priv->dai_links[*link_idx].cpu_of_node = dai_node;
+	priv->dai_links[*link_idx].platform_of_node = dai_node;
+	priv->dai_links[*link_idx].codec_name = "snd-soc-dummy";
+	priv->dai_links[*link_idx].codec_dai_name = "snd-soc-dummy-dai";
+	priv->dai_links[*link_idx].dynamic = 1;
+	priv->dai_links[*link_idx].dpcm_playback = 1;
+	priv->dai_links[*link_idx].dpcm_merged_format = 1;
+	priv->dai_links[*link_idx].id = J721E_DAI_LINK_IVI_DPCM;
+	priv->dai_links[*link_idx].dai_fmt = J721E_DAI_FMT;
+	priv->dai_links[*link_idx].init = j721e_audio_init_ivi;
+	priv->dai_links[*link_idx].ops = &j721e_audio_ops;
+	(*link_idx)++;
+
+	/* Playback BE: dummy -> codeca + codecb */
+	priv->dai_links[*link_idx].codecs = devm_kcalloc(priv->dev, 2,
+				sizeof(*priv->dai_links[*link_idx].codecs),
+				GFP_KERNEL);
+	if (!priv->dai_links[*link_idx].codecs)
+		return -ENOMEM;
+
+	priv->dai_links[*link_idx].name = "IVI BE Playback";
+	priv->dai_links[*link_idx].stream_name = "ivi be Playback";
+	priv->dai_links[*link_idx].cpu_dai_name = "snd-soc-dummy-dai";
+	priv->dai_links[*link_idx].cpu_name = "snd-soc-dummy";
+	priv->dai_links[*link_idx].no_pcm = 1;
+	priv->dai_links[*link_idx].dpcm_playback = 1;
+	priv->dai_links[*link_idx].id = J721E_DAI_LINK_IVI_DPCM;
+	priv->dai_links[*link_idx].dai_fmt = J721E_DAI_FMT;
+	priv->dai_links[*link_idx].init = j721e_audio_init;
+	priv->dai_links[*link_idx].ops = &j721e_audio_ops;
+	priv->dai_links[*link_idx].be_hw_params_fixup = j721e_audio_be_hw_params_fixup;
+	priv->dai_links[*link_idx].codecs[0].of_node = codeca_node;
+	priv->dai_links[*link_idx].codecs[0].dai_name = "pcm3168a-dac";
+	priv->dai_links[*link_idx].codecs[1].of_node = codecb_node;
+	priv->dai_links[*link_idx].codecs[1].dai_name = "pcm3168a-dac";
+	priv->dai_links[*link_idx].num_codecs = 2;
+	(*link_idx)++;
+
+	/* Capture FE: ivi-mcasp <- dummy */
+	priv->dai_links[*link_idx].name = "IVI FE Capture";
+	priv->dai_links[*link_idx].stream_name = "ivi fe Capture";
+	priv->dai_links[*link_idx].cpu_of_node = dai_node;
+	priv->dai_links[*link_idx].platform_of_node = dai_node;
+	priv->dai_links[*link_idx].codec_name = "snd-soc-dummy";
+	priv->dai_links[*link_idx].codec_dai_name = "snd-soc-dummy-dai";
+	priv->dai_links[*link_idx].dynamic = 1;
+	priv->dai_links[*link_idx].dpcm_capture = 1;
+	priv->dai_links[*link_idx].dpcm_merged_format = 1;
+	priv->dai_links[*link_idx].id = J721E_DAI_LINK_IVI_DPCM;
+	priv->dai_links[*link_idx].dai_fmt = J721E_DAI_FMT;
+	priv->dai_links[*link_idx].init = j721e_audio_init;
+	priv->dai_links[*link_idx].ops = &j721e_audio_ops;
+	(*link_idx)++;
+
+	/* Capture BE: dummy <- codeca + codecb */
+	priv->dai_links[*link_idx].codecs = devm_kcalloc(priv->dev, 2,
+				sizeof(*priv->dai_links[*link_idx].codecs),
+				GFP_KERNEL);
+	if (!priv->dai_links[*link_idx].codecs)
+		return -ENOMEM;
+
+	priv->dai_links[*link_idx].name = "IVI BE Capture";
+	priv->dai_links[*link_idx].stream_name = "ivi be Capture";
+	priv->dai_links[*link_idx].cpu_dai_name = "snd-soc-dummy-dai";
+	priv->dai_links[*link_idx].cpu_name = "snd-soc-dummy";
+	priv->dai_links[*link_idx].no_pcm = 1;
+	priv->dai_links[*link_idx].dpcm_capture = 1;
+	priv->dai_links[*link_idx].id = J721E_DAI_LINK_IVI_DPCM;
+	priv->dai_links[*link_idx].dai_fmt = J721E_DAI_FMT;
+	priv->dai_links[*link_idx].init = j721e_audio_init;
+	priv->dai_links[*link_idx].ops = &j721e_audio_ops;
+	priv->dai_links[*link_idx].be_hw_params_fixup = j721e_audio_be_hw_params_fixup;
+	priv->dai_links[*link_idx].codecs[0].of_node = codeca_node;
+	priv->dai_links[*link_idx].codecs[0].dai_name = "pcm3168a-adc";
+	priv->dai_links[*link_idx].codecs[1].of_node = codecb_node;
+	priv->dai_links[*link_idx].codecs[1].dai_name = "pcm3168a-adc";
+	priv->dai_links[*link_idx].num_codecs = 2;
+	(*link_idx)++;
+
+	priv->codec_conf[*conf_idx].of_node = codeca_node;
+	priv->codec_conf[*conf_idx].name_prefix = "codeca";
+	(*conf_idx)++;
+	priv->codec_conf[*conf_idx].of_node = codecb_node;
+	priv->codec_conf[*conf_idx].name_prefix = "codecb";
+	(*conf_idx)++;
+
+	return 0;
+}
+
 static int j721e_soc_probe(struct platform_device *pdev)
 {
 	struct device_node *node = pdev->dev.of_node;
@@ -926,6 +1091,10 @@ static int j721e_soc_probe(struct platform_device *pdev)
 		return ret;
 
 	ret = j721e_soc_probe_ivi_multicodec(priv, &link_cnt, &conf_cnt);
+	if (ret)
+		return ret;
+
+	ret = j721e_soc_probe_ivi_dpcm(priv, &link_cnt, &conf_cnt);
 	if (ret)
 		return ret;
 
