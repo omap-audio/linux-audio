@@ -1686,6 +1686,12 @@ static struct davinci_mcasp_pdata dra7_mcasp_pdata = {
 	.version = MCASP_VERSION_4,
 };
 
+static struct davinci_mcasp_pdata omap_mcasp_pdata = {
+	.tx_dma_offset = 0,
+	.rx_dma_offset = 0,
+	.version = MCASP_VERSION_OMAP,
+};
+
 static const struct of_device_id mcasp_dt_ids[] = {
 	{
 		.compatible = "ti,dm646x-mcasp-audio",
@@ -1702,6 +1708,10 @@ static const struct of_device_id mcasp_dt_ids[] = {
 	{
 		.compatible = "ti,dra7-mcasp-audio",
 		.data = &dra7_mcasp_pdata,
+	},
+	{
+		.compatible = "ti,omap4-mcasp-audio",
+		.data = &omap_mcasp_pdata,
 	},
 	{ /* sentinel */ }
 };
@@ -1813,6 +1823,22 @@ static struct davinci_mcasp_pdata *davinci_mcasp_set_pdata_from_of(
 		pdata->serial_dir = of_serial_dir;
 	}
 
+	if (pdata->version == MCASP_VERSION_OMAP) {
+		if (pdata->op_mode != DAVINCI_MCASP_DIT_MODE) {
+			dev_err(&pdev->dev, "Only supports DIT mode.\n");
+			ret = -ENOTSUPP;
+			goto nodata;
+		}
+
+		if (pdata->num_serializer != 1 ||
+		    pdata->serial_dir[0] != TX_MODE) {
+			dev_err(&pdev->dev,
+				"Only 1 TX serializer is supported.\n");
+			ret = -ENOTSUPP;
+			goto nodata;
+		}
+	}
+
 	ret = of_property_match_string(np, "dma-names", "tx");
 	if (ret < 0)
 		goto nodata;
@@ -1838,13 +1864,15 @@ static struct davinci_mcasp_pdata *davinci_mcasp_set_pdata_from_of(
 		pdata->rx_dma_channel = dma_spec.args[0];
 	}
 
-	ret = of_property_read_u32(np, "tx-num-evt", &val);
-	if (ret >= 0)
-		pdata->txnumevt = val;
+	if (pdata->version != MCASP_VERSION_OMAP) {
+		ret = of_property_read_u32(np, "tx-num-evt", &val);
+		if (ret >= 0)
+			pdata->txnumevt = val;
 
-	ret = of_property_read_u32(np, "rx-num-evt", &val);
-	if (ret >= 0)
-		pdata->rxnumevt = val;
+		ret = of_property_read_u32(np, "rx-num-evt", &val);
+		if (ret >= 0)
+			pdata->rxnumevt = val;
+	};
 
 	ret = of_property_read_u32(np, "sram-size-playback", &val);
 	if (ret >= 0)
