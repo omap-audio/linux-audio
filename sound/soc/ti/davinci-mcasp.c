@@ -192,6 +192,7 @@ static inline void mcasp_set_clk_pdir(struct davinci_mcasp *mcasp, bool enable)
 	u32 bit = PIN_BIT_AMUTE;
 
 	for_each_set_bit_from(bit, &mcasp->pdir, PIN_BIT_AFSR + 1) {
+		pr_err("%s: BIT%u: %s\n", __func__, bit, enable ? "Set" : "Clear");
 		if (enable)
 			mcasp_set_bits(mcasp, DAVINCI_MCASP_PDIR_REG, BIT(bit));
 		else
@@ -204,6 +205,7 @@ static inline void mcasp_set_axr_pdir(struct davinci_mcasp *mcasp, bool enable)
 	u32 bit;
 
 	for_each_set_bit(bit, &mcasp->pdir, PIN_BIT_AMUTE) {
+		pr_err("%s: AXR%u: %s\n", __func__, bit, enable ? "Enable" : "Disable");
 		if (enable)
 			mcasp_set_bits(mcasp, DAVINCI_MCASP_PDIR_REG, BIT(bit));
 		else
@@ -849,6 +851,7 @@ static int mcasp_common_hw_param(struct davinci_mcasp *mcasp, int stream,
 	int active_serializers, numevt;
 	u32 reg;
 	/* Default configuration */
+	pr_err("%s: tdm_slots: %u, max_active_serializers: %u\n", __func__, slots, max_active_serializers);
 	if (mcasp->version < MCASP_VERSION_3)
 		mcasp_set_bits(mcasp, DAVINCI_MCASP_PWREMUMGT_REG, MCASP_SOFT);
 
@@ -1029,13 +1032,77 @@ static int mcasp_i2s_hw_param(struct davinci_mcasp *mcasp, int stream,
 	return 0;
 }
 
+static int mcasp_compute_clock_dividers(long fclk_rate, int tgt_sample_rate,
+					u32 *out_div_lo, u32 *out_div_hi)
+{
+	/* Given a particular functional clock rate and a target audio sample
+	* rate, determine the proper values for the ACLKXCTL and AHCLKXCTL, the
+	* dividers which produce the high frequency transmit master clock and
+	* the transmit clock.
+	*/
+	u32 divisor;
+	unsigned long ppm;
+	int sample_rate;
+	u32 i;
+
+	/* Start by making sure the fclk is divisible by 128 (the number of
+	* clocks present in a single S/PDIF frame.
+	*/
+	if (fclk_rate & 0x7F)
+		return -EINVAL;
+
+	fclk_rate >>= 7;
+
+	/* rounded division: fclk_rate / tgt_sample_rate + 0.5 */
+	divisor = (2 * fclk_rate + tgt_sample_rate) / (2 * tgt_sample_rate);
+	if (!divisor)
+		return -EINVAL;
+
+	sample_rate = fclk_rate / divisor;
+
+	/* ppm calculation in two steps to avoid overflow */
+	ppm = abs(tgt_sample_rate - sample_rate);
+	ppm = (1000000 * ppm) / tgt_sample_rate;
+
+	if (ppm > 100)
+		return -EINVAL;
+
+	/* At this point, divisor holds the product of the two divider values we
+	* need to use for ACLKXCTL and AHCLKXCTL.  ACLKXCTL holds a 5 bit
+	* divider [1, 32], while AHCLKXCTL holds a 12 bit divider [1, 4096].
+	* We need to make sure that we can factor divisor into two integers
+	* which will fit into these divider registers.  Find the largest 5-bit
+	* + 1 value which divides divisor and use that as our smaller divider.
+	* After removing this factor from divisor, if the result is <= 4096,
+	* then we have succeeded and will be able to produce the target sample
+	* rate.
+	*/
+	for (i = 32; (i > 1) && (divisor % i); --i)
+		; /* no body */
+
+	/* Make sure to subtract one, registers hold the value of the divider
+	* minus one (IOW, to divide by 5, the register gets programmed with the
+	* value 4. */
+	*out_div_lo = i - 1;
+	*out_div_hi = (divisor / i) - 1;
+
+	return (*out_div_hi <= 4096) ? 0 : -EINVAL;
+}
 /* S/PDIF */
 static int mcasp_dit_hw_param(struct davinci_mcasp *mcasp,
 			      unsigned int rate)
 {
+	u32 aclkxdiv, ahclkxdiv;
 	u32 cs_value = 0;
 	u8 *cs_bytes = (u8*) &cs_value;
+	int ret;
 
+	ret = mcasp_compute_clock_dividers(mcasp->sysclk_freq, rate,
+					   &aclkxdiv, &ahclkxdiv);
+	if (ret) {
+		dev_err(mcasp->dev, "No valid clock configuration for DIT\n");
+		return ret;
+	}
 	/* Set the TX format : 24 bit right rotation, 32 bit slot, Pad 0
 	   and LSB first */
 	mcasp_set_bits(mcasp, DAVINCI_MCASP_TXFMT_REG, TXROT(6) | TXSSZ(15));
@@ -1051,8 +1118,12 @@ static int mcasp_dit_hw_param(struct davinci_mcasp *mcasp,
 
 	mcasp_clr_bits(mcasp, DAVINCI_MCASP_XEVTCTL_REG, TXDATADMADIS);
 
-	/* Only 44100 and 48000 are valid, both have the same setting */
-	mcasp_set_bits(mcasp, DAVINCI_MCASP_AHCLKXCTL_REG, AHCLKXDIV(3));
+	pr_err("%s: aclkxdiv: %u, ahclkxdiv: %u\n", __func__, aclkxdiv,
+	       ahclkxdiv);
+	mcasp_mod_bits(mcasp, DAVINCI_MCASP_ACLKXCTL_REG,
+		       ACLKXDIV(aclkxdiv), ACLKXDIV_MASK);
+	mcasp_mod_bits(mcasp, DAVINCI_MCASP_AHCLKXCTL_REG,
+		       AHCLKXDIV(ahclkxdiv), AHCLKXDIV_MASK);
 
 	/* Enable the DIT */
 	mcasp_set_bits(mcasp, DAVINCI_MCASP_TXDITCTL_REG, DITEN);
@@ -1096,6 +1167,11 @@ static int mcasp_dit_hw_param(struct davinci_mcasp *mcasp,
 
 	mcasp_set_reg(mcasp, DAVINCI_MCASP_DITCSRA_REG, cs_value);
 	mcasp_set_reg(mcasp, DAVINCI_MCASP_DITCSRB_REG, cs_value);
+
+	set_bit(PIN_BIT_ACLKX, &mcasp->pdir);
+	set_bit(PIN_BIT_AFSX, &mcasp->pdir);
+	set_bit(PIN_BIT_AHCLKX, &mcasp->pdir);
+//	set_bit(PIN_BIT_AXR, &mcasp->pdir);
 
 	return 0;
 }
@@ -1235,11 +1311,13 @@ static int davinci_mcasp_hw_params(struct snd_pcm_substream *substream,
 	 * If mcasp is BCLK master, and a BCLK divider was not provided by
 	 * the machine driver, we need to calculate the ratio.
 	 */
+	pr_err("%s: sysclk_freq: %u, tdm_slots: %d\n", __func__, mcasp->sysclk_freq, mcasp->tdm_slots);
 	if (mcasp->bclk_master && mcasp->bclk_div == 0 && mcasp->sysclk_freq) {
 		int slots = mcasp->tdm_slots;
 		int rate = params_rate(params);
 		int sbits = params_width(params);
 
+		pr_err("%s: hi\n", __func__);
 		if (mcasp->slot_width)
 			sbits = mcasp->slot_width;
 
@@ -2231,6 +2309,8 @@ static int davinci_mcasp_probe(struct platform_device *pdev)
 		} else {
 			mcasp->tdm_slots = pdata->tdm_slots;
 		}
+	} else {
+		mcasp->tdm_slots = 32;
 	}
 
 	mcasp->num_serializer = pdata->num_serializer;

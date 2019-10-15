@@ -11,6 +11,7 @@
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/interrupt-controller/irq.h>
 #include <dt-bindings/pinctrl/k3.h>
+#include <dt-bindings/sound/ti-mcasp.h>
 
 / {
   fragment@101 {
@@ -67,6 +68,28 @@
 
 			branch-count = <2>;
 			hold-active-state = <GPIO_ACTIVE_HIGH>;
+		};
+
+		soundx: sound@6 {
+			compatible = "simple-audio-card";
+			simple-audio-card,name = "SPDIF";
+			simple-audio-card,bitclock-master = <&sound3_master>;
+			simple-audio-card,frame-master = <&sound3_master>;
+
+			sound3_master: simple-audio-card,cpu {
+				sound-dai = <&mcasp2>;
+				clocks = <&k3_clks 176 1>;
+				system-clock-id = <MCASP_CLK_HCLK_AUXCLK>;
+			};
+
+			simple-audio-card,codec {
+				sound-dai = <&spdif_out>;
+			};
+		};
+
+		spdif_out: spdif-out {
+			compatible = "linux,spdif-dit";
+			#sound-dai-cells = <0>;
 		};
 	};
   };
@@ -172,6 +195,12 @@
 	audi_ext_refclk0_pins_default: audi_ext_refclk0_pins_default {
 		pinctrl-single,pins = <
 			J721E_IOPAD(0x1c, PIN_OUTPUT, 6) /* (AD22) PRG1_PRU0_GPO6.AUDIO_EXT_REFCLK0 */
+		>;
+	};
+
+	mcasp2_pins_default: mcasp2_pins_default {
+		pinctrl-single,pins = <
+			J721E_IOPAD(0x138, PIN_OUTPUT_PULLDOWN, 12) /* (AE25) PRG0_PRU1_GPO14.MCASP2_AXR0 */
 		>;
 	};
 };
@@ -337,6 +366,20 @@
 	>;
 	tx-num-evt = <0>;
 	rx-num-evt = <0>;
+
+	status = "okay";
+};
+
+&mcasp2 {
+	#sound-dai-cells = <0>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&mcasp2_pins_default>;
+
+	op-mode = <1>;		/* MCASP_DIT_MODE */
+	serial-dir = <
+		1 0 0 0
+		0 0 >;
 
 	status = "okay";
 };
