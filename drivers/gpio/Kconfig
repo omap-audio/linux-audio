@@ -73,6 +73,12 @@ config GPIO_SYSFS
 	  Kernel drivers may also request that a particular GPIO be
 	  exported to userspace; this can be useful when debugging.
 
+config GPIO_SHARED
+	tristate "Driver for handling shared GPIO lines"
+	depends on OF_GPIO
+	help
+	  When a single GPIO line is connected to different peripherals.
+
 config GPIO_GENERIC
 	depends on HAS_IOMEM # Only for IOMEM drivers
 	tristate
