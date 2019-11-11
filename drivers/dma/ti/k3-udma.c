@@ -505,7 +505,7 @@ static bool udma_is_chan_running(struct udma_chan *uc)
 	if (uc->rchan)
 		rrt_ctl = udma_rchanrt_read(uc->rchan, UDMA_RCHAN_RT_CTL_REG);
 
-	if (trt_ctl & (UDMA_CHAN_RT_CTL_EN || rrt_ctl & UDMA_CHAN_RT_CTL_EN))
+	if (trt_ctl & UDMA_CHAN_RT_CTL_EN || rrt_ctl & UDMA_CHAN_RT_CTL_EN)
 		return true;
 
 	return false;
