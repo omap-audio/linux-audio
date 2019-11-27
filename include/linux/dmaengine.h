@@ -1591,6 +1591,10 @@ dma_request_slave_channel(struct device *dev, const char *name)
 	return IS_ERR(ch) ? NULL : ch;
 }
 
+/*
+ * Please use dma_request_chan() directly.
+ * Legacy support should use dma_slave_map + dma_request_chan()
+ */
 static inline struct dma_chan
 *dma_request_slave_channel_compat(const dma_cap_mask_t mask,
 				  dma_filter_fn fn, void *fn_param,
@@ -1598,12 +1602,15 @@ static inline struct dma_chan
 {
 	struct dma_chan *chan;
 
-	chan = dma_request_slave_channel(dev, name);
-	if (chan)
+	chan = dma_request_chan(dev, name);
+	if (!IS_ERR(chan))
 		return chan;
 
 	if (!fn || !fn_param)
 		return NULL;
+
+	dev_info(dev, "Please add dma_slave_map entry for %s:%s and migrate to"
+		 " dma_request_chan()", dev_name(dev), name);
 
 	return __dma_request_channel(&mask, fn, fn_param, NULL);
 }
