@@ -90,6 +90,8 @@
 		clock-frequency = <48000000>;
 		current-speed = <115200>;
 		power-domains = <&k3_pds 146 TI_SCI_PD_EXCLUSIVE>;
+		dmas = <&main_udmap 0xc514>, <&main_udmap 0x4514>;
+		dma-names = "tx", "rx";
 	};
 
 	main_uart1: serial@2810000 {
@@ -100,6 +102,8 @@
 		interrupts = <GIC_SPI 193 IRQ_TYPE_LEVEL_HIGH>;
 		clock-frequency = <48000000>;
 		power-domains = <&k3_pds 147 TI_SCI_PD_EXCLUSIVE>;
+		dmas = <&main_udmap 0xc515>, <&main_udmap 0x4515>;
+		dma-names = "tx", "rx";
 	};
 
 	main_uart2: serial@2820000 {
@@ -110,6 +114,8 @@
 		interrupts = <GIC_SPI 194 IRQ_TYPE_LEVEL_HIGH>;
 		clock-frequency = <48000000>;
 		power-domains = <&k3_pds 148 TI_SCI_PD_EXCLUSIVE>;
+		dmas = <&main_udmap 0xc516>, <&main_udmap 0x4516>;
+		dma-names = "tx", "rx";
 	};
 
 	crypto: crypto@4e00000 {
