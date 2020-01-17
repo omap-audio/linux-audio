@@ -21,7 +21,7 @@ static const struct snd_pcm_hardware udma_pcm_hardware = {
 				  SNDRV_PCM_INFO_INTERLEAVED,
 	.buffer_bytes_max	= SIZE_MAX,
 	.period_bytes_min	= 32,
-	.period_bytes_max	= SZ_64K,
+	.period_bytes_max	= SZ_512K,
 	.periods_min		= 2,
 	.periods_max		= UINT_MAX,
 };
