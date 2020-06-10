@@ -471,3 +471,15 @@
 	pinctrl-0 = <&main_mcan3_pins_default>;
 	phys = <&transceiver3>;
 };
+
+&mcasp0 {
+	status = "disabled";
+};
+
+&mcasp1 {
+	status = "disabled";
+};
+
+&mcasp2 {
+	status = "disabled";
+};
