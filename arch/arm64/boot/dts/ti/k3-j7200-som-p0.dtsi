@@ -8,6 +8,7 @@
 #include <dt-bindings/gpio/gpio.h>
 
 #include "k3-j7200.dtsi"
+#include <dt-bindings/gpio/gpio.h>
 
 / {
 	memory@80000000 {
@@ -287,6 +288,34 @@
 				  "CANUART_MUX2_SEL0", "CANUART_MUX_SEL1",
 				  "UART/LIN_MUX_SEL", "TRC_D17/AUDIO_REFCLK_SEL",
 				  "GPIO_LIN_EN", "CAN_STB";
+
+		p1-hog {
+			/* P1 - CANUART_MUX1_SEL0 */
+			gpio-hog;
+			gpios = <1 GPIO_ACTIVE_HIGH>;
+			output-low;
+		};
+
+		p2-hog {
+			/* P2 - CANUART_MUX2_SEL0 */
+			gpio-hog;
+			gpios = <2 GPIO_ACTIVE_HIGH>;
+			output-low;
+		};
+
+		p3-hog {
+			/* P3 - CANUART_MUX_SEL1 */
+			gpio-hog;
+			gpios = <3 GPIO_ACTIVE_HIGH>;
+			output-high;
+		};
+
+		p5-hog {
+			/* P5 - TRC_D17/AUDIO_REFCLK_SEL */
+			gpio-hog;
+			gpios = <5 GPIO_ACTIVE_HIGH>;
+			output-low;
+		};
 	};
 };
 
