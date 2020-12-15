@@ -6,9 +6,6 @@ $schema: http://devicetree.org/meta-schemas/core.yaml#
 
 title: Toschiba TC358768/TC358778 Parallel RGB to MIPI DSI bridge
 
-maintainers:
-  - Peter Ujfalusi <peter.ujfalusi@ti.com>
-
 description: |
   The TC358768/TC358778 is bridge device which converts RGB to DSI.
 
