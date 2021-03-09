@@ -43,6 +43,7 @@
 		ti,ivi-mcasp = <&mcasp0>;
 		ti,ivi-codec-a = <&pcm3168a_a>;
 		ti,ivi-codec-b = <&pcm3168a_b>;
+		ti,ivi-mcasp-dit = <&mcasp2>;
 
 		clocks = <&k3_clks 184 1>,
 			 <&k3_clks 184 2>, <&k3_clks 184 4>,
@@ -51,7 +52,9 @@
 			 <&k3_clks 174 1>,
 			 <&k3_clks 174 2>, <&k3_clks 174 4>,
 			 <&k3_clks 157 301>,
-			 <&k3_clks 157 330>, <&k3_clks 157 331>;
+			 <&k3_clks 157 330>, <&k3_clks 157 331>,
+			 <&k3_clks 176 1>,
+			 <&k3_clks 176 2>, <&k3_clks 176 4>;
 		clock-names = "cpb-mcasp-auxclk",
 			      "cpb-mcasp-auxclk-48000", "cpb-mcasp-auxclk-44100",
 			      "cpb-codec-scki",
@@ -59,7 +62,9 @@
 			      "ivi-mcasp-auxclk",
 			      "ivi-mcasp-auxclk-48000", "ivi-mcasp-auxclk-44100",
 			      "ivi-codec-scki",
-			      "ivi-codec-scki-48000", "ivi-codec-scki-44100";
+			      "ivi-codec-scki-48000", "ivi-codec-scki-44100",
+			      "ivi-mcasp-dit-auxclk",
+			      "ivi-mcasp-dit-auxclk-48000", "ivi-mcasp-dit-auxclk-44100";
 	};
   };
 };
@@ -89,6 +94,12 @@
 			J721E_IOPAD(0xec, PIN_INPUT_PULLDOWN, 12) /* (AG27) PRG0_PRU0_GPO15.MCASP0_AXR11 */
 			J721E_IOPAD(0xf0, PIN_INPUT_PULLDOWN, 12) /* (AH28) PRG0_PRU0_GPO16.MCASP0_AXR12 */
 			J721E_IOPAD(0xf4, PIN_INPUT_PULLDOWN, 12) /* (AB24) PRG0_PRU0_GPO17.MCASP0_AXR13 */
+		>;
+	};
+
+	mcasp2_pins_default: mcasp2_pins_default {
+		pinctrl-single,pins = <
+			J721E_IOPAD(0x138, PIN_OUTPUT_PULLDOWN, 12) /* (AE25) PRG0_PRU1_GPO14.MCASP2_AXR0 */
 		>;
 	};
 
@@ -197,6 +208,25 @@
 		2 2 2 1
 		1 1 1 2
 		2 2 0 0
+	>;
+	tx-num-evt = <0>;
+	rx-num-evt = <0>;
+
+	status = "okay";
+};
+
+&mcasp2 {
+	#sound-dai-cells = <0>;
+
+	pinctrl-names = "default";
+	pinctrl-0 = <&mcasp2_pins_default>;
+
+	op-mode = <1>;		/* MCASP_DIT_MODE */
+	auxclk-fs-ratio = <256>;
+
+	serial-dir = <	/* 0: INACTIVE, 1: TX, 2: RX */
+		1 0 0 0
+		0
 	>;
 	tx-num-evt = <0>;
 	rx-num-evt = <0>;
