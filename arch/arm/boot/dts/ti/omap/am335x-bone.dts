@@ -24,6 +24,11 @@
 		#sound-dai-cells = <0>;
 	};
 
+	spdif_out: spdif-out {
+		#sound-dai-cells = <0>;
+		compatible = "linux,spdif-dit";
+	};
+
 	sound0: sound@0 {
 		compatible = "simple-audio-card";
 		simple-audio-card,name = "BeagleBone-Cape";
@@ -81,6 +86,26 @@
 			sound-dai = <&dummy_codec0>;
 		};
 	};
+
+	sound4: sound@4 {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "BeagleBone-spdif";
+		simple-audio-card,format = "dsp_b";
+		simple-audio-card,bitclock-master = <&sound4_master>;
+		simple-audio-card,frame-master = <&sound4_master>;
+
+		status = "okay";
+
+		sound4_master: simple-audio-card,cpu {
+			sound-dai = <&mcasp1>;
+			system-clock-frequency = <24000000>;
+			system-clock-id = <MCASP_CLK_HCLK_AUXCLK>;
+		};
+
+		simple-audio-card,codec {
+			sound-dai = <&spdif_out>;
+		};
+	};
 };
 
 &am33xx_pinmux {
@@ -88,7 +113,7 @@
 		pinctrl-single,pins = <
 			AM33XX_PADCONF(AM335X_PIN_MCASP0_FSX, PIN_INPUT_PULLDOWN, MUX_MODE0) /* mcasp0_fsx */
 			AM33XX_PADCONF(AM335X_PIN_MCASP0_ACLKX, PIN_INPUT_PULLDOWN, MUX_MODE0) /* mcasp0_aclkx */
-			AM33XX_PADCONF(AM335X_PIN_MCASP0_AHCLKX, PIN_OUTPUT_PULLDOWN, MUX_MODE2) /* mcasp0_axr3 */
+//			AM33XX_PADCONF(AM335X_PIN_MCASP0_AHCLKX, PIN_OUTPUT_PULLDOWN, MUX_MODE2) /* mcasp0_axr3 */
 			AM33XX_PADCONF(AM335X_PIN_MCASP0_AHCLKR, PIN_INPUT_PULLDOWN, MUX_MODE2) /* mcasp0_axr2 */
 		>;
 	};
@@ -98,7 +123,7 @@
 			AM33XX_PADCONF(AM335X_PIN_MCASP0_FSX, PIN_INPUT_PULLDOWN, MUX_MODE7)
 			AM33XX_PADCONF(AM335X_PIN_MCASP0_ACLKX, PIN_INPUT_PULLDOWN, MUX_MODE7)
 //			AM33XX_PADCONF(AM335X_PIN_MCASP0_AHCLKX, PIN_INPUT_PULLDOWN, MUX_MODE7)
-			AM33XX_PADCONF(AM335X_PIN_MCASP0_AHCLKX, PIN_OUTPUT_PULLDOWN, MUX_MODE3) /* mcasp1_axr1 */
+//			AM33XX_PADCONF(AM335X_PIN_MCASP0_AHCLKX, PIN_OUTPUT_PULLDOWN, MUX_MODE3) /* mcasp1_axr1 */
 			AM33XX_PADCONF(AM335X_PIN_MCASP0_AHCLKR, PIN_INPUT_PULLDOWN, MUX_MODE7)
 		>;
 	};
@@ -107,8 +132,8 @@
 		pinctrl-single,pins = <
 			AM33XX_PADCONF(AM335X_PIN_MCASP0_FSR, PIN_OUTPUT_PULLDOWN, MUX_MODE3) /* mcasp1_fsx */
 			AM33XX_PADCONF(AM335X_PIN_MCASP0_ACLKR, PIN_OUTPUT_PULLDOWN, MUX_MODE3) /* mcasp1_aclkx */
-//			AM33XX_PADCONF(AM335X_PIN_MCASP0_AXR1, PIN_OUTPUT_PULLDOWN, MUX_MODE2) /* mcasp1_axr0 */
-//			AM33XX_PADCONF(AM335X_PIN_MCASP0_AHCLKX, PIN_OUTPUT_PULLDOWN, MUX_MODE3) /* mcasp1_axr1 */
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_AXR1, PIN_OUTPUT_PULLDOWN, MUX_MODE3) /* mcasp1_axr0 */
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_AHCLKX, PIN_OUTPUT_PULLDOWN, MUX_MODE3) /* mcasp1_axr1 */
 		>;
 	};
 
@@ -116,8 +141,8 @@
 		pinctrl-single,pins = <
 			AM33XX_PADCONF(AM335X_PIN_MCASP0_FSR, PIN_INPUT_PULLDOWN, MUX_MODE7) /* mcasp1_fsx */
 			AM33XX_PADCONF(AM335X_PIN_MCASP0_ACLKR, PIN_INPUT_PULLDOWN, MUX_MODE7) /* mcasp1_aclkx */
-//			AM33XX_PADCONF(AM335X_PIN_MCASP0_AXR1, PIN_INPUT_PULLDOWN, MUX_MODE7) /* mcasp1_axr0 */
-//			AM33XX_PADCONF(AM335X_PIN_MCASP0_AHCLKX, PIN_INPUT_PULLDOWN, MUX_MODE7) /* mcasp1_axr1 */
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_AXR1, PIN_INPUT_PULLDOWN, MUX_MODE7) /* mcasp1_axr0 */
+			AM33XX_PADCONF(AM335X_PIN_MCASP0_AHCLKX, PIN_INPUT_PULLDOWN, MUX_MODE7) /* mcasp1_axr1 */
 			AM33XX_PADCONF(AM335X_PIN_ECAP0_IN_PWM0_OUT, PIN_OUTPUT, MUX_MODE7) /* gpio0_7 */
 		>;
 	};
@@ -193,8 +218,7 @@
 
 	status = "okay";
 
-	op-mode = <0>;	/* MCASP_IIS_MODE */
-	tdm-slots = <2>;
+	op-mode = <1>;		/* MCASP_DIT_MODE */
 	/* 4 serializers */
 	serial-dir = <	/* 0: INACTIVE, 1: TX, 2: RX */
 		0 1 0 0

@@ -19,25 +19,29 @@
 /*
  * Maximum number of configuration entries for prefixes:
  * CPB: 2 (mcasp10 + codec)
- * IVI: 3 (mcasp0 + 2x codec)
+ * IVI: 5 (mcasp0 + 2x codec + mcasp2 + spdif-dit)
  */
-#define J721E_CODEC_CONF_COUNT	5
+#define J721E_CODEC_CONF_COUNT		7
 
 enum j721e_audio_domain_id {
 	J721E_AUDIO_DOMAIN_CPB = 0,
 	J721E_AUDIO_DOMAIN_IVI,
+	J721E_AUDIO_DOMAIN_IVI_DIT,
 	J721E_AUDIO_DOMAIN_LAST,
 };
 
-#define J721E_CLK_PARENT_48000	0
-#define J721E_CLK_PARENT_44100	1
+#define J721E_CLK_PARENT_48000		0
+#define J721E_CLK_PARENT_44100		1
 
-#define J721E_MAX_CLK_HSDIV	128
-#define PCM1368A_MAX_SYSCLK	36864000
+#define J721E_MAX_CLK_HSDIV		128
+#define PCM1368A_MAX_SYSCLK		36864000
 
-#define J721E_DAI_FMT		(SND_SOC_DAIFMT_RIGHT_J | \
-				 SND_SOC_DAIFMT_NB_NF |   \
-				 SND_SOC_DAIFMT_CBS_CFS)
+#define J721E_DAI_FMT			(SND_SOC_DAIFMT_RIGHT_J | \
+					SND_SOC_DAIFMT_NB_NF |   \
+					SND_SOC_DAIFMT_CBS_CFS)
+#define J721E_DIT_DAI_FMT		(SND_SOC_DAIFMT_DSP_B | \
+					SND_SOC_DAIFMT_IB_NF |   \
+					SND_SOC_DAIFMT_CBS_CFS)
 
 enum j721e_board_type {
 	J721E_BOARD_CPB = 1,
@@ -523,7 +527,7 @@ static const struct j721e_audio_match_data j721e_cpb_data = {
 
 static const struct j721e_audio_match_data j721e_cpb_ivi_data = {
 	.board_type = J721E_BOARD_CPB_IVI,
-	.num_links = 4, /* CPB pcm3168a + 2x pcm3168a on IVI */
+	.num_links = 5, /* CPB pcm3168a + 2x pcm3168a on IVI + dit on IVI */
 	.pll_rates = {
 		[J721E_CLK_PARENT_44100] = 1083801600, /* PLL15 */
 		[J721E_CLK_PARENT_48000] = 1179648000, /* PLL4 */
@@ -840,6 +844,81 @@ put_dai_node:
 	return ret;
 }
 
+static int j721e_soc_probe_ivi_dit(struct j721e_priv *priv, int *link_idx,
+				   int *conf_idx)
+{
+	struct device_node *node = priv->dev->of_node;
+	struct snd_soc_dai_link_component *compnent;
+	struct device_node *dai_node, *codec_node;
+	struct j721e_audio_domain *domain;
+	int comp_count, comp_idx;
+	int ret;
+
+	if (priv->match_data->board_type != J721E_BOARD_CPB_IVI)
+		return 0;
+
+	dai_node = of_parse_phandle(node, "ti,ivi-dit-mcasp", 0);
+	if (!dai_node) {
+		dev_dbg(priv->dev, "IVI DIT McASP node is not provided\n");
+		return 0;
+	}
+
+	codec_node = of_parse_phandle(node, "ti,ivi-dit-codec", 0);
+	if (!codec_node) {
+		dev_err(priv->dev, "IVI DIT codec node is not provided\n");
+		return -EINVAL;
+	}
+
+	domain = &priv->audio_domains[J721E_AUDIO_DOMAIN_IVI_DIT];
+	ret = j721e_get_clocks(priv->dev, &domain->codec, "ivi-codec-scki");
+	if (ret)
+		return ret;
+
+	ret = j721e_get_clocks(priv->dev, &domain->mcasp, "ivi-mcasp-dit-auxclk");
+	if (ret)
+		return ret;
+
+	/*
+	 * For IVI S/PDIF DIT we have one link:
+	 * McASP2 -> spdif-dit
+	 */
+	comp_count = 3;
+	compnent = devm_kzalloc(priv->dev, comp_count * sizeof(*compnent),
+				GFP_KERNEL);
+	if (!compnent)
+		return -ENOMEM;
+
+	comp_idx = 0;
+	priv->dai_links[*link_idx].cpus = &compnent[comp_idx++];
+	priv->dai_links[*link_idx].num_cpus = 1;
+	priv->dai_links[*link_idx].codecs = &compnent[comp_idx++];
+	priv->dai_links[*link_idx].num_codecs = 1;
+	priv->dai_links[*link_idx].platforms = &compnent[comp_idx++];
+	priv->dai_links[*link_idx].num_platforms = 1;
+
+	priv->dai_links[*link_idx].name = "IVI DIT Playback";
+	priv->dai_links[*link_idx].stream_name = "IVI DIT Digital";
+	priv->dai_links[*link_idx].cpus->of_node = dai_node;
+	priv->dai_links[*link_idx].platforms->of_node = dai_node;
+	priv->dai_links[*link_idx].codecs->of_node = codec_node;
+	priv->dai_links[*link_idx].codecs->dai_name = "dit-hifi";
+	priv->dai_links[*link_idx].playback_only = 1;
+	priv->dai_links[*link_idx].id = J721E_AUDIO_DOMAIN_IVI_DIT;
+	priv->dai_links[*link_idx].dai_fmt = J721E_DIT_DAI_FMT;
+	priv->dai_links[*link_idx].init = j721e_audio_init;
+	priv->dai_links[*link_idx].ops = &j721e_audio_ops;
+	(*link_idx)++;
+
+	priv->codec_conf[*conf_idx].dlc.of_node = codec_node;
+	priv->codec_conf[*conf_idx].name_prefix = "ivi-dit";
+	(*conf_idx)++;
+	priv->codec_conf[*conf_idx].dlc.of_node = dai_node;
+	priv->codec_conf[*conf_idx].name_prefix = "McASP2";
+	(*conf_idx)++;
+
+	return 0;
+}
+
 static int j721e_soc_probe(struct platform_device *pdev)
 {
 	struct device_node *node = pdev->dev.of_node;
@@ -895,6 +974,10 @@ static int j721e_soc_probe(struct platform_device *pdev)
 		return ret;
 
 	ret = j721e_soc_probe_ivi(priv, &link_cnt, &conf_cnt);
+	if (ret)
+		return ret;
+
+	ret = j721e_soc_probe_ivi_dit(priv, &link_cnt, &conf_cnt);
 	if (ret)
 		return ret;
 
