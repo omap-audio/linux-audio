@@ -30,6 +30,11 @@
 
 			status = "disabled";
 		};
+
+		spdif_out: spdif-out {
+			#sound-dai-cells = <0>;
+			compatible = "linux,spdif-dit";
+		};
 	};
   };
 
@@ -43,7 +48,8 @@
 		ti,ivi-mcasp = <&mcasp0>;
 		ti,ivi-codec-a = <&pcm3168a_a>;
 		ti,ivi-codec-b = <&pcm3168a_b>;
-		ti,ivi-mcasp-dit = <&mcasp2>;
+		ti,ivi-dit-mcasp = <&mcasp2>;
+		ti,ivi-dit-codec = <&spdif_out>;
 
 		clocks = <&k3_clks 184 1>,
 			 <&k3_clks 184 2>, <&k3_clks 184 4>,
