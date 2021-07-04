@@ -6,10 +6,41 @@
 
 #include "omap4460.dtsi"
 #include "omap4-panda-common.dtsi"
+#include <dt-bindings/sound/ti-mcasp.h>
 
 / {
 	model = "TI OMAP4 PandaBoard-ES";
 	compatible = "ti,omap4-panda-es", "ti,omap4-panda", "ti,omap4460", "ti,omap4430", "ti,omap4";
+
+	dummy_codec0: dummy_codec@0 {
+		compatible = "linux,snd-soc-dummy";
+		#sound-dai-cells = <0>;
+	};
+
+	spdif_out: spdif-out {
+		#sound-dai-cells = <0>;
+		compatible = "linux,spdif-dit";
+	};
+
+	sound3: sound@3 {
+		compatible = "simple-audio-card";
+		simple-audio-card,name = "omap4-spdif";
+		simple-audio-card,format = "dsp_b";
+		simple-audio-card,bitclock-master = <&sound3_master>;
+		simple-audio-card,frame-master = <&sound3_master>;
+
+		status = "okay";
+
+		sound3_master: simple-audio-card,cpu {
+			sound-dai = <&mcasp0>;
+			clocks = <&abe_clkctrl OMAP4_MCASP_CLKCTRL 0>;
+			system-clock-id = <MCASP_CLK_HCLK_AUXCLK>;
+		};
+
+		simple-audio-card,codec {
+			sound-dai = <&spdif_out>;
+		};
+	};
 };
 
 /* Audio routing is differnet between PandaBoard4430 and PandaBoardES */
@@ -65,6 +96,12 @@
 			OMAP4_IOPAD(0x11e, PIN_OUTPUT | MUX_MODE0)		/* uart2_tx.uart2_tx */
 		>;
 	};
+
+	mcasp_pins: mcasp_pins {
+		pinctrl-single,pins = <
+			OMAP4_IOPAD(0x114, PIN_OUTPUT | MUX_MODE2) /* abe_dmic_din2.abe_mcasp_axr */
+		>;
+	};
 };
 
 &led_wkgpio_pins {
@@ -87,12 +124,6 @@
 	};
 };
 
-&gpio_keys {
-	buttonS2 {
-		gpios = <&gpio4 17 GPIO_ACTIVE_LOW>; /* gpio_113 */
-	};
-};
-
 &gpio1_target {
 	 ti,no-reset-on-init;
 };
@@ -111,4 +142,12 @@
 		compatible = "ti,wl1271-st";
 		enable-gpios = <&gpio2 14 GPIO_ACTIVE_HIGH>;	/* GPIO_46 */
 	};
+};
+
+&mcasp0 {
+	#sound-dai-cells = <0>;
+	status = "okay";
+
+	pinctrl-0 = <&mcasp_pins>;
+	pinctrl-names = "default";
 };
