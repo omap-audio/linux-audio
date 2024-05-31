@@ -606,6 +606,18 @@ cifs_sfu_type(struct cifs_fattr *fattr, const char *path,
 				mnr = le64_to_cpu(*(__le64 *)(pbuf+16));
 				fattr->cf_rdev = MKDEV(mjr, mnr);
 			}
+		} else if (memcmp("LnxSOCK", pbuf, 8) == 0) {
+			cifs_dbg(FYI, "Socket\n");
+			fattr->cf_mode |= S_IFSOCK;
+			fattr->cf_dtype = DT_SOCK;
+			if (bytes_read == 24) {
+				/* we have enough to decode dev num */
+				__u64 mjr; /* major */
+				__u64 mnr; /* minor */
+				mjr = le64_to_cpu(*(__le64 *)(pbuf+8));
+				mnr = le64_to_cpu(*(__le64 *)(pbuf+16));
+				fattr->cf_rdev = MKDEV(mjr, mnr);
+			}
 		} else if (memcmp("IntxLNK", pbuf, 7) == 0) {
 			cifs_dbg(FYI, "Symlink\n");
 			fattr->cf_mode |= S_IFLNK;
