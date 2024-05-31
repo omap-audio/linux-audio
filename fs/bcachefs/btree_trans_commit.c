@@ -10,6 +10,7 @@
 #include "btree_update_interior.h"
 #include "btree_write_buffer.h"
 #include "buckets.h"
+#include "disk_accounting.h"
 #include "errcode.h"
 #include "error.h"
 #include "journal.h"
@@ -228,14 +229,14 @@ static int __btree_node_flush(struct journal *j, struct journal_entry_pin *pin,
 	struct btree_write *w = container_of(pin, struct btree_write, journal);
 	struct btree *b = container_of(w, struct btree, writes[i]);
 	struct btree_trans *trans = bch2_trans_get(c);
-	unsigned long old, new, v;
+	unsigned long old, new;
 	unsigned idx = w - b->writes;
 
 	btree_node_lock_nopath_nofail(trans, &b->c, SIX_LOCK_read);
-	v = READ_ONCE(b->flags);
 
+	old = READ_ONCE(b->flags);
 	do {
-		old = new = v;
+		new = old;
 
 		if (!(old & (1 << BTREE_NODE_dirty)) ||
 		    !!(old & (1 << BTREE_NODE_write_idx)) != idx ||
@@ -245,7 +246,7 @@ static int __btree_node_flush(struct journal *j, struct journal_entry_pin *pin,
 		new &= ~BTREE_WRITE_TYPE_MASK;
 		new |= BTREE_WRITE_journal_reclaim;
 		new |= 1 << BTREE_NODE_need_write;
-	} while ((v = cmpxchg(&b->flags, old, new)) != old);
+	} while (!try_cmpxchg(&b->flags, &old, new));
 
 	btree_node_write_if_need(c, b, SIX_LOCK_read);
 	six_unlock_read(&b->c.lock);
@@ -620,6 +621,14 @@ static noinline int bch2_trans_commit_run_gc_triggers(struct btree_trans *trans)
 	return 0;
 }
 
+static struct bversion journal_pos_to_bversion(struct journal_res *res, unsigned offset)
+{
+	return (struct bversion) {
+		.hi = res->seq >> 32,
+		.lo = (res->seq << 32) | (res->offset + offset),
+	};
+}
+
 static inline int
 bch2_trans_commit_write_locked(struct btree_trans *trans, unsigned flags,
 			       struct btree_insert_entry **stopped_at,
@@ -628,7 +637,7 @@ bch2_trans_commit_write_locked(struct btree_trans *trans, unsigned flags,
 	struct bch_fs *c = trans->c;
 	struct btree_trans_commit_hook *h;
 	unsigned u64s = 0;
-	int ret;
+	int ret = 0;
 
 	bch2_trans_verify_not_unlocked(trans);
 	bch2_trans_verify_not_in_restart(trans);
@@ -693,19 +702,36 @@ bch2_trans_commit_write_locked(struct btree_trans *trans, unsigned flags,
 				i->k->k.version = MAX_VERSION;
 	}
 
-	if (trans->fs_usage_deltas &&
-	    bch2_trans_fs_usage_apply(trans, trans->fs_usage_deltas))
-		return -BCH_ERR_btree_insert_need_mark_replicas;
-
-	/* XXX: we only want to run this if deltas are nonzero */
-	bch2_trans_account_disk_usage_change(trans);
-
 	h = trans->hooks;
 	while (h) {
 		ret = h->fn(trans, h);
 		if (ret)
-			goto revert_fs_usage;
+			return ret;
 		h = h->next;
+	}
+
+	struct jset_entry *entry = trans->journal_entries;
+
+	if (likely(!(flags & BCH_TRANS_COMMIT_skip_accounting_apply))) {
+		percpu_down_read(&c->mark_lock);
+
+		for (entry = trans->journal_entries;
+		     entry != (void *) ((u64 *) trans->journal_entries + trans->journal_entries_u64s);
+		     entry = vstruct_next(entry))
+			if (jset_entry_is_key(entry) && entry->start->k.type == KEY_TYPE_accounting) {
+				struct bkey_i_accounting *a = bkey_i_to_accounting(entry->start);
+
+				a->k.version = journal_pos_to_bversion(&trans->journal_res,
+								(u64 *) entry - (u64 *) trans->journal_entries);
+				BUG_ON(bversion_zero(a->k.version));
+				ret = bch2_accounting_mem_mod_locked(trans, accounting_i_to_s_c(a), false);
+				if (ret)
+					goto revert_fs_usage;
+			}
+		percpu_up_read(&c->mark_lock);
+
+		/* XXX: we only want to run this if deltas are nonzero */
+		bch2_trans_account_disk_usage_change(trans);
 	}
 
 	trans_for_each_update(trans, i)
@@ -776,17 +802,34 @@ bch2_trans_commit_write_locked(struct btree_trans *trans, unsigned flags,
 
 	return 0;
 fatal_err:
-	bch2_fatal_error(c);
+	bch2_fs_fatal_error(c, "fatal error in transaction commit: %s", bch2_err_str(ret));
+	percpu_down_read(&c->mark_lock);
 revert_fs_usage:
-	if (trans->fs_usage_deltas)
-		bch2_trans_fs_usage_revert(trans, trans->fs_usage_deltas);
+	for (struct jset_entry *entry2 = trans->journal_entries;
+	     entry2 != entry;
+	     entry2 = vstruct_next(entry2))
+		if (jset_entry_is_key(entry2) && entry2->start->k.type == KEY_TYPE_accounting) {
+			struct bkey_s_accounting a = bkey_i_to_s_accounting(entry2->start);
+
+			bch2_accounting_neg(a);
+			bch2_accounting_mem_mod_locked(trans, a.c, false);
+			bch2_accounting_neg(a);
+		}
+	percpu_up_read(&c->mark_lock);
 	return ret;
 }
 
 static noinline void bch2_drop_overwrites_from_journal(struct btree_trans *trans)
 {
+	/*
+	 * Accounting keys aren't deduped in the journal: we have to compare
+	 * each individual update against what's in the btree to see if it has
+	 * been applied yet, and accounting updates also don't overwrite,
+	 * they're deltas that accumulate.
+	 */
 	trans_for_each_update(trans, i)
-		bch2_journal_key_overwritten(trans->c, i->btree_id, i->level, i->k->k.p);
+		if (i->k->k.type != KEY_TYPE_accounting)
+			bch2_journal_key_overwritten(trans->c, i->btree_id, i->level, i->k->k.p);
 }
 
 static noinline int bch2_trans_commit_bkey_invalid(struct btree_trans *trans,
@@ -922,7 +965,7 @@ int bch2_trans_commit_error(struct btree_trans *trans, unsigned flags,
 		break;
 	case -BCH_ERR_btree_insert_need_mark_replicas:
 		ret = drop_locks_do(trans,
-			bch2_replicas_delta_list_mark(c, trans->fs_usage_deltas));
+			bch2_accounting_update_sb(trans));
 		break;
 	case -BCH_ERR_journal_res_get_blocked:
 		/*
@@ -993,15 +1036,24 @@ static noinline int
 do_bch2_trans_commit_to_journal_replay(struct btree_trans *trans)
 {
 	struct bch_fs *c = trans->c;
-	int ret = 0;
 
 	trans_for_each_update(trans, i) {
-		ret = bch2_journal_key_insert(c, i->btree_id, i->level, i->k);
+		int ret = bch2_journal_key_insert(c, i->btree_id, i->level, i->k);
 		if (ret)
-			break;
+			return ret;
 	}
 
-	return ret;
+	for (struct jset_entry *i = trans->journal_entries;
+	     i != (void *) ((u64 *) trans->journal_entries + trans->journal_entries_u64s);
+	     i = vstruct_next(i))
+		if (i->type == BCH_JSET_ENTRY_btree_keys ||
+		    i->type == BCH_JSET_ENTRY_write_buffer_keys) {
+			int ret = bch2_journal_key_insert(c, i->btree_id, i->level, i->start);
+			if (ret)
+				return ret;
+		}
+
+	return 0;
 }
 
 int __bch2_trans_commit(struct btree_trans *trans, unsigned flags)
@@ -1016,8 +1068,6 @@ int __bch2_trans_commit(struct btree_trans *trans, unsigned flags)
 	if (!trans->nr_updates &&
 	    !trans->journal_entries_u64s)
 		goto out_reset;
-
-	memset(&trans->fs_usage_delta, 0, sizeof(trans->fs_usage_delta));
 
 	ret = bch2_trans_commit_run_triggers(trans);
 	if (ret)
@@ -1115,6 +1165,7 @@ retry:
 	bch2_trans_verify_not_in_restart(trans);
 	if (likely(!(flags & BCH_TRANS_COMMIT_no_journal_res)))
 		memset(&trans->journal_res, 0, sizeof(trans->journal_res));
+	memset(&trans->fs_usage_delta, 0, sizeof(trans->fs_usage_delta));
 
 	ret = do_bch2_trans_commit(trans, flags, &errored_at, _RET_IP_);
 
